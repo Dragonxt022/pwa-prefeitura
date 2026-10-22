@@ -1,0 +1,19 @@
+{
+  "name": "prefeitura-piloto-backend",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API mockada do piloto Prefeitura Digital (dados em memoria)",
+  "type": "module",
+  "main": "server.js",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.3.0"
+  }
+}

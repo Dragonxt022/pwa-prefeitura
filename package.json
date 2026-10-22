@@ -1,0 +1,22 @@
+{
+  "name": "pwa-prefeitura",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Piloto de PWA de atendimento ao cidadao (React + Vite + vite-plugin-pwa + Express)",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "dev:api": "npm --prefix backend run dev",
+    "dev:web": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "preview": "npm --prefix frontend run preview",
+    "start:api": "npm --prefix backend start",
+    "lint": "npm --prefix frontend run lint",
+    "install:all": "npm install && npm --prefix frontend install && npm --prefix backend install"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}

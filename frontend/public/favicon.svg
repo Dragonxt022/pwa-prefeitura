@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Prefeitura Digital">
+  <defs>
+    <linearGradient id="fundo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1D6FE0" />
+      <stop offset="1" stop-color="#0C3A7E" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#fundo)" />
+  <path d="M12 27 32 14l20 13v3H12z" fill="#fff" />
+  <rect x="18" y="32" width="28" height="20" fill="#fff" />
+  <rect x="23" y="36" width="5" height="5" fill="#1351B4" />
+  <rect x="36" y="36" width="5" height="5" fill="#1351B4" />
+  <rect x="29" y="45" width="6" height="7" fill="#1351B4" />
+</svg>
