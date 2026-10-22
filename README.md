@@ -38,13 +38,21 @@ Esse comando instala as dependências da raiz, do `frontend` e do `backend`.
 ## Execução
 
 ```powershell
-# API (:3000) + frontend (:5173) juntos
+# janela dividida: API (:3000) à esquerda, frontend (:5173) à direita
+.\iniciar-dev.cmd
+# equivalentes: duplo clique no arquivo ou npm run dev:split
+
+# ambos na mesma janela, com saídas identificadas (api/web)
 npm run dev
 
 # ou em terminais separados
 npm run dev:api
 npm run dev:web
 ```
+
+O `iniciar-dev.cmd` confere Node, instala dependências se faltarem, verifica se as portas 3000/5173
+estão livres e abre os dois serviços em **painéis divididos do Windows Terminal**. Sem Windows Terminal,
+ele cai para uma janela única com `concurrently`.
 
 Acesse **http://localhost:5173**. O front chama `/api/...`; o proxy do Vite encaminha para
 `http://localhost:3000` (configurável por `API_TARGET` no `frontend/.env`).
@@ -69,7 +77,8 @@ Para depurar SW em desenvolvimento, altere `devOptions.enabled` para `true` em
 | Comando | O que faz |
 |---|---|
 | `npm run install:all` | Instala raiz, frontend e backend |
-| `npm run dev` | Sobe API e frontend com `concurrently` |
+| `.\iniciar-dev.cmd` / `npm run dev:split` | Abre API e frontend em painéis divididos (Windows Terminal) |
+| `npm run dev` | Sobe API e frontend na mesma janela com `concurrently` |
 | `npm run dev:api` | Só a API (`node --watch`) |
 | `npm run dev:web` | Só o Vite |
 | `npm run build` | Build de produção do frontend (`dist/`) |

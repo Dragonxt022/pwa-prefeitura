@@ -8,6 +8,7 @@
   },
   "scripts": {
     "dev": "concurrently -n api,web -c blue,green \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
+    "dev:split": "iniciar-dev.cmd",
     "dev:api": "npm --prefix backend run dev",
     "dev:web": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",

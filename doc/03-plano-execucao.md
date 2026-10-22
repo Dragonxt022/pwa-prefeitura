@@ -121,6 +121,9 @@ apenas registra a permissão quando possível.
 npm run install:all
 
 # desenvolvimento (API :3000 + Vite :5173)
+#   tela dividida no Windows Terminal:
+.\iniciar-dev.cmd
+#   ou na mesma janela:
 npm run dev
 
 # validar antes de testar PWA
