@@ -39,7 +39,12 @@ Esse comando instala as dependências da raiz, do `frontend` e do `backend`.
 
 ```powershell
 # janela dividida: API (:3000) à esquerda, frontend (:5173) à direita
+# (padrão: exposto na rede local para testar no celular)
 .\iniciar-dev.cmd
+
+# apenas neste computador (não expõe na rede)
+.\iniciar-dev.cmd local
+
 # equivalentes: duplo clique no arquivo ou npm run dev:split
 
 # ambos na mesma janela, com saídas identificadas (api/web)
@@ -51,8 +56,8 @@ npm run dev:web
 ```
 
 O `iniciar-dev.cmd` confere Node, instala dependências se faltarem, verifica se as portas 3000/5173
-estão livres e abre os dois serviços em **painéis divididos do Windows Terminal**. Sem Windows Terminal,
-ele cai para uma janela única com `concurrently`.
+estão livres, mostra o IP da rede e abre os dois serviços em **painéis divididos do Windows Terminal**.
+Sem Windows Terminal, ele cai para uma janela única com `concurrently`.
 
 Acesse **http://localhost:5173**. O front chama `/api/...`; o proxy do Vite encaminha para
 `http://localhost:3000` (configurável por `API_TARGET` no `frontend/.env`).
@@ -77,8 +82,13 @@ Para depurar SW em desenvolvimento, altere `devOptions.enabled` para `true` em
 | Comando | O que faz |
 |---|---|
 | `npm run install:all` | Instala raiz, frontend e backend |
-| `.\iniciar-dev.cmd` / `npm run dev:split` | Abre API e frontend em painéis divididos (Windows Terminal) |
-| `npm run dev` | Sobe API e frontend na mesma janela com `concurrently` |
+| `.\iniciar-dev.cmd` | API + frontend em painéis divididos, expostos na LAN |
+| `.\iniciar-dev.cmd local` | Mesmo layout, escutando apenas em localhost |
+| `.\scripts\liberar-firewall.ps1` | Libera TCP 5173/4173/3000 no firewall (LocalSubnet, requer admin) |
+| `npm run dev:split` | Equivalente ao `iniciar-dev.cmd` |
+| `npm run dev:lan` | API + Vite em uma janela, escutando na LAN |
+| `npm run preview:lan` | Preview do build escutando na LAN |
+| `npm run dev` | Sobe API e frontend na mesma janela com `concurrently` (`localhost`) |
 | `npm run dev:api` | Só a API (`node --watch`) |
 | `npm run dev:web` | Só o Vite |
 | `npm run build` | Build de produção do frontend (`dist/`) |
@@ -159,13 +169,39 @@ Contrato completo, códigos de erro e validações: [doc/02-requisitos.md](doc/0
 - `POST` nunca é cacheado: offline, o app mostra "Sem conexão" e preserva o formulário.
 - Navegações usam `index.html` como fallback; `/api/*` é excluído desse fallback.
 
-## iPhone / iOS
+## Testar no celular (mesma rede Wi-Fi)
 
-- O Service Worker exige **HTTPS ou localhost**. Para testar no iPhone físico, use um túnel HTTPS.
-  **Evite o ngrok gratuito**: o interstitial dele quebra o registro do SW. Prefira
-  `cloudflared tunnel --url http://localhost:4173` (Cloudflare Tunnel) ou `mkcert`.
-- Cada URL de túnel é uma origem nova: instalação, cache e permissões não são herdados de `localhost`.
-- Para instalar: Safari → Compartilhar → **Adicionar à Tela de Início**.
+Sem túnel: o `iniciar-dev.cmd` já expõe o Vite na rede local e imprime o endereço.
+
+```powershell
+.\iniciar-dev.cmd          # padrão: LAN (ex.: http://192.168.0.68:5173)
+```
+
+1. Conecte o celular na **mesma rede Wi-Fi** do PC.
+2. Abra a URL impressa — ou rode `node scripts/ip-local.mjs 5173` para ver o IP.
+3. Se a página não abrir, libere o firewall em um PowerShell **como Administrador**:
+   `.\scripts\liberar-firewall.ps1` (TCP 5173/4173/3000, entrada, `LocalSubnet`).
+   Para remover: `.\scripts\liberar-firewall.ps1 -Remover`.
+4. Para esconder da rede: `.\iniciar-dev.cmd local`.
+
+A rede pode estar classificada como **Pública** no Windows. O script cobre esse perfil, mas as regras
+ficam restritas à sub-rede local — use apenas em rede confiável.
+
+### Limitação: HTTP na LAN não ativa o Service Worker
+
+Service Worker exige contexto seguro (HTTPS ou `localhost`). Em `http://192.168.x.x:5173`:
+
+- telas, navegação, formulários e API funcionam normalmente;
+- **não** há offline, cache do SW, prompt de instalação nem push;
+- no iPhone, "Adicionar à Tela de Início" abre em modo `standalone`, porém sem offline.
+
+Para validar o PWA completo no celular sem túnel, use **HTTPS local com `mkcert`** (certificado para o IP
+e CA instalada no aparelho: Android em "CA do usuário"; iOS em perfil + confiança total) ou publique o
+build em um host HTTPS. O piloto valida o PWA no desktop via `localhost`.
+
+### iOS
+
+- Instalação: Safari → Compartilhar → **Adicionar à Tela de Início**.
 - Notificações: iOS 16.4+, somente no app instalado e com permissão pedida por gesto. O piloto **não
   envia push** — apenas registra a permissão quando aplicável.
 
@@ -187,7 +223,9 @@ Contrato completo, códigos de erro e validações: [doc/02-requisitos.md](doc/0
 | `/api` retorna HTML | Proxy ausente/path errado | Confirme `server.proxy` e `API_TARGET`; teste `/api/health` |
 | Mudanças não aparecem no preview | SW antigo em cache | DevTools → Application → Unregister + reload; ou "Update on reload" |
 | Ícones quebrados | Build antigo sem os PNGs | `npm --prefix frontend run icons && npm run build` |
-| Service Worker não registra | Rodando em `dev` ou HTTP remoto | Use `build` + `preview` e HTTPS/localhost |
+| Service Worker não registra | Rodando em `dev` ou HTTP remoto | Use `build` + `preview` em HTTPS/`localhost`; em HTTP na LAN não registra (esperado) |
+| Celular não abre `http://IP:5173` | Firewall, rede Pública ou Wi-Fi diferente | Rode `.\scripts\liberar-firewall.ps1` como admin, confirme a mesma rede e desative "isolamento de clientes" no roteador |
+| Sem opção de instalar no celular | HTTP na LAN não é contexto seguro | Use HTTPS local (`mkcert`) ou publique o build em host HTTPS |
 | Protocolos somem | Store em memória | Esperado: reiniciar a API zera (ADR 0003) |
 
 ## Documentação

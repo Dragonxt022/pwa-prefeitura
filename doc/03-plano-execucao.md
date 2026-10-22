@@ -4,7 +4,7 @@
 |---|---|
 | Versão | 2.0 |
 | Data | 22/10/2026 |
-| Status | Fases 0–4 concluídas em ambiente local; Fases 5–6 pendentes |
+| Status | Fases 0–4 concluídas em ambiente local; Fase 5 em andamento (LAN); Fase 6 pendente |
 | Referências | [01](01-projeto-inicial.md) · [02](02-requisitos.md) · [04](04-validacao.md) |
 
 ## 0. Como usar este plano
@@ -81,24 +81,29 @@
 > `NetworkFirst` com timeout e limite de entradas (ADR 0004). `navigateFallbackDenylist` impede que
 > navegações para `/api` recebam o `index.html`.
 
-## 6. Fase 5 — iOS e dispositivo físico (30/10)
+## 6. Fase 5 — Dispositivos físicos (30/10)
+
+Abordagem adotada: **exposição na rede local (LAN), sem túnel**. O celular acessa o Vite pelo IP do PC
+na mesma rede Wi-Fi; o proxy do Vite encaminha `/api` para a API local.
 
 | ID | Tarefa | Responsável | Prazo | Critério de aceite | Status |
 |---|---|---|---|---|---|
-| F5-1 | Publicar preview via túnel HTTPS | Dev | 30/10 | URL acessível no iPhone, SW registrado | [ ] |
-| F5-2 | Instalar na Tela de Início e validar `standalone` | QA | 30/10 | Abre sem barra do Safari | [ ] |
-| F5-3 | Validar status, cópia de protocolo e consulta no iOS | QA | 30/10 | Fluxo completo sem teclado cobrindo campo | [ ] |
-| F5-4 | Documentar limitação de push no iOS | PO | 30/10 | Texto na tela de Perfil + doc | [x] |
+| F5-1 | Expor dev na LAN (`iniciar-dev.cmd`) e liberar firewall | Dev | 30/10 | Celular abre `http://IP:5173` na mesma Wi-Fi | [x] |
+| F5-2 | Validar fluxo completo no celular (HTTP/LAN) | QA | 30/10 | Home, formulário, protocolo e acompanhamento sem erro de layout | [ ] |
+| F5-3 | Instalar na Tela de Início (iOS) e validar `standalone` | QA | 30/10 | Abre sem barra do Safari | [ ] |
+| F5-4 | Documentar limitação de PWA em HTTP na LAN e push no iOS | PO | 30/10 | Texto no README + tela de Perfil | [x] |
+| F5-5 | (Opcional) HTTPS local com `mkcert` para validar SW no aparelho | Dev | 31/10 | SW ativo e offline funcionando no celular | [ ] |
 
-**Correção do plano original — túnel:** o **ngrok gratuito** injeta uma página de interstitial que
-quebra o registro do Service Worker e o carregamento de assets. Use:
+**Por que não há offline no teste via LAN:** Service Worker exige contexto seguro (HTTPS ou
+`localhost`). Em `http://192.168.x.x:5173` o fluxo de telas e API funciona, mas cache, instalação via
+prompt e push não. O `mkcert` resolve isso localmente, porém exige instalar a CA no aparelho
+(Android: CA do usuário; iOS: perfil + confiança total) — por isso ficou como tarefa opcional (F5-5).
+Alternativa: publicar o build em um host HTTPS e apontar a API para um endereço acessível.
 
-- **Cloudflare Tunnel** (`cloudflared tunnel --url http://localhost:4173`) — sem interstitial; ou
-- certificado local com `mkcert` + proxy HTTPS; ou
-- deploy de preview (Vercel/Netlify/Cloudflare Pages) apontando a API para um host acessível.
-
-Lembre que cada URL de túnel é uma **origem nova**: instalação, cache e permissões não são compartilhados
-com `localhost`.
+**Firewall:** `.\scripts\liberar-firewall.ps1` (PowerShell como Administrador) cria regras de entrada
+para TCP 5173/4173/3000 limitadas a `LocalSubnet`, cobrindo os perfis Private e Public. Remova com
+`-Remover`. A rede "RH 2" está classificada como **Pública**: as regras valem para ela, mas não abrem
+as portas para a internet.
 
 **iOS — requisitos reais de push (para a fase futura):** iOS 16.4+, app **instalado** na Tela de Início,
 permissão solicitada **em resposta a um gesto**, e backend com Web Push/VAPID. O piloto não envia push;
@@ -121,15 +126,21 @@ apenas registra a permissão quando possível.
 npm run install:all
 
 # desenvolvimento (API :3000 + Vite :5173)
-#   tela dividida no Windows Terminal:
+#   tela dividida no Windows Terminal, exposto na LAN:
 .\iniciar-dev.cmd
-#   ou na mesma janela:
+#   apenas neste computador:
+.\iniciar-dev.cmd local
+#   ou na mesma janela (localhost):
 npm run dev
 
 # validar antes de testar PWA
 npm run lint
 npm run build
 npm run preview      # http://localhost:4173
+
+# testar no celular (mesma Wi-Fi)
+node scripts/ip-local.mjs 5173
+.\scripts\liberar-firewall.ps1   # PowerShell como Administrador
 
 # apenas um dos lados
 npm run dev:api
@@ -152,7 +163,7 @@ Variáveis úteis (definir no terminal antes de subir):
 | Service Worker antigo servindo build velho | Tela sem mudanças após deploy | DevTools → Application → Unregister + "Update on reload"; cache versionado |
 | Porta ocupada | `EADDRINUSE` | `PORT=3001` no backend e `API_TARGET` correspondente |
 | Proxy não aplicado no preview | `/api` retorna HTML | Confirmar que `preview` herda `server.proxy`; testar `curl /api/health` |
-| Túnel quebrando SW | Manifest/ícones 404 | Trocar ngrok por Cloudflare Tunnel |
+| HTTP na LAN impede SW | Offline/instalação não validados no aparelho | Usar HTTPS local com `mkcert` (F5-5) |
 | Dados sumindo | Reinício do backend | Esperado: store em memória (ADR 0003) |
 
 ## 10. Critérios de saída do piloto

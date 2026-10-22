@@ -6,7 +6,7 @@
 | Ambiente | Windows, Node **24.12.0**, npm **11.6.2**, Chrome (Playwright) |
 | Versões | Vite **8.3.5**, vite-plugin-pwa **2.0.0**, React **19.3.1**, react-router-dom **7.18.4**, Express **5.3.0** |
 | Escopo | Fases 1–4 do plano (build, PWA, API, telas, offline em desktop) |
-| Resultado | **Aprovado** para os critérios abaixo; Fase 5 (iPhone físico) pendente |
+| Resultado | **Aprovado** para os critérios abaixo; Fase 5 (dispositivos físicos) pendente |
 
 ## 1. Qualidade de código
 
@@ -101,7 +101,22 @@ Procedimento: carregar `/`, colocar o contexto do navegador em offline e recarre
 | Envio offline mostra "Sem conexão" e preserva os campos digitados | OK |
 | Nenhuma tela branca ou erro de JS | OK |
 
-## 6. Evidências visuais
+## 6. Rede local (LAN)
+
+Exposição via `.\iniciar-dev.cmd` (Vite com `--host`) para teste no celular, sem túnel.
+
+| Verificação | Resultado |
+|---|---|
+| Vite escutando em todas as interfaces (`::`) na porta 5173 | OK |
+| `http://192.168.0.68:5173` a partir do PC | 200 |
+| `http://192.168.0.68:5173/api/health` via proxy | `ok` |
+| Regras de firewall TCP 5173/4173/3000 (`LocalSubnet`, Private+Public) | criadas em 22/10 |
+| Acesso a partir do celular | pendente (Fase 5) |
+
+> Em `http://` na LAN o Service Worker não registra (contexto não seguro). O teste cobre telas e API;
+> offline e instalação exigem HTTPS local (`mkcert`) — F5-5.
+
+## 7. Evidências visuais
 
 | Arquivo | Descrição |
 |---|---|
@@ -111,18 +126,18 @@ Procedimento: carregar `/`, colocar o contexto do navegador em offline e recarre
 | [form-offline.png](evidencias/form-offline.png) | Tentativa de envio offline |
 | [acompanhar-nao-encontrado.png](evidencias/acompanhar-nao-encontrado.png) | Protocolo inexistente |
 
-## 7. Pendências de validação
+## 8. Pendências de validação
 
 | Item | Motivo | Fase |
 |---|---|---|
-| iPhone físico (Safari, instalação, `standalone`) | Exige túnel HTTPS | 5 |
-| Android físico | Ambiente disponível apenas em desktop | 5 |
+| iPhone físico (Safari, instalação, `standalone`) | Exige HTTPS local (`mkcert`) para SW/offline; acesso HTTP na LAN já habilitado | 5 |
+| Android físico | Ambiente disponível apenas em desktop; acesso HTTP na LAN já habilitado | 5 |
 | Lighthouse (PWA/Performance/A11y) | Não executado neste ciclo | 6 |
 | axe / leitor de tela (VoiceOver, TalkBack) | Auditoria manual pendente | 6 |
 | Teste com usuários | Depende de recrutamento | 6 |
 | Carga e concorrência | Store em memória | Pós-piloto |
 
-## 8. Conclusão
+## 9. Conclusão
 
 O piloto técnico atende aos critérios das Fases 1–4: build limpo, PWA instalável com Service Worker
 ativo, API com contratos e erros consistentes, quatro telas funcionais e comportamento offline

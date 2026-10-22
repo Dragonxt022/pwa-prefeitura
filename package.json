@@ -9,6 +9,9 @@
   "scripts": {
     "dev": "concurrently -n api,web -c blue,green \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"",
     "dev:split": "iniciar-dev.cmd",
+    "dev:lan": "concurrently -n api,web -c blue,green \"npm --prefix backend run dev\" \"npm --prefix frontend run dev -- --host\"",
+    "dev:web:lan": "npm --prefix frontend run dev -- --host",
+    "preview:lan": "npm --prefix frontend run preview -- --host",
     "dev:api": "npm --prefix backend run dev",
     "dev:web": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",

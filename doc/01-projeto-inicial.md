@@ -72,7 +72,7 @@ e pelo menos **80%** classificam a tarefa como "fácil" ou "muito fácil".
 |---|---|---|
 | H1 | O cidadão entende a diferença entre os 6 tipos de serviço sem treinamento | Teste moderado + observação |
 | H2 | Guardar o protocolo em formato legível (não apenas UUID) aumenta a taxa de consulta posterior | Comparar consultas pós-teste |
-| H3 | O modo offline evita abandono em conexão instável | Teste com rede limitada (DevTools / túnel) |
+| H3 | O modo offline evita abandono em conexão instável | Teste com rede limitada (DevTools: throttling/offline) |
 | H4 | Instalar o PWA no iOS é obstáculo real para notificações | Entrevista pós-teste com usuários iPhone |
 
 ## 6. Métricas de sucesso
@@ -93,8 +93,9 @@ e pelo menos **80%** classificam a tarefa como "fácil" ou "muito fácil".
 - **Premissa**: o piloto roda em ambiente controlado, com dados fictícios e sem cidadão real.
 - **Premissa**: a API definitiva seguirá o mesmo contrato de campos e códigos de erro descritos em 02.
 - **Restrição**: Node 20.19+ (Vite 8 e vite-plugin-pwa 2 exigem; recomendado Node 22 LTS ou superior).
-- **Restrição**: Service Worker só funciona em HTTPS ou `localhost`. Teste em iPhone físico exige túnel
-  HTTPS ou certificado local — ver plano, Fase 5.
+- **Restrição**: Service Worker só funciona em HTTPS ou `localhost`. Em `http://IP-da-rede` (LAN) o SW
+  não registra: o teste no celular cobre telas e API, mas offline/instalação exigem HTTPS local
+  (`mkcert`) — ver plano, Fase 5.
 - **Restrição**: push no iOS exige iOS 16.4+, app instalado na Tela de Início e permissão pedida por gesto.
 - **Restrição orçamentária**: nenhuma dependência paga; tudo roda local.
 
