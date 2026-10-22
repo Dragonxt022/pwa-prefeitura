@@ -13,6 +13,11 @@
 > Este documento substitui o roteiro inicial (que era um passo a passo técnico). O passo a passo virou
 > [README](../README.md) e [03-plano-execucao.md](03-plano-execucao.md); requisitos e contratos estão em
 > [02-requisitos.md](02-requisitos.md).
+>
+> **Atualização de 22/10/2026:** o escopo foi ampliado no piloto v3. Itens que aparecem como “fora do
+> escopo” abaixo (painel de gestão, foto, localização, SLA e catálogo maior) foram implementados como
+> demonstração; consulte [02-requisitos.md](02-requisitos.md) e [04-validacao.md](04-validacao.md) para o
+> estado atual. A lista original permanece para registrar o recorte inicial.
 
 ## 1. Contexto e problema
 

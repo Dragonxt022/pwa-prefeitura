@@ -20,7 +20,7 @@
 | ID | Tarefa | Responsável | Prazo | Critério de aceite | Status |
 |---|---|---|---|---|---|
 | F0-1 | Separar visão, requisitos e plano em documentos próprios | PO | 22/10 | 01, 02 e 03 existem e não se contradizem | [x] |
-| F0-2 | Registrar decisões de arquitetura em ADRs | Dev front | 22/10 | 5 ADRs com contexto, decisão e consequências | [x] |
+| F0-2 | Registrar decisões de arquitetura em ADRs | Dev front | 22/10 | ADRs com contexto, decisão e consequências | [x] |
 | F0-3 | Preservar o plano original para histórico | PO | 22/10 | Arquivo em `doc/historico/` | [x] |
 | F0-4 | `git init` + `.gitignore` + primeiro commit | Dev | 22/10 | Repositório limpo, sem `node_modules`/`dist` | [x] |
 | F0-5 | README com setup, scripts e troubleshooting | Dev | 22/10 | Um novo dev sobe o projeto só com o README | [x] |
@@ -155,6 +155,8 @@ Variáveis úteis (definir no terminal antes de subir):
 | `PORT` | backend | Porta da API (padrão 3000) |
 | `MOCK_LATENCY_MS` | backend | Latência simulada em ms (padrão 200; `0` desliga) |
 | `CORS_ORIGINS` | backend | Lista separada por vírgula de origens permitidas |
+| `DATA_FILE` | backend | Caminho do JSON de persistência (padrão `backend/data/estado.json`) |
+| `ADMIN_TOKEN` | backend | Token do painel de gestão (padrão de demonstração `prefeitura-demo`) |
 
 ## 9. Riscos operacionais do plano
 
@@ -164,7 +166,7 @@ Variáveis úteis (definir no terminal antes de subir):
 | Porta ocupada | `EADDRINUSE` | `PORT=3001` no backend e `API_TARGET` correspondente |
 | Proxy não aplicado no preview | `/api` retorna HTML | Confirmar que `preview` herda `server.proxy`; testar `curl /api/health` |
 | HTTP na LAN impede SW | Offline/instalação não validados no aparelho | Usar HTTPS local com `mkcert` (F5-5) |
-| Dados sumindo | Reinício do backend | Esperado: store em memória (ADR 0003) |
+| Dados sumindo | Reinício do backend | Não deve ocorrer: o estado é persistido em `DATA_FILE`; para resetar, pare a API e remova o arquivo |
 
 ## 10. Critérios de saída do piloto
 

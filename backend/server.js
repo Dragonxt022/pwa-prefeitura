@@ -5,7 +5,10 @@ const app = criarApp()
 
 const servidor = app.listen(porta, () => {
   console.log(`API mockada em http://localhost:${porta}/api/health`)
-  console.log('Dados em memória: reiniciar o processo zera as solicitações criadas.')
+  console.log('Dados persistidos em backend/data/estado.json (ou em DATA_FILE).')
+  console.log(
+    `Painel de gestão em /gestao (token: ${process.env.ADMIN_TOKEN ? 'definido em ADMIN_TOKEN' : 'prefeitura-demo'}).`,
+  )
 })
 
 servidor.on('error', (erro) => {

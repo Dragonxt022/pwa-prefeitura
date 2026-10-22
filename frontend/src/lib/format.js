@@ -9,7 +9,8 @@ const dataHora = new Intl.DateTimeFormat('pt-BR', {
 
 export function formatarData(iso) {
   if (!iso) return '—'
-  const valor = new Date(iso)
+  // Datas sem horário (AAAA-MM-DD) são civis: não devem sofrer conversão de fuso.
+  const valor = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T00:00:00`) : new Date(iso)
   return Number.isNaN(valor.getTime()) ? '—' : data.format(valor)
 }
 

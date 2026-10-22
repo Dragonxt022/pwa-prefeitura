@@ -5,156 +5,236 @@
 | Data da execução | 22/10/2026 |
 | Ambiente | Windows, Node **24.12.0**, npm **11.6.2**, Chrome (Playwright) |
 | Versões | Vite **8.3.5**, vite-plugin-pwa **2.0.0**, React **19.3.1**, react-router-dom **7.18.4**, Express **5.3.0** |
-| Escopo | Fases 1–4 do plano (build, PWA, API, telas, offline em desktop) e revisão visual |
-| Resultado | **Aprovado** para os critérios abaixo; instalação/standalone em dispositivo físico pendente (Fase 5) |
+| Escopo | API com persistência, catálogo de 9 serviços, formulário com foto/CEP/localização, fila offline, acompanhamento, avaliação, gestão, acessibilidade e PWA |
+| Resultado | **Aprovado nos critérios locais**; instalação em aparelho físico, push em segundo plano e auditoria formal de acessibilidade ficam pendentes |
 
 ## 1. Qualidade de código
 
 | Verificação | Comando | Resultado |
 |---|---|---|
-| Lint | `npm run lint` | 0 erros, 0 warnings (oxlint) |
-| Build | `npm run build` | Sucesso (≈ 0,70 s) |
+| Lint | `npm run lint` | **0 erros, 3 warnings** (`react(set-state-in-effect)`) |
+| Build | `npm run build` | Sucesso em 1,73 s |
 
 Saída do build:
 
 ```
-dist/registerSW.js                0.13 kB
-dist/manifest.webmanifest         0.67 kB
-dist/index.html                   1.25 kB │ gzip: 0.58 kB
-dist/assets/index-*.css          26.70 kB │ gzip: 6.15 kB
-dist/assets/index-*.js          312.50 kB │ gzip: 97.43 kB
+dist/registerSW.js                              0.13 kB
+dist/manifest.webmanifest                       0.67 kB
+dist/index.html                                 1.25 kB │ gzip: 0.58 kB
+dist/assets/logo-icone-branco-*.png             9.09 kB
+dist/assets/logo-icone-colorido-*.png          41.88 kB
+dist/assets/index-*.css                        52.81 kB │ gzip: 10.13 kB
+dist/assets/index-*.js                        371.12 kB │ gzip: 111.55 kB
 
 PWA v2.0.0  mode generateSW
-precache  17 entries (450.26 KiB)
+precache  17 entries (533.01 KiB)
 files generated: dist/sw.js, dist/workbox-*.js
 ```
 
-O bundle cresceu cerca de 7 kB (gzip) em relação à versão anterior por causa do conjunto de ícones
-Lucide e das ilustrações SVG inline, que continuam funcionando offline. Os logos oficiais também são
-servidos como assets locais e entram no precache.
+Os warnings são informativos e ficam em `frontend/src/hooks/useAtualizacoes.js:85`,
+`frontend/src/components/Layout.jsx:38` e `frontend/src/pages/NovaSolicitacao.jsx:161`. Eles apontam
+chamadas de `setState` dentro de efeitos de sincronização com APIs externas; não impedem o build nem
+geram erro em execução. O bundle JS cresceu em relação ao ciclo anterior por causa das novas telas
+(catálogo, gestão, avaliação, acessibilidade e fila offline).
 
-Dois bugs encontrados e corrigidos durante a validação:
+Correções feitas durante esta rodada:
 
-1. Ícones gerados com alpha invertido (cálculo errado do canto arredondado) — corrigido no gerador.
-2. Alerta "Revise os campos destacados" permanecia visível depois de o usuário corrigir os campos
-   (chaves `undefined` no objeto de erros) — corrigido em `NovaSolicitacao.jsx`.
+- leitura da `sequencia` persistida no JSON, evitando depender apenas do maior protocolo existente;
+- a mensagem “Rascunho restaurado” permanece visível até o usuário editar o formulário;
+- removido `autoFocus` do login da gestão para o atalho “Pular para o conteúdo” ser o primeiro foco;
+- cache antigo `api-get-v1` é apagado no boot e o cache novo é `api-public-v2`;
+- listagem pública de solicitações removida; respostas públicas não devolvem `contato` nem `clientId`;
+- busca sem acentos normalizada na Home, catálogo e gestão;
+- datas civis (`AAAA-MM-DD`) formatadas sem deslocamento de fuso.
 
 ## 2. PWA e Service Worker
 
-Verificado no Chrome via Playwright em `http://localhost:4173`:
+Verificado em `http://localhost:4173` com o build de produção:
 
 | Item | Resultado |
 |---|---|
 | `dist/sw.js` e `dist/workbox-*.js` | Gerados |
-| `navigator.serviceWorker.getRegistration()` | Registrado, escopo `/` |
-| Estado do SW | `active` (ativado e em execução) |
-| Cache criado | `workbox-precache-v2-http://localhost:4173/` e `api-get-v1` |
-| `link[rel=manifest]` | `/manifest.webmanifest` |
-| Ícones | 192, 512, maskable 512, apple-touch-icon 180 e favicon 32 acessíveis (marca oficial) |
-| Console | 0 erros de JS; 1 warning de meta depreciada, corrigido com `mobile-web-app-capable` |
+| Registro do Service Worker | Ativo, escopo `/` |
+| Cache de assets | `workbox-precache-v2-http://localhost:4173/` |
+| Cache de API pública | `api-public-v2` |
+| Cache antigo `api-get-v1` | Ausente após o boot e a limpeza automática |
+| Manifest e ícones | 192, 512, maskable 512, apple-touch 180 e favicon 32 acessíveis |
+| Rotas de gestão no cache | Nenhuma; URLs observadas: `/api/avisos`, `/api/servicos` e `/status` |
+
+O teste abriu a Home, depois `/gestao`, autenticou e abriu um detalhe. As chaves do `api-public-v2`
+continuaram apenas com avisos, serviços e endpoints `/status`; não apareceram `/api/gestao`,
+`/api/solicitacoes/<protocolo>` (detalhe) nem imagens/fotos do pedido. Escritas (`POST`) nunca são
+cacheadas.
+
+### 2.1 Catálogo offline
+
+Procedimento: carregar `/servicos` online, colocar o contexto em offline e navegar novamente.
+
+| Verificação | Resultado |
+|---|---|
+| App abre offline com o HTML/JS/CSS do precache | OK |
+| Título “Todos os serviços” | OK |
+| Os 9 serviços aparecem | OK |
+| Faixa “Sem conexão — usando dados salvos.” | OK |
+| Nenhuma tela branca ou erro de JavaScript | OK |
+
+### 2.2 Fila offline
+
+Procedimento no build de produção, com o contexto offline:
+
+1. preencher uma solicitação de **Sinalização de trânsito**;
+2. tocar em **Salvar no aparelho**;
+3. verificar a fila local;
+4. voltar online e aguardar o reenvio automático.
+
+| Verificação | Resultado |
+|---|---|
+| Tela “Pedido salvo” e aviso de conexão | OK |
+| Fila com 1 pedido aguardando | OK |
+| Reenvio automático ao voltar online | OK |
+| Confirmação trocada para “Pronto!” | OK |
+| Protocolo criado | `PREF-2026-000008` |
+| Fila esvaziada após o envio | OK |
+
+O `clientId` do pedido foi reenviado pela API e devolveu o mesmo protocolo com `criada: false`,
+confirmando a idempotência.
+
+### 2.3 Rascunho
+
+| Verificação | Resultado |
+|---|---|
+| Salvar rascunho após 700 ms | OK |
+| Recarregar o formulário | Tipo, descrição e endereço restaurados |
+| Mensagem após 1,4 s da restauração | “Rascunho restaurado. Continue de onde parou.” |
+| Foto processada no cliente | Pré-visualização gerada; imagem reduzida para JPEG antes do envio |
 
 ## 3. Contratos da API
 
-Executado contra `http://localhost:3000`:
+Executado contra `http://localhost:3000` com dados fictícios persistidos em
+`backend/data/estado.json`:
 
-| Método | Rota | Resultado esperado | Obtido |
+| Método | Rota | Esperado | Obtido |
 |---|---|---|---|
-| GET | `/api/health` | 200 | 200 |
-| GET | `/api/servicos` | 200 (6 itens) | 200 |
-| GET | `/api/avisos` | 200 (4 itens) | 200 |
+| GET | `/api/health` | 200 `ok` | 200 `ok` |
+| GET | `/api/servicos` | 200 com 9 itens | 200, 9 |
+| GET | `/api/avisos` | 200 | 200 |
 | GET | `/api/perfil` | 200 | 200 |
+| GET | `/api/solicitacoes` | 404 (listagem pública removida) | 404 |
 | GET | `/api/solicitacoes/PREF-2026-000001` | 200 | 200 |
 | GET | `/api/solicitacoes/PREF-2026-999999` | 404 | 404 |
-| POST | `/api/solicitacoes` (válido) | 201 + protocolo | 201 `PREF-2026-000004` |
-| POST | `/api/solicitacoes` (descrição curta) | 422 | 422 |
-| POST | `/api/solicitacoes` (JSON quebrado) | 400 | 400 |
-| GET | `/api/rota-inexistente` | 404 | 404 |
-| POST | 9 envios adicionais | 201 | 201 |
-| POST | 10º e 11º envios no mesmo minuto | 429 | 429 |
+| GET | `/api/solicitacoes/semelhantes?tipo=iluminacao&endereco=…` | 200, até 3, sem endereço | 200, 2 |
+| POST | `/api/solicitacoes` válido | 201 + protocolo | 201 + protocolo |
+| POST | `/api/solicitacoes` com descrição curta | 422 com `campos` | 422 |
+| POST | mesma requisição com `clientId` repetido | 200 `criada: false` | 200, mesmo protocolo |
+| GET | `/api/gestao/solicitacoes` sem token | 401 | 401 |
+| GET | `/api/gestao/solicitacoes` com token | 200 + total + estatísticas | 200, total 8 |
+| PATCH | `/api/gestao/solicitacoes/:protocolo/status` | 200 + histórico | 200 (validado via painel) |
+| POST | `/api/solicitacoes/:protocolo/avaliacao` | 201; segunda tentativa 409 | 201; avaliação única |
+| POST | 10 POSTs no mesmo minuto por IP | 429 no excedente | Validado em ciclo anterior; não repetido para preservar o estado |
 
-Erro 422 conferido no corpo: `{"erro":{"codigo":"validacao","mensagem":"Revise os campos destacados.","campos":{...}}}`.
+Detalhe público de `PREF-2026-000001` retornou exatamente:
+`protocolo, tipo, tipoTitulo, descricao, endereco, status, criadoEm, atualizadoEm, historico,
+prazoDias, slaEm, prioridade, foto, localizacao, avaliacao, slaDiasRestantes, slaVencido`.
+Não há `contato` nem `clientId`. Semelhantes retornaram apenas
+`protocolo, tipo, tipoTitulo, status, criadoEm, atualizadoEm, distanciaMetros`.
+
+Estatísticas da gestão no fechamento: **total 8, abertas 7, atrasadas 1, concluídas 1,
+avaliações 1, média 5,0**. A avaliação da `PREF-2026-000002` (nota 5 e comentário) está persistida.
+A `PREF-2026-000005` mantém foto, localização, prioridade alta e histórico.
 
 ## 4. Fluxos de interface
 
-Roteiro executado com Playwright (build de produção servido por `vite preview`):
+Executados com Playwright no build de produção:
 
 | Passo | Resultado |
 |---|---|
-| Home carrega 4 avisos e 6 serviços em cartões com ícones | OK |
-| Busca da Home filtra serviços por título, descrição e categoria | OK |
-| Botão "Nova solicitação" navega sem recarregar | OK |
-| Serviço `/nova-solicitacao?tipo=pavimentacao` pré-seleciona o tipo | OK |
-| Envio vazio mostra erros por campo e resumo com foco | OK |
-| Erros desaparecem ao corrigir cada campo | OK (após correção) |
-| POST válido retorna `PREF-2026-000004` e tela de confirmação | OK |
-| Botão "Acompanhar" consulta automaticamente e mostra histórico | OK |
-| Protocolo inexistente mostra "Protocolo não encontrado" | OK |
-| `PREF-2026-000004` aparece em "Consultas recentes" | OK |
-| Perfil exibe dados mascarados e orienta a instalação para ativar notificações | OK |
-| 404 de rota (`/rota-que-nao-existe`) | OK |
+| Home carrega 4 avisos, 6 destaques e contador de 9 serviços | OK |
+| Busca `iluminacao` encontra “Iluminação pública” | OK |
+| `/servicos` lista os 9 serviços e filtros por categoria | OK |
+| Serviço pré-selecionado via `?tipo=meio_ambiente` | OK |
+| Formulário aceita descrição, endereço e foto | OK |
+| Rascunho restaurado após reload | OK |
+| Pedido offline enfileirado e reenviado | OK |
+| `PREF-2026-000008` aparece em “Meus pedidos” após a confirmação | OK |
+| Acompanhamento de `PREF-2026-000002` mostra histórico, SLA e avaliação | OK |
+| Gestão autenticada lista 8 pedidos, filtros e estatísticas | OK |
+| Detalhe da gestão abre `PREF-2026-000008` sem erro | OK |
+| Mudança de status/prioridade atualiza histórico e estatísticas | OK em ciclo anterior; estado atual reflete a alteração |
+| Protocolo inexistente mostra “Protocolo não encontrado” | OK |
+| Rota inexistente mostra 404 | OK |
 
-## 5. Offline (desktop)
+## 5. Acessibilidade
 
-Procedimento: carregar `/`, colocar o contexto do navegador em offline e recarregar.
-
-| Verificação | Resultado |
-|---|---|
-| App abre offline (HTML/JS/CSS do precache) | OK |
-| Faixa "Sem conexão — usando dados salvos." aparece | OK |
-| Avisos e serviços continuam visíveis (cache `api-get-v1`) | OK |
-| Formulário de nova solicitação carrega offline | OK |
-| Envio offline mostra "Sem conexão" e preserva os campos digitados | OK |
-| Nenhuma tela branca ou erro de JS | OK |
-
-## 6. Rede local (LAN)
-
-Exposição via `.\iniciar-dev.cmd` (Vite com `--host`) para teste no celular, sem túnel.
+Testes manuais e com Playwright em 390 px e 1280 px:
 
 | Verificação | Resultado |
 |---|---|
-| Vite escutando em todas as interfaces (`::`) na porta 5173 | OK |
+| Atalho “Pular para o conteúdo” no login da gestão | Primeiro `Tab` foca o link; `Enter` leva ao `main#gestao-conteudo` |
+| Atalho também no app | Presente no `Layout` e no painel |
+| Foco visível | OK em links, botões, campos e seleção de serviço |
+| Fonte ampliada | `data-fonte="grande"`, raiz 18 px, sem overflow em 390 px |
+| Alto contraste | `data-contraste="alto"`, superfícies/bordas e controles com estado pressionado |
+| Preferências | Persistidas em `localStorage` e reaplicadas ao recarregar |
+| Labels e mensagens | Campos associados; erros com `role="alert"`; status com `aria-live` |
+| Alvos de toque | Botões e links principais com área de pelo menos 44 px |
+
+A captura [perfil-acessibilidade.png](evidencias/v3/perfil-acessibilidade.png) registra fonte ampliada e
+alto contraste ativos.
+
+Ainda pendente: auditoria com leitor de tela (VoiceOver/TalkBack), `axe` e Lighthouse formais.
+
+## 6. Rede local
+
+| Verificação | Resultado |
+|---|---|
 | `http://192.168.0.68:5173` a partir do PC | 200 |
-| `http://192.168.0.68:5173/api/health` via proxy | `ok` |
-| Regras de firewall TCP 5173/4173/3000 (`LocalSubnet`, Private+Public) | criadas em 22/10 |
-| Acesso a partir do celular | OK — fluxo de telas e API validado pelo usuário via `http://192.168.0.68:5173` |
+| `/api/health` via proxy na LAN | 200 `ok` |
+| Firewall TCP 5173/4173/3000 (`LocalSubnet`) | Criado em 22/10 |
+| Acesso pelo celular na mesma Wi-Fi | Validado pelo usuário em ciclo anterior |
 
-> Em `http://` na LAN o Service Worker não registra (contexto não seguro). O teste cobre telas e API;
-> offline e instalação exigem HTTPS local (`mkcert`) — F5-5.
+> Em HTTP na LAN o Service Worker não registra (contexto não seguro). Telas, formulário e API
+> funcionam; offline, instalação e prompt de instalação exigem `localhost` ou HTTPS local. O PWA
+> completo foi validado no desktop em `http://localhost:4173`.
 
 ## 7. Evidências visuais
 
-As capturas refletem o redesign minimalista aplicado em 22/10/2026 (marca oficial, ícones Lucide e
-ilustrações SVG inline).
+Capturas do build de produção em 22/10/2026, em `doc/evidencias/v3/`:
 
 | Arquivo | Descrição |
 |---|---|
-| [home-desktop.png](evidencias/home-desktop.png) | Home minimalista em 1280 px |
-| [home-mobile-carregada.png](evidencias/home-mobile-carregada.png) | Home em 390×844 (página completa) |
-| [home-dark.png](evidencias/home-dark.png) | Home no tema escuro |
-| [nova-solicitacao.png](evidencias/nova-solicitacao.png) | Seleção de serviço por cartões de ícone |
-| [confirmacao.png](evidencias/confirmacao.png) | Confirmação com protocolo e botão de cópia |
-| [acompanhar.png](evidencias/acompanhar.png) | Protocolo com status, dados e histórico |
-| [acompanhar-nao-encontrado.png](evidencias/acompanhar-nao-encontrado.png) | Protocolo inexistente em 390×844 |
-| [perfil.png](evidencias/perfil.png) | Perfil, notificações e privacidade |
-| [404.png](evidencias/404.png) | Rota inexistente |
-| [home-offline.png](evidencias/home-offline.png) | Home recarregada offline com cache |
-| [form-offline.png](evidencias/form-offline.png) | Tentativa de envio offline |
+| [home-desktop.png](evidencias/v3/home-desktop.png) | Home com avisos, 6 destaques e 9 serviços (1280 px) |
+| [home-mobile.png](evidencias/v3/home-mobile.png) | Home em viewport de 390 × 844 |
+| [servicos-desktop.png](evidencias/v3/servicos-desktop.png) | Catálogo completo com 9 serviços |
+| [busca-sem-acento.png](evidencias/v3/busca-sem-acento.png) | Busca `iluminacao` encontrando “Iluminação pública” |
+| [form-mobile.png](evidencias/v3/form-mobile.png) | Formulário mobile com serviço selecionado e rascunho |
+| [form-campos-mobile.png](evidencias/v3/form-campos-mobile.png) | Descrição, CEP e campos assistidos no mobile |
+| [fila-offline.png](evidencias/v3/fila-offline.png) | Pedido salvo no aparelho com 1 item na fila |
+| [fila-enviada.png](evidencias/v3/fila-enviada.png) | Confirmação “Pronto!” com protocolo após reconexão |
+| [offline-catalogo.png](evidencias/v3/offline-catalogo.png) | Catálogo aberto offline com faixa de aviso |
+| [gestao-painel.png](evidencias/v3/gestao-painel.png) | Painel com estatísticas, filtros e fila de atendimento |
+| [gestao-detalhe.png](evidencias/v3/gestao-detalhe.png) | Detalhe do protocolo e formulário de atualização |
+| [acompanhar.png](evidencias/v3/acompanhar.png) | Acompanhamento com status, SLA e histórico |
+| [avaliacao.png](evidencias/v3/avaliacao.png) | Avaliação registrada com nota e comentário |
+| [perfil-acessibilidade.png](evidencias/v3/perfil-acessibilidade.png) | Perfil com fonte ampliada e alto contraste |
 
 ## 8. Pendências de validação
 
 | Item | Motivo | Fase |
 |---|---|---|
-| iPhone físico (Safari, instalação, `standalone`) | Exige HTTPS local (`mkcert`) para SW/offline; acesso HTTP na LAN já habilitado | 5 |
-| Android físico (instalação/standalone) | Fluxo via LAN validado pelo usuário; falta validar instalação, SW e offline em HTTPS local | 5 |
+| iPhone físico (Safari, instalação, `standalone`) | Exige HTTPS local (`mkcert`) para SW/offline | 5 |
+| Android físico (instalação/standalone) | Fluxo via LAN validado; falta instalação/SW em HTTPS | 5 |
+| Push em segundo plano | Implementação fora do escopo; notificações são locais/foreground | Pós-piloto |
 | Lighthouse (PWA/Performance/A11y) | Não executado neste ciclo | 6 |
 | axe / leitor de tela (VoiceOver, TalkBack) | Auditoria manual pendente | 6 |
 | Teste com usuários | Depende de recrutamento | 6 |
-| Carga e concorrência | Store em memória | Pós-piloto |
+| Carga, concorrência e banco real | Persistência JSON atende apenas ao piloto | Pós-piloto |
+| Autenticação de titularidade | No piloto o protocolo é a chave de acesso | Pós-piloto |
+| Testes automatizados em CI | A validação atual é manual + Playwright | 6 |
 
 ## 9. Conclusão
 
-O piloto técnico atende aos critérios das Fases 1–4: build limpo, PWA instalável com Service Worker
-ativo, API com contratos e erros consistentes, quatro telas funcionais — agora com interface
-minimalista orientada a ícones e ilustrações — e comportamento offline verificado em desktop. A
-recomendação é avançar para a Fase 5 (dispositivos reais) antes de qualquer decisão de integração com
-a API definitiva.
+O piloto atende aos critérios locais das fases implementadas: build e lint sem erros, API com contratos e
+erros consistentes, persistência em JSON, nove serviços, fila offline com idempotência, painel de gestão,
+SLA, avaliação, notificações locais, atalhos de acessibilidade e PWA com cache público controlado. A
+recomendação é usar esta versão para demonstração e avançar para a validação em dispositivos reais e para
+as pendências de produção listadas acima.

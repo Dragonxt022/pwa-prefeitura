@@ -10,14 +10,27 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import Avaliacao from '../components/Avaliacao'
 import ErrorState from '../components/ErrorState'
 import { IlustracaoBusca } from '../components/Ilustracoes'
 import { SkeletonBloco } from '../components/Loading'
 import { StatusBadge } from '../components/StatusBadge'
 import { consultarSolicitacao } from '../lib/api'
-import { listarConsultas, registrarConsulta } from '../lib/consultas'
+import {
+  listarConsultas,
+  listarPedidos,
+  marcarNotificacoesLidas,
+  marcarPedidoVisto,
+  registrarConsulta,
+  registrarPedido,
+} from '../lib/consultas'
 import { formatarDataHora, infoStatus, normalizarProtocolo } from '../lib/format'
+import { infoPrazo } from '../lib/prazos'
 import { visualStatus } from '../lib/visual'
+
+function urlDoMapa(localizacao) {
+  return `https://www.openstreetmap.org/?mlat=${localizacao.latitude}&mlon=${localizacao.longitude}#map=18/${localizacao.latitude}/${localizacao.longitude}`
+}
 
 export default function Acompanhar() {
   const [params, setParams] = useSearchParams()
@@ -29,6 +42,7 @@ export default function Acompanhar() {
   const [carregando, setCarregando] = useState(false)
   const [aviso, setAviso] = useState('')
   const [recentes, setRecentes] = useState(listarConsultas)
+  const [pedidos, setPedidos] = useState(listarPedidos)
 
   const consultadoRef = useRef('')
   const campoRef = useRef(null)
@@ -51,6 +65,11 @@ export default function Acompanhar() {
       const dados = await consultarSolicitacao(limpo)
       setResultado(dados)
       setRecentes(registrarConsulta(dados.protocolo))
+      registrarPedido(dados)
+      marcarPedidoVisto(dados.protocolo)
+      setPedidos(listarPedidos())
+      marcarNotificacoesLidas()
+      window.dispatchEvent(new CustomEvent('prefeitura:notificacoes'))
     } catch (falha) {
       setErro(falha)
     } finally {
@@ -65,6 +84,24 @@ export default function Acompanhar() {
     }
   }, [protocoloParam, consultar])
 
+  useEffect(() => {
+    const atualizar = () => setPedidos(listarPedidos())
+    marcarNotificacoesLidas()
+    window.dispatchEvent(new CustomEvent('prefeitura:notificacoes'))
+    window.addEventListener('prefeitura:notificacoes', atualizar)
+    window.addEventListener('prefeitura:fila', atualizar)
+    return () => {
+      window.removeEventListener('prefeitura:notificacoes', atualizar)
+      window.removeEventListener('prefeitura:fila', atualizar)
+    }
+  }, [])
+
+  function abrirPedido(protocolo) {
+    setValor(protocolo)
+    setParams({ protocolo }, { replace: true })
+    consultar(protocolo)
+  }
+
   function aoEnviar(evento) {
     evento.preventDefault()
     const limpo = normalizarProtocolo(valor)
@@ -73,8 +110,18 @@ export default function Acompanhar() {
     else if (!limpo) consultar(limpo)
   }
 
+  function voltarParaPedidos() {
+    setResultado(null)
+    setErro(null)
+    setValor('')
+    consultadoRef.current = ''
+    setParams({}, { replace: true })
+    setPedidos(listarPedidos())
+  }
+
   const status = resultado ? infoStatus(resultado.status) : null
   const visual = resultado ? visualStatus(resultado.status) : null
+  const prazo = resultado ? infoPrazo(resultado) : null
   const naoEncontrado = erro?.codigo === 'nao_encontrado'
 
   return (
@@ -82,7 +129,7 @@ export default function Acompanhar() {
       <header className="cabecalho-pagina">
         <p className="cabecalho-pagina__sobre">Acompanhar</p>
         <h1>Seu protocolo</h1>
-        <p className="texto-suave">Digite o número para ver o andamento.</p>
+        <p className="texto-suave">Digite o número ou abra um dos seus pedidos.</p>
       </header>
 
       <form className="cartao consulta" onSubmit={aoEnviar} noValidate>
@@ -128,21 +175,56 @@ export default function Acompanhar() {
         </button>
       </form>
 
+      {!resultado && pedidos.length > 0 && (
+        <section className="meus-pedidos" aria-labelledby="titulo-meus-pedidos">
+          <div className="secao__cabecalho">
+            <div>
+              <h2 id="titulo-meus-pedidos">Meus pedidos</h2>
+              <p className="secao__apoio">Salvos neste aparelho.</p>
+            </div>
+            <span className="secao__contagem">{pedidos.length}</span>
+          </div>
+          <ul className="lista-pedidos">
+            {pedidos.map((pedido) => {
+              const atualizado = pedido.vistoEm !== pedido.atualizadoEm
+              return (
+                <li key={pedido.protocolo}>
+                  <button
+                    type="button"
+                    className={`pedido-card${atualizado ? ' is-atualizado' : ''}`}
+                    onClick={() => abrirPedido(pedido.protocolo)}
+                    aria-label={`Abrir ${pedido.protocolo}, ${pedido.tipoTitulo ?? 'serviço'}`}
+                  >
+                    <span className="pedido-card__topo">
+                      <code>{pedido.protocolo}</code>
+                      <StatusBadge status={pedido.status} />
+                    </span>
+                    <strong className="pedido-card__titulo">{pedido.tipoTitulo ?? 'Serviço'}</strong>
+                    <span className="pedido-card__endereco">{pedido.endereco}</span>
+                    <span className="pedido-card__rodape">
+                      <span>Atualizado em {formatarDataHora(pedido.atualizadoEm)}</span>
+                      {atualizado && (
+                        <span className="pedido-card__novo">
+                          <span className="pedido-card__ponto" aria-hidden="true" />
+                          Atualizado
+                        </span>
+                      )}
+                    </span>
+                  </button>
+                </li>
+              )
+            })}
+          </ul>
+        </section>
+      )}
+
       {recentes.length > 0 && !resultado && (
         <section className="recentes" aria-labelledby="titulo-recentes">
-          <h2 id="titulo-recentes">Recentes</h2>
+          <h2 id="titulo-recentes">Consultas recentes</h2>
           <ul>
             {recentes.map((item) => (
               <li key={item.protocolo}>
-                <button
-                  type="button"
-                  className="chip"
-                  onClick={() => {
-                    setValor(item.protocolo)
-                    consultar(item.protocolo)
-                    setParams({ protocolo: item.protocolo }, { replace: true })
-                  }}
-                >
+                <button type="button" className="chip" onClick={() => abrirPedido(item.protocolo)}>
                   <Clock3 aria-hidden="true" />
                   {item.protocolo}
                 </button>
@@ -182,6 +264,20 @@ export default function Acompanhar() {
 
           <p className="resultado__descricao">{status.descricao}</p>
 
+          {prazo && (
+            <div className={`prazo${prazo.vencido ? ' prazo--atrasado' : ''}`}>
+              <span className="prazo__icone">
+                <Clock3 aria-hidden="true" />
+              </span>
+              <span>
+                <span className="prazo__rotulo">Prazo estimado</span>
+                <strong>
+                  {prazo.data} · {prazo.rotulo}
+                </strong>
+              </span>
+            </div>
+          )}
+
           <ul className="lista-dados lista-dados--grade">
             <li className="lista-dados__item">
               <span className="lista-dados__icone tom-azul">
@@ -199,6 +295,11 @@ export default function Acompanhar() {
               <span className="lista-dados__texto">
                 <span className="lista-dados__rotulo">Endereço</span>
                 <strong className="lista-dados__valor">{resultado.endereco}</strong>
+                {resultado.localizacao && (
+                  <a href={urlDoMapa(resultado.localizacao)} target="_blank" rel="noreferrer">
+                    Ver no mapa (online)
+                  </a>
+                )}
               </span>
             </li>
             <li className="lista-dados__item">
@@ -220,6 +321,13 @@ export default function Acompanhar() {
               </span>
             </li>
           </ul>
+
+          {resultado.foto && (
+            <figure className="resultado__foto">
+              <img src={resultado.foto} alt="Foto anexada à solicitação" loading="lazy" />
+              <figcaption>Foto enviada com o pedido.</figcaption>
+            </figure>
+          )}
 
           <section className="resultado__historico" aria-labelledby="titulo-historico">
             <h3 id="titulo-historico">Histórico</h3>
@@ -243,11 +351,28 @@ export default function Acompanhar() {
             </ol>
           </section>
 
-          <Link className="botao botao--secundario resultado__acao" to="/nova-solicitacao">
-            <Plus aria-hidden="true" />
-            Nova solicitação
-            <ArrowRight aria-hidden="true" />
-          </Link>
+          {resultado.status === 'concluida' && (
+            <Avaliacao
+              protocolo={resultado.protocolo}
+              avaliacao={resultado.avaliacao}
+              aoAvaliar={(atualizada) => {
+                setResultado(atualizada)
+                registrarPedido(atualizada)
+                setPedidos(listarPedidos())
+              }}
+            />
+          )}
+
+          <div className="acoes">
+            <Link className="botao botao--secundario" to="/nova-solicitacao">
+              <Plus aria-hidden="true" />
+              Nova solicitação
+            </Link>
+            <button type="button" className="botao botao--secundario" onClick={voltarParaPedidos}>
+              Meus pedidos
+              <ArrowRight aria-hidden="true" />
+            </button>
+          </div>
         </article>
       )}
     </div>

@@ -2,6 +2,7 @@ import cors from 'cors'
 import express from 'express'
 import { AppError, naoEncontrado } from './errors.js'
 import avisosRouter from './routes/avisos.js'
+import gestaoRouter from './routes/gestao.js'
 import perfilRouter from './routes/perfil.js'
 import servicosRouter from './routes/servicos.js'
 import solicitacoesRouter from './routes/solicitacoes.js'
@@ -25,7 +26,9 @@ export function criarApp({ latenciaMs = Number(process.env.MOCK_LATENCY_MS ?? 20
   app.disable('x-powered-by')
   app.set('json spaces', 2)
   app.use(cors({ origin: origensPermitidas() }))
-  app.use(express.json({ limit: '16kb' }))
+  // Fotos são reenquadradas no cliente, mas ainda podem chegar com alguns
+  // centenas de KB em base64. O limite maior vale apenas para este piloto.
+  app.use(express.json({ limit: '2mb' }))
 
   if (latenciaMs > 0) {
     app.use('/api', (_req, _res, next) => {
@@ -48,6 +51,7 @@ export function criarApp({ latenciaMs = Number(process.env.MOCK_LATENCY_MS ?? 20
   app.use('/api/avisos', avisosRouter)
   app.use('/api/perfil', perfilRouter)
   app.use('/api/solicitacoes', solicitacoesRouter)
+  app.use('/api/gestao', gestaoRouter)
 
   app.use('/api', (req) => {
     throw naoEncontrado(`Rota de API inexistente: ${req.method} ${req.originalUrl}`)
@@ -68,7 +72,7 @@ export function criarApp({ latenciaMs = Number(process.env.MOCK_LATENCY_MS ?? 20
 
     if (erro?.type === 'entity.too.large') {
       return res.status(413).json({
-        erro: { codigo: 'corpo_muito_grande', mensagem: 'O conteúdo enviado excede o limite de 16 KB.' },
+        erro: { codigo: 'corpo_muito_grande', mensagem: 'O conteúdo enviado excede o limite de 2 MB.' },
       })
     }
 

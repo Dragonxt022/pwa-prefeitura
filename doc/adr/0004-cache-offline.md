@@ -1,6 +1,9 @@
 # ADR 0004 — Precache + NetworkFirst na API + autoUpdate
 
-- **Status:** Aceito
+> **Substituída parcialmente pela [ADR 0006](0006-persistencia-e-privacidade.md) em 22/10/2026.** O cache
+> `api-get-v1` foi trocado por `api-public-v2`, restrito a GETs públicos não pessoais.
+
+- **Status:** Substituída parcialmente (histórico)
 - **Data:** 22/10/2026
 - **Decisores:** Dev front, QA
 

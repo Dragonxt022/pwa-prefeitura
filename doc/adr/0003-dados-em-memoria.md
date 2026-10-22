@@ -1,6 +1,10 @@
 # ADR 0003 — Dados em memória no piloto
 
-- **Status:** Aceito (temporário, com prazo)
+> **Substituída pela [ADR 0006](0006-persistencia-e-privacidade.md) em 22/10/2026.** O piloto passou a
+> persistir o estado em JSON e a usar `clientId` para idempotência; este registro permanece como
+> histórico da decisão inicial.
+
+- **Status:** Substituída (histórico)
 - **Data:** 22/10/2026
 - **Decisores:** Dev back, PO
 

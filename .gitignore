@@ -35,5 +35,9 @@ test-results/
 # PWA dev
 dev-dist/
 
+# Dados locais do piloto (persistencia em arquivo)
+backend/data/
+backend/*.data.json
+
 # Artefatos do Playwright MCP
 .playwright-mcp/

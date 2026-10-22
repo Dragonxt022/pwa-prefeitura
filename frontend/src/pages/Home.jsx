@@ -1,4 +1,4 @@
-import { ArrowUpRight, Clock3, Plus, Search, Sparkles } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, Clock3, Plus, Search, Sparkles } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ErrorState from '../components/ErrorState'
@@ -9,6 +9,12 @@ import { useRecurso } from '../hooks/useRecurso'
 import { listarAvisos, listarServicos } from '../lib/api'
 import { formatarData, infoPrioridade } from '../lib/format'
 import { visualAviso, visualServico } from '../lib/visual'
+
+const normalizar = (valor) =>
+  String(valor ?? '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
 
 export default function Home() {
   const [busca, setBusca] = useState('')
@@ -23,10 +29,12 @@ export default function Home() {
   }, [dados])
 
   const servicosFiltrados = useMemo(() => {
-    const termo = busca.trim().toLowerCase()
-    if (!termo) return servicos
+    const termo = normalizar(busca).trim()
+    if (!termo) {
+      return servicos.filter((servico) => servico.destaque !== false).slice(0, 6)
+    }
     return servicos.filter((servico) =>
-      `${servico.titulo} ${servico.descricao} ${servico.categoria}`.toLowerCase().includes(termo),
+      normalizar(`${servico.titulo} ${servico.descricao} ${servico.categoria}`).includes(termo),
     )
   }, [busca, servicos])
 
@@ -60,8 +68,11 @@ export default function Home() {
         <>
           <section className="secao" aria-labelledby="titulo-servicos">
             <div className="secao__cabecalho">
-              <h2 id="titulo-servicos">Serviços</h2>
-              {!carregando && <span className="secao__contagem">{servicosFiltrados.length}</span>}
+              <div>
+                <h2 id="titulo-servicos">Serviços</h2>
+                <p className="secao__apoio">Os mais procurados, com prazo de atendimento.</p>
+              </div>
+              {!carregando && <span className="secao__contagem">{servicos.length}</span>}
             </div>
 
             <div className="campo-busca">
@@ -72,7 +83,7 @@ export default function Home() {
               <input
                 id="busca-servico"
                 type="search"
-                placeholder="Buscar serviço"
+                placeholder={servicos.length ? `Buscar entre os ${servicos.length} serviços` : 'Buscar serviço'}
                 value={busca}
                 onChange={(evento) => setBusca(evento.target.value)}
               />
@@ -109,6 +120,13 @@ export default function Home() {
                   )
                 })}
               </ul>
+            )}
+
+            {!carregando && (
+              <Link className="secao__link" to="/servicos">
+                Ver todos os {servicos.length} serviços
+                <ArrowRight aria-hidden="true" />
+              </Link>
             )}
           </section>
 

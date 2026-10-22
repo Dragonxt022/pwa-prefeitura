@@ -56,13 +56,20 @@ export default defineConfig(({ mode }) => {
           cleanupOutdatedCaches: true,
           runtimeCaching: [
             {
-              // GETs da API: rede primeiro, cache como fallback offline.
-              urlPattern: ({ url, sameOrigin }) =>
-                sameOrigin && url.pathname.startsWith('/api/'),
+              // Apenas dados públicos e não pessoais entram no cache offline.
+              // Gestão, detalhe do pedido, foto e localização ficam fora do SW.
+              urlPattern: ({ url, sameOrigin }) => {
+                if (!sameOrigin || !url.pathname.startsWith('/api/')) return false
+                if (url.pathname.startsWith('/api/gestao')) return false
+                if (url.pathname.startsWith('/api/solicitacoes')) {
+                  return /^\/api\/solicitacoes\/[^/]+\/status$/.test(url.pathname)
+                }
+                return true
+              },
               handler: 'NetworkFirst',
               method: 'GET',
               options: {
-                cacheName: 'api-get-v1',
+                cacheName: 'api-public-v2',
                 networkTimeoutSeconds: 3,
                 expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
                 cacheableResponse: { statuses: [200] },

@@ -1,23 +1,32 @@
 import {
   Bell,
   CalendarDays,
+  ClipboardList,
+  Contrast,
   Fingerprint,
   Mail,
   MapPin,
   Phone,
   ShieldCheck,
   Smartphone,
+  SlidersHorizontal,
   Trash2,
   UserRound,
+  ZoomIn,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import ErrorState from '../components/ErrorState'
 import { SkeletonBloco } from '../components/Loading'
 import { Badge } from '../components/StatusBadge'
 import { usePwaInstall } from '../hooks/usePwaInstall'
 import { useRecurso } from '../hooks/useRecurso'
+import {
+  lerPreferenciasAcessibilidade,
+  salvarPreferenciasAcessibilidade,
+} from '../lib/acessibilidade'
 import { obterPerfil } from '../lib/api'
-import { limparDadosLocais } from '../lib/consultas'
+import { contarNotificacoesNaoLidas, limparDadosLocais } from '../lib/consultas'
 import { formatarData } from '../lib/format'
 
 function lerPermissao() {
@@ -43,8 +52,20 @@ export default function Perfil() {
   const { standalone, ios, suportaNotificacao } = usePwaInstall()
   const [permissao, setPermissao] = useState(lerPermissao)
   const [mensagem, setMensagem] = useState('')
+  const [preferencias, setPreferencias] = useState(lerPreferenciasAcessibilidade)
+  const [naoLidas, setNaoLidas] = useState(contarNotificacoesNaoLidas)
 
-  const podeAtivar = standalone && suportaNotificacao && permissao !== 'granted' && permissao !== 'denied'
+  useEffect(() => {
+    const atualizar = () => setNaoLidas(contarNotificacoesNaoLidas())
+    window.addEventListener('prefeitura:notificacoes', atualizar)
+    window.addEventListener('prefeitura:fila', atualizar)
+    return () => {
+      window.removeEventListener('prefeitura:notificacoes', atualizar)
+      window.removeEventListener('prefeitura:fila', atualizar)
+    }
+  }, [])
+
+  const podeAtivar = suportaNotificacao && permissao !== 'granted' && permissao !== 'denied'
 
   async function ativarNotificacoes() {
     if (!podeAtivar) return
@@ -53,14 +74,22 @@ export default function Perfil() {
       setPermissao(resposta)
       setMensagem(resposta === 'granted' ? 'Permissão concedida.' : 'Permissão não concedida.')
     } catch {
-      setMensagem('Não foi possível pedir permissão.')
+      setMensagem('Não foi possível pedir permissão neste navegador.')
     }
   }
 
+  function alterarPreferencias(parcial) {
+    const novas = salvarPreferenciasAcessibilidade({ ...preferencias, ...parcial })
+    setPreferencias(novas)
+  }
+
   function limpar() {
-    if (!window.confirm('Remover protocolos e preferências salvos neste dispositivo?')) return
+    if (!window.confirm('Remover protocolos, rascunhos e fila salvos neste dispositivo?')) return
     limparDadosLocais()
     setMensagem('Dados locais removidos.')
+    setNaoLidas(0)
+    window.dispatchEvent(new CustomEvent('prefeitura:notificacoes'))
+    window.dispatchEvent(new CustomEvent('prefeitura:fila'))
   }
 
   const rotuloNotificacao =
@@ -68,11 +97,9 @@ export default function Perfil() {
       ? 'Ativas'
       : permissao === 'denied'
         ? 'Bloqueadas'
-        : !standalone
-          ? 'Requer app'
-          : !suportaNotificacao
-            ? 'Indisponível'
-            : 'Disponíveis'
+        : !suportaNotificacao
+          ? 'Indisponível'
+          : 'Disponíveis'
 
   return (
     <div className="pagina pagina--estreita">
@@ -105,6 +132,65 @@ export default function Perfil() {
             </div>
           </section>
 
+          <section className="cartao cartao--acessibilidade" aria-labelledby="titulo-acessibilidade">
+            <div className="preferencia__topo">
+              <span className="icone-tile tom-roxo">
+                <SlidersHorizontal aria-hidden="true" />
+              </span>
+              <div className="preferencia__texto">
+                <h2 id="titulo-acessibilidade">Acessibilidade</h2>
+                <p>Ajuste a leitura para o seu jeito.</p>
+              </div>
+            </div>
+
+            <div className="acessibilidade__grupo">
+              <span className="acessibilidade__rotulo">
+                <ZoomIn aria-hidden="true" />
+                Tamanho do texto
+              </span>
+              <div className="segmento" role="group" aria-label="Tamanho do texto">
+                <button
+                  type="button"
+                  className={preferencias.fonte === 'normal' ? 'is-ativo' : undefined}
+                  aria-pressed={preferencias.fonte === 'normal'}
+                  onClick={() => alterarPreferencias({ fonte: 'normal' })}
+                >
+                  Padrão
+                </button>
+                <button
+                  type="button"
+                  className={preferencias.fonte === 'grande' ? 'is-ativo' : undefined}
+                  aria-pressed={preferencias.fonte === 'grande'}
+                  onClick={() => alterarPreferencias({ fonte: 'grande' })}
+                >
+                  Ampliado
+                </button>
+              </div>
+            </div>
+
+            <label className="alternador">
+              <input
+                type="checkbox"
+                checked={preferencias.contraste}
+                onChange={(evento) => alterarPreferencias({ contraste: evento.target.checked })}
+              />
+              <span className="alternador__trilho" aria-hidden="true">
+                <span />
+              </span>
+              <span className="alternador__texto">
+                <strong>
+                  <Contrast aria-hidden="true" />
+                  Alto contraste
+                </strong>
+                <small>Reforça bordas, textos e áreas de foco.</small>
+              </span>
+            </label>
+
+            <p className="texto-suave acessibilidade__nota">
+              As preferências ficam salvas neste aparelho e valem para todas as telas.
+            </p>
+          </section>
+
           <section className="cartao cartao--preferencia" aria-labelledby="titulo-notificacoes">
             <div className="preferencia__topo">
               <span className="icone-tile tom-azul">
@@ -112,7 +198,7 @@ export default function Perfil() {
               </span>
               <div className="preferencia__texto">
                 <h2 id="titulo-notificacoes">Notificações</h2>
-                <p>Atualizações dos seus protocolos.</p>
+                <p>Mudanças de status dos seus protocolos.</p>
               </div>
               <Badge tom={permissao === 'granted' ? 'sucesso' : 'neutro'}>{rotuloNotificacao}</Badge>
             </div>
@@ -121,17 +207,16 @@ export default function Perfil() {
               <p className="alerta alerta--info">
                 <Smartphone aria-hidden="true" />
                 <span>
-                  {ios
-                    ? 'Adicione à Tela de Início para ativar.'
-                    : 'Instale o app para ativar.'}
+                  No celular, instale o app para receber avisos do sistema. No navegador, os avisos
+                  aparecem enquanto o app estiver aberto.
                 </span>
               </p>
             )}
 
-            {standalone && !suportaNotificacao && (
+            {!suportaNotificacao && (
               <p className="alerta alerta--info">
                 <Smartphone aria-hidden="true" />
-                <span>Indisponível neste navegador.</span>
+                <span>Indisponível neste navegador. Os avisos continuam em “Meus pedidos”.</span>
               </p>
             )}
 
@@ -141,11 +226,18 @@ export default function Perfil() {
               </p>
             )}
 
-            {podeAtivar && (
-              <button type="button" className="botao botao--primario" onClick={ativarNotificacoes}>
-                Ativar
-              </button>
-            )}
+            <div className="preferencia__acoes">
+              {podeAtivar && (
+                <button type="button" className="botao botao--primario" onClick={ativarNotificacoes}>
+                  Ativar notificações
+                </button>
+              )}
+              <Link className="botao botao--secundario" to="/acompanhar">
+                <ClipboardList aria-hidden="true" />
+                Meus pedidos
+                {naoLidas > 0 && <span className="contador-aviso">{naoLidas}</span>}
+              </Link>
+            </div>
 
             {mensagem && (
               <p className="texto-suave" role="status">
@@ -160,7 +252,7 @@ export default function Perfil() {
             </span>
             <div className="cartao__corpo">
               <h2 id="titulo-privacidade">Dados no aparelho</h2>
-              <p>Protocolos recentes e preferência de notificação.</p>
+              <p>Protocolos, rascunhos e fila de envio offline.</p>
             </div>
             <button type="button" className="botao botao--secundario botao--pequeno" onClick={limpar}>
               <Trash2 aria-hidden="true" />
@@ -195,6 +287,10 @@ export default function Perfil() {
                 </span>
               </li>
             </ul>
+            <div className="sobre-links">
+              <Link to="/servicos">Catálogo de serviços</Link>
+              <Link to="/gestao">Área de gestão</Link>
+            </div>
           </section>
         </div>
       )}

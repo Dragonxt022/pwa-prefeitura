@@ -1,11 +1,18 @@
 /**
- * Store em memória do piloto.
+ * Store do piloto com persistencia simples em JSON.
  *
- * Limitações conhecidas (ver doc/adr/0003-dados-em-memoria.md):
- * - os dados são perdidos a cada reinício do processo;
- * - não há concorrência real, transação ou idempotência;
- * - não usar com dados pessoais reais.
+ * O arquivo de dados fica fora do Git (backend/data/estado.json) e pode ser
+ * trocado com a variavel DATA_FILE. A escrita e suficiente para o piloto,
+ * mas nao substitui um banco de dados transacional.
  */
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { dirname, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const raizBackend = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const arquivoDados = process.env.DATA_FILE
+  ? resolve(process.env.DATA_FILE)
+  : resolve(raizBackend, 'data', 'estado.json')
 
 export const STATUS = {
   recebida: 'Recebida',
@@ -16,6 +23,7 @@ export const STATUS = {
 }
 
 export const STATUS_ABERTOS = ['recebida', 'em_analise', 'em_execucao']
+export const STATUS_FINAIS = ['concluida', 'indeferida']
 
 export const servicos = [
   {
@@ -24,6 +32,8 @@ export const servicos = [
     descricao: 'Poste apagado, lâmpada queimada, luminária danificada ou fiação exposta.',
     categoria: 'Infraestrutura',
     prazoDias: 5,
+    ordem: 1,
+    destaque: true,
   },
   {
     id: 'pavimentacao',
@@ -31,6 +41,8 @@ export const servicos = [
     descricao: 'Buraco na via, afundamento de asfalto, calçada quebrada ou meio-fio danificado.',
     categoria: 'Infraestrutura',
     prazoDias: 15,
+    ordem: 2,
+    destaque: true,
   },
   {
     id: 'limpeza',
@@ -38,6 +50,8 @@ export const servicos = [
     descricao: 'Lixo acumulado, entulho em via pública, poda de mato ou limpeza de bueiro.',
     categoria: 'Zeladoria',
     prazoDias: 3,
+    ordem: 3,
+    destaque: true,
   },
   {
     id: 'poda',
@@ -45,6 +59,8 @@ export const servicos = [
     descricao: 'Galhos sobre a rede elétrica, árvore com risco de queda ou poda de rotina.',
     categoria: 'Meio ambiente',
     prazoDias: 10,
+    ordem: 4,
+    destaque: true,
   },
   {
     id: 'fiscalizacao',
@@ -52,6 +68,8 @@ export const servicos = [
     descricao: 'Terreno abandonado, mato alto, descarte irregular ou construção irregular.',
     categoria: 'Fiscalização',
     prazoDias: 20,
+    ordem: 5,
+    destaque: true,
   },
   {
     id: 'sinalizacao',
@@ -59,6 +77,38 @@ export const servicos = [
     descricao: 'Placa danificada, faixa apagada, semáforo com defeito ou falta de sinalização.',
     categoria: 'Mobilidade',
     prazoDias: 7,
+    ordem: 6,
+    destaque: true,
+  },
+  {
+    id: 'ouvidoria',
+    titulo: 'Ouvidoria',
+    descricao: 'Elogio, reclamação, sugestão ou denúncia sobre o atendimento público.',
+    categoria: 'Atendimento',
+    prazoDias: 10,
+    ordem: 7,
+    destaque: false,
+    novo: true,
+  },
+  {
+    id: 'zeladoria',
+    titulo: 'Zeladoria urbana',
+    descricao: 'Bueiro entupido, calçada danificada, praça, mobiliário ou esgoto a céu aberto.',
+    categoria: 'Zeladoria',
+    prazoDias: 7,
+    ordem: 8,
+    destaque: false,
+    novo: true,
+  },
+  {
+    id: 'meio_ambiente',
+    titulo: 'Meio ambiente',
+    descricao: 'Descarte irregular, queimada, poluição, maus-tratos a animais ou risco ambiental.',
+    categoria: 'Meio ambiente',
+    prazoDias: 10,
+    ordem: 9,
+    destaque: false,
+    novo: true,
   },
 ]
 
@@ -111,10 +161,7 @@ export const perfil = {
   },
 }
 
-let sequencia = 3
-
-/** @type {Array<object>} */
-export const solicitacoes = [
+const SOLICITACOES_SEMENTE = [
   {
     protocolo: 'PREF-2026-000001',
     tipo: 'iluminacao',
@@ -164,8 +211,94 @@ export const solicitacoes = [
   },
 ]
 
+/** @type {Array<object>} */
+export const solicitacoes = []
+let sequencia = 3
+
+function adicionarDias(iso, dias) {
+  const data = new Date(iso)
+  data.setDate(data.getDate() + dias)
+  return data.toISOString()
+}
+
+function normalizarTexto(valor) {
+  return String(valor ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+}
+
+function normalizarSolicitacao(item) {
+  const servico = servicos.find((servicoAtual) => servicoAtual.id === item.tipo)
+  const criadoEm = item.criadoEm || new Date().toISOString()
+  const prazoDias = Number(item.prazoDias) || servico?.prazoDias || 10
+  const status = STATUS[item.status] ? item.status : 'recebida'
+  const historico = Array.isArray(item.historico) && item.historico.length > 0
+    ? item.historico
+    : [{ status, em: criadoEm, observacao: 'Solicitação registrada pelo aplicativo.' }]
+
+  return {
+    ...item,
+    tipoTitulo: item.tipoTitulo || servico?.titulo || 'Serviço',
+    status,
+    criadoEm,
+    atualizadoEm: item.atualizadoEm || criadoEm,
+    prazoDias,
+    slaEm: item.slaEm || adicionarDias(criadoEm, prazoDias),
+    prioridade: item.prioridade || 'normal',
+    foto: item.foto || null,
+    localizacao: item.localizacao || null,
+    avaliacao: item.avaliacao || null,
+    clientId: item.clientId || null,
+    historico,
+  }
+}
+
+function calcularSequencia() {
+  return solicitacoes.reduce((maior, item) => {
+    const numero = Number(String(item.protocolo).split('-').at(-1))
+    return Number.isFinite(numero) && numero > maior ? numero : maior
+  }, 0)
+}
+
+function carregar() {
+  let carregadas = SOLICITACOES_SEMENTE
+  let sequenciaSalva = 0
+
+  if (existsSync(arquivoDados)) {
+    try {
+      const salvo = JSON.parse(readFileSync(arquivoDados, 'utf8'))
+      if (Array.isArray(salvo.solicitacoes)) {
+        carregadas = salvo.solicitacoes
+        sequenciaSalva = Number(salvo.sequencia) || 0
+      }
+    } catch (erro) {
+      console.warn(`[dados] não foi possível ler ${arquivoDados}:`, erro.message)
+    }
+  }
+
+  solicitacoes.length = 0
+  solicitacoes.push(...carregadas.map(normalizarSolicitacao))
+  sequencia = Math.max(sequenciaSalva, calcularSequencia())
+}
+
+function persistir() {
+  try {
+    mkdirSync(dirname(arquivoDados), { recursive: true })
+    writeFileSync(
+      arquivoDados,
+      JSON.stringify({ versao: 1, salvoEm: new Date().toISOString(), sequencia, solicitacoes }, null, 2),
+    )
+  } catch (erro) {
+    console.error(`[dados] não foi possível salvar ${arquivoDados}:`, erro.message)
+  }
+}
+
+carregar()
+
 export function listarServicos() {
-  return servicos
+  return [...servicos].sort((a, b) => a.ordem - b.ordem)
 }
 
 export function buscarServico(id) {
@@ -177,15 +310,53 @@ export function listarAvisos() {
 }
 
 export function buscarSolicitacao(protocolo) {
-  return solicitacoes.find((item) => item.protocolo === protocolo.toUpperCase().trim())
+  const alvo = String(protocolo ?? '').toUpperCase().trim()
+  return solicitacoes.find((item) => item.protocolo === alvo)
 }
 
-export function criarSolicitacao({ tipo, descricao, endereco, contato }) {
+export function buscarSolicitacaoPorClientId(clientId) {
+  if (!clientId) return null
+  return solicitacoes.find((item) => item.clientId === clientId) ?? null
+}
+
+export function listarSolicitacoes({ status, tipo, busca, limite = 100 } = {}) {
+  let dados = [...solicitacoes].sort(
+    (a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime(),
+  )
+
+  if (status) dados = dados.filter((item) => item.status === status)
+  if (tipo) dados = dados.filter((item) => item.tipo === tipo)
+
+  const termo = normalizarTexto(busca)
+  if (termo) {
+    dados = dados.filter((item) =>
+      normalizarTexto(
+        `${item.protocolo} ${item.tipoTitulo} ${item.endereco} ${item.descricao}`,
+      ).includes(termo),
+    )
+  }
+
+  const total = dados.length
+  return { dados: dados.slice(0, Math.max(1, Math.min(Number(limite) || 100, 100))), total }
+}
+
+export function criarSolicitacao({
+  tipo,
+  descricao,
+  endereco,
+  contato,
+  foto = null,
+  localizacao = null,
+  clientId = null,
+}) {
+  const existente = buscarSolicitacaoPorClientId(clientId)
+  if (existente) return { solicitacao: existente, criada: false }
+
   const agora = new Date().toISOString()
   const servico = buscarServico(tipo)
   sequencia += 1
 
-  const solicitacao = {
+  const solicitacao = normalizarSolicitacao({
     protocolo: `PREF-${new Date().getFullYear()}-${String(sequencia).padStart(6, '0')}`,
     tipo,
     tipoTitulo: servico.titulo,
@@ -195,15 +366,134 @@ export function criarSolicitacao({ tipo, descricao, endereco, contato }) {
     status: 'recebida',
     criadoEm: agora,
     atualizadoEm: agora,
+    prazoDias: servico.prazoDias,
+    prioridade: 'normal',
+    foto,
+    localizacao,
+    clientId,
     historico: [
       { status: 'recebida', em: agora, observacao: 'Solicitação registrada pelo aplicativo.' },
     ],
-  }
+  })
 
   solicitacoes.unshift(solicitacao)
+  persistir()
+  return { solicitacao, criada: true }
+}
+
+export function atualizarStatus(protocolo, { status, observacao, prioridade }) {
+  const solicitacao = buscarSolicitacao(protocolo)
+  if (!solicitacao) return null
+
+  const agora = new Date().toISOString()
+  solicitacao.status = status
+  solicitacao.atualizadoEm = agora
+  if (prioridade) solicitacao.prioridade = prioridade
+  if (observacao?.trim()) {
+    solicitacao.historico.push({
+      status,
+      em: agora,
+      observacao: observacao.trim(),
+    })
+  } else {
+    solicitacao.historico.push({
+      status,
+      em: agora,
+      observacao: `Status atualizado para ${STATUS[status]}.`,
+    })
+  }
+  if (status === 'concluida') solicitacao.concluidoEm = agora
+  persistir()
   return solicitacao
 }
 
+export function avaliarSolicitacao(protocolo, { nota, comentario }) {
+  const solicitacao = buscarSolicitacao(protocolo)
+  if (!solicitacao) return null
+
+  solicitacao.avaliacao = {
+    nota,
+    comentario: comentario?.trim() || null,
+    em: new Date().toISOString(),
+  }
+  persistir()
+  return solicitacao
+}
+
+export function listarSemelhantes({ tipo, endereco, latitude, longitude }) {
+  if (!tipo) return []
+
+  const tokens = normalizarTexto(endereco)
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length >= 3)
+  const lat = Number(latitude)
+  const lng = Number(longitude)
+  const temCoordenadas = Number.isFinite(lat) && Number.isFinite(lng)
+
+  return solicitacoes
+    .filter((item) => item.tipo === tipo && STATUS_ABERTOS.includes(item.status))
+    .map((item) => {
+      const tokensItem = normalizarTexto(item.endereco)
+        .split(/[^a-z0-9]+/)
+        .filter((token) => token.length >= 3)
+      const comuns = tokens.filter((token) => tokensItem.includes(token)).length
+      const textoParecido =
+        Boolean(endereco) &&
+        (normalizarTexto(item.endereco).includes(normalizarTexto(endereco)) ||
+          normalizarTexto(endereco).includes(normalizarTexto(item.endereco)))
+
+      let distanciaMetros = null
+      if (temCoordenadas && item.localizacao) {
+        const dLat = (lat - Number(item.localizacao.latitude)) * 111_320
+        const dLng =
+          (lng - Number(item.localizacao.longitude)) *
+          111_320 *
+          Math.cos((lat * Math.PI) / 180)
+        distanciaMetros = Math.round(Math.sqrt(dLat ** 2 + dLng ** 2))
+      }
+
+      const corresponde =
+        (tokens.length > 0 && comuns >= 2) ||
+        textoParecido ||
+        (distanciaMetros !== null && distanciaMetros <= 300)
+
+      return { item, corresponde, distanciaMetros }
+    })
+    .filter(({ corresponde }) => corresponde)
+    .slice(0, 3)
+    .map(({ item, distanciaMetros }) => ({
+      protocolo: item.protocolo,
+      tipo: item.tipo,
+      tipoTitulo: item.tipoTitulo,
+      status: item.status,
+      criadoEm: item.criadoEm,
+      atualizadoEm: item.atualizadoEm,
+      distanciaMetros,
+    }))
+}
+
+export function estatisticasGestao() {
+  const agora = Date.now()
+  const abertas = solicitacoes.filter((item) => STATUS_ABERTOS.includes(item.status))
+  const atrasadas = abertas.filter((item) => new Date(item.slaEm).getTime() < agora)
+  const avaliacoes = solicitacoes.filter((item) => item.avaliacao?.nota)
+  const mediaAvaliacao = avaliacoes.length
+    ? avaliacoes.reduce((soma, item) => soma + item.avaliacao.nota, 0) / avaliacoes.length
+    : null
+
+  return {
+    total: solicitacoes.length,
+    abertas: abertas.length,
+    atrasadas: atrasadas.length,
+    concluidas: solicitacoes.filter((item) => item.status === 'concluida').length,
+    avaliacoes: avaliacoes.length,
+    mediaAvaliacao: mediaAvaliacao ? Number(mediaAvaliacao.toFixed(1)) : null,
+  }
+}
+
 export function reiniciar() {
-  sequencia = 3
+  solicitacoes.length = 0
+  solicitacoes.push(...SOLICITACOES_SEMENTE.map(normalizarSolicitacao))
+  sequencia = calcularSequencia()
+  persistir()
 }
