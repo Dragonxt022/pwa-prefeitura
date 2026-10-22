@@ -48,10 +48,9 @@ contador "N de M" reflete o filtro.
 
 ### RF-03 — Atalho do catálogo para o formulário
 
-Clicar em um serviço abre `/nova-solicitacao?tipo=<id>` com o tipo já selecionado e a descrição de apoio
-do serviço visível.
+Clicar em um serviço abre `/nova-solicitacao?tipo=<id>` com o tipo já selecionado.
 
-**Aceite:** o `select` inicia com o serviço clicado; o texto de ajuda mostra prazo estimado.
+**Aceite:** o cartão do serviço fica marcado na grade, com ícone e prazo estimado visíveis.
 
 ### RF-04 — Registro de solicitação
 
@@ -59,15 +58,15 @@ Formulário com tipo (obrigatório), descrição (10–1200 caracteres), endere�
 (até 120). O envio deve ser bloqueado enquanto a requisição está em andamento.
 
 **Aceite:** campos inválidos são destacados com mensagem junto ao campo e resumo no topo com foco
-programático; ao corrigir um campo, o erro correspondente desaparece; o botão mostra "Enviando…" e
+programático; ao corrigir um campo, o erro correspondente desaparece; o botão mostra "Enviando" e
 fica desabilitado.
 
 ### RF-05 — Protocolo e confirmação
 
 Após o `POST` bem-sucedido, exibir o protocolo gerado, o serviço, o endereço e a data/hora, com botão
-"Copiar" e link "Acompanhar agora". O protocolo também é salvo no dispositivo.
+de copiar (ícone) e link "Acompanhar". O protocolo também é salvo no dispositivo.
 
-**Aceite:** protocolo no formato `PREF-AAAA-000000`; "Copiar" usa Clipboard API e confirma com "Copiado!";
+**Aceite:** protocolo no formato `PREF-AAAA-000000`; o botão usa Clipboard API e confirma com "Copiado";
 o link leva a `/acompanhar?protocolo=…` com consulta automática.
 
 ### RF-06 — Acompanhamento por protocolo
@@ -88,10 +87,10 @@ permitindo nova consulta com um toque. O último protocolo fica em `prefeitura:u
 
 ### RF-08 — Perfil fictício
 
-Exibir nome, documento mascarado, e-mail, telefone, bairro e data de cadastro vindos da API, com selo
-"Demonstração".
+Exibir nome, documento mascarado, e-mail, telefone, bairro e data de cadastro vindos da API, com
+identificação de demonstração no rodapé.
 
-**Aceite:** dados iguais aos do backend; nenhum campo editável; aviso de que autenticação está fora do escopo.
+**Aceite:** dados iguais aos do backend; nenhum campo editável; contexto de dados fictícios visível no rodapé.
 
 ### RF-09 — Preferência de notificação condicionada
 
@@ -99,7 +98,7 @@ Oferecer o botão de ativar notificações **somente** quando o app estiver inst
 standalone`), a API `Notification` existir e a permissão não tiver sido decidida. No iOS, explicar que
 é necessário adicionar à Tela de Início.
 
-**Aceite:** no navegador comum o botão fica desabilitado com "Disponível após instalar"; em modo
+**Aceite:** no navegador comum o botão não é exibido e um aviso orienta a instalação; em modo
 standalone o clique chama `Notification.requestPermission()` (gesto do usuário); permissão negada
 mostra instrução de desbloqueio.
 

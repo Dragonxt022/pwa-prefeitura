@@ -1,3 +1,15 @@
+import {
+  Bell,
+  CalendarDays,
+  Fingerprint,
+  Mail,
+  MapPin,
+  Phone,
+  ShieldCheck,
+  Smartphone,
+  Trash2,
+  UserRound,
+} from 'lucide-react'
 import { useState } from 'react'
 import ErrorState from '../components/ErrorState'
 import { SkeletonBloco } from '../components/Loading'
@@ -10,6 +22,20 @@ import { formatarData } from '../lib/format'
 
 function lerPermissao() {
   return typeof Notification === 'undefined' ? 'indisponivel' : Notification.permission
+}
+
+function Dado({ Icone, rotulo, valor, largo = false }) {
+  return (
+    <div className={`dado${largo ? ' dado--largo' : ''}`}>
+      <span className="dado__icone">
+        <Icone aria-hidden="true" />
+      </span>
+      <span className="dado__texto">
+        <span className="dado__rotulo">{rotulo}</span>
+        <strong className="dado__valor">{valor}</strong>
+      </span>
+    </div>
+  )
 }
 
 export default function Perfil() {
@@ -25,20 +51,16 @@ export default function Perfil() {
     try {
       const resposta = await Notification.requestPermission()
       setPermissao(resposta)
-      setMensagem(
-        resposta === 'granted'
-          ? 'Permissão concedida. O envio de push será habilitado em uma fase futura do piloto.'
-          : 'Permissão não concedida. Você pode reativar nas configurações do sistema.',
-      )
+      setMensagem(resposta === 'granted' ? 'Permissão concedida.' : 'Permissão não concedida.')
     } catch {
-      setMensagem('Não foi possível solicitar a permissão neste navegador.')
+      setMensagem('Não foi possível pedir permissão.')
     }
   }
 
   function limpar() {
     if (!window.confirm('Remover protocolos e preferências salvos neste dispositivo?')) return
     limparDadosLocais()
-    setMensagem('Dados locais removidos deste dispositivo.')
+    setMensagem('Dados locais removidos.')
   }
 
   const rotuloNotificacao =
@@ -46,16 +68,22 @@ export default function Perfil() {
       ? 'Ativas'
       : permissao === 'denied'
         ? 'Bloqueadas'
-        : standalone
-          ? 'Disponíveis'
-          : 'Requer instalação'
+        : !standalone
+          ? 'Requer app'
+          : !suportaNotificacao
+            ? 'Indisponível'
+            : 'Disponíveis'
 
   return (
     <div className="pagina pagina--estreita">
-      <header className="cabecalho-pagina">
-        <p className="cabecalho-pagina__sobre">Perfil</p>
-        <h1>Seus dados e preferências</h1>
-        <p className="texto-suave">Informações fictícias usadas apenas para validar o fluxo do piloto.</p>
+      <header className="perfil-topo">
+        <span className="avatar">
+          <UserRound aria-hidden="true" />
+        </span>
+        <div className="perfil-topo__texto">
+          <p className="perfil-topo__sobre">Perfil</p>
+          <h1>{perfil?.nome ?? 'Seu perfil'}</h1>
+        </div>
       </header>
 
       {erro ? (
@@ -65,78 +93,59 @@ export default function Perfil() {
       ) : (
         <div className="pilha">
           <section className="cartao" aria-labelledby="titulo-dados">
-            <div className="cartao__cabecalho">
-              <h2 id="titulo-dados">Dados do cidadão</h2>
-              <Badge tom="info">Demonstração</Badge>
+            <h2 id="titulo-dados" className="sr-only">
+              Dados do cidadão
+            </h2>
+            <div className="grade-dados">
+              <Dado Icone={Fingerprint} rotulo="Documento" valor={perfil.documentoMascarado} />
+              <Dado Icone={Mail} rotulo="E-mail" valor={perfil.email} largo />
+              <Dado Icone={Phone} rotulo="Telefone" valor={perfil.telefone} />
+              <Dado Icone={MapPin} rotulo="Bairro" valor={perfil.bairro} />
+              <Dado Icone={CalendarDays} rotulo="Desde" valor={formatarData(perfil.desde)} />
             </div>
-            <dl className="info-lista">
-              <div>
-                <dt>Nome</dt>
-                <dd>{perfil.nome}</dd>
-              </div>
-              <div>
-                <dt>Documento</dt>
-                <dd>{perfil.documentoMascarado}</dd>
-              </div>
-              <div>
-                <dt>E-mail</dt>
-                <dd>{perfil.email}</dd>
-              </div>
-              <div>
-                <dt>Telefone</dt>
-                <dd>{perfil.telefone}</dd>
-              </div>
-              <div>
-                <dt>Bairro</dt>
-                <dd>{perfil.bairro}</dd>
-              </div>
-              <div>
-                <dt>Cadastro desde</dt>
-                <dd>{formatarData(perfil.desde)}</dd>
-              </div>
-            </dl>
-            <p className="texto-suave">
-              Edição de dados e autenticação (gov.br) estão fora do escopo deste piloto.
-            </p>
           </section>
 
-          <section className="cartao" aria-labelledby="titulo-notificacoes">
-            <div className="cartao__cabecalho">
-              <h2 id="titulo-notificacoes">Notificações</h2>
+          <section className="cartao cartao--preferencia" aria-labelledby="titulo-notificacoes">
+            <div className="preferencia__topo">
+              <span className="icone-tile tom-azul">
+                <Bell aria-hidden="true" />
+              </span>
+              <div className="preferencia__texto">
+                <h2 id="titulo-notificacoes">Notificações</h2>
+                <p>Atualizações dos seus protocolos.</p>
+              </div>
               <Badge tom={permissao === 'granted' ? 'sucesso' : 'neutro'}>{rotuloNotificacao}</Badge>
             </div>
 
-            <p>
-              Receba atualizações quando o status de uma solicitação mudar. O envio real de push
-              ainda não faz parte deste piloto: aqui registramos apenas a permissão do dispositivo.
-            </p>
-
             {!standalone && (
               <p className="alerta alerta--info">
-                {ios
-                  ? 'No iPhone, as notificações só funcionam depois de adicionar o app à Tela de Início e abri-lo pelo ícone.'
-                  : 'Instale o app (ícone de instalação na barra de endereço) para habilitar notificações.'}
+                <Smartphone aria-hidden="true" />
+                <span>
+                  {ios
+                    ? 'Adicione à Tela de Início para ativar.'
+                    : 'Instale o app para ativar.'}
+                </span>
+              </p>
+            )}
+
+            {standalone && !suportaNotificacao && (
+              <p className="alerta alerta--info">
+                <Smartphone aria-hidden="true" />
+                <span>Indisponível neste navegador.</span>
               </p>
             )}
 
             {permissao === 'denied' && (
               <p className="alerta alerta--erro">
-                A permissão foi bloqueada no navegador. Libere nas configurações do site e recarregue.
+                Permissão bloqueada. Libere nas configurações do site.
               </p>
             )}
 
-            <button
-              type="button"
-              className="botao botao--primario"
-              onClick={ativarNotificacoes}
-              disabled={!podeAtivar}
-            >
-              {permissao === 'granted'
-                ? 'Notificações ativas'
-                : podeAtivar
-                  ? 'Ativar notificações'
-                  : 'Disponível após instalar'}
-            </button>
+            {podeAtivar && (
+              <button type="button" className="botao botao--primario" onClick={ativarNotificacoes}>
+                Ativar
+              </button>
+            )}
 
             {mensagem && (
               <p className="texto-suave" role="status">
@@ -145,38 +154,47 @@ export default function Perfil() {
             )}
           </section>
 
-          <section className="cartao" aria-labelledby="titulo-privacidade">
-            <h2 id="titulo-privacidade">Privacidade e dados locais</h2>
-            <p>
-              Este protótipo guarda apenas os últimos protocolos consultados e sua preferência de
-              notificação, no armazenamento local do navegador. Nenhum dado é enviado para serviços
-              de terceiros.
-            </p>
-            <button type="button" className="botao botao--secundario" onClick={limpar}>
-              Limpar dados deste dispositivo
+          <section className="cartao cartao--linha" aria-labelledby="titulo-privacidade">
+            <span className="icone-tile tom-verde">
+              <ShieldCheck aria-hidden="true" />
+            </span>
+            <div className="cartao__corpo">
+              <h2 id="titulo-privacidade">Dados no aparelho</h2>
+              <p>Protocolos recentes e preferência de notificação.</p>
+            </div>
+            <button type="button" className="botao botao--secundario botao--pequeno" onClick={limpar}>
+              <Trash2 aria-hidden="true" />
+              Limpar
             </button>
           </section>
 
           <section className="cartao" aria-labelledby="titulo-sobre">
-            <h2 id="titulo-sobre">Sobre o aplicativo</h2>
-            <dl className="info-lista info-lista--compacta">
-              <div>
-                <dt>Versão</dt>
-                <dd>0.1.0 (piloto)</dd>
-              </div>
-              <div>
-                <dt>Modo de execução</dt>
-                <dd>{import.meta.env.MODE === 'production' ? 'Build de produção' : 'Desenvolvimento'}</dd>
-              </div>
-              <div>
-                <dt>Instalado</dt>
-                <dd>{standalone ? 'Sim (modo standalone)' : 'Não (rodando no navegador)'}</dd>
-              </div>
-              <div>
-                <dt>Plataforma</dt>
-                <dd>{ios ? 'iOS' : 'Outra'}</dd>
-              </div>
-            </dl>
+            <div className="cartao__cabecalho">
+              <h2 id="titulo-sobre">Sobre</h2>
+              <span className="secao__contagem">v0.1.0</span>
+            </div>
+            <ul className="lista-dados lista-dados--grade">
+              <li className="lista-dados__item">
+                <span className="lista-dados__texto">
+                  <span className="lista-dados__rotulo">Modo</span>
+                  <strong className="lista-dados__valor">
+                    {import.meta.env.MODE === 'production' ? 'Produção' : 'Desenvolvimento'}
+                  </strong>
+                </span>
+              </li>
+              <li className="lista-dados__item">
+                <span className="lista-dados__texto">
+                  <span className="lista-dados__rotulo">Instalado</span>
+                  <strong className="lista-dados__valor">{standalone ? 'Sim' : 'Navegador'}</strong>
+                </span>
+              </li>
+              <li className="lista-dados__item">
+                <span className="lista-dados__texto">
+                  <span className="lista-dados__rotulo">Plataforma</span>
+                  <strong className="lista-dados__valor">{ios ? 'iOS' : 'Outra'}</strong>
+                </span>
+              </li>
+            </ul>
           </section>
         </div>
       )}

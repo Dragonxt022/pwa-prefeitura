@@ -23,27 +23,27 @@ export const STATUS_INFO = {
   recebida: {
     rotulo: 'Recebida',
     tom: 'info',
-    descricao: 'Solicitação registrada e aguardando triagem da equipe responsável.',
+    descricao: 'Aguardando triagem da equipe.',
   },
   em_analise: {
     rotulo: 'Em análise',
     tom: 'atencao',
-    descricao: 'A equipe está avaliando o local e definindo o encaminhamento.',
+    descricao: 'A equipe está avaliando o local.',
   },
   em_execucao: {
     rotulo: 'Em execução',
     tom: 'execucao',
-    descricao: 'Serviço programado ou em andamento no endereço informado.',
+    descricao: 'Serviço em andamento no endereço.',
   },
   concluida: {
     rotulo: 'Concluída',
     tom: 'sucesso',
-    descricao: 'Serviço concluído. Se o problema persistir, abra uma nova solicitação.',
+    descricao: 'Serviço concluído.',
   },
   indeferida: {
     rotulo: 'Indeferida',
     tom: 'erro',
-    descricao: 'A solicitação não pôde ser atendida. Consulte o histórico para detalhes.',
+    descricao: 'Solicitação não atendida.',
   },
 }
 

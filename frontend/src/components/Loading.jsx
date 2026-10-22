@@ -1,11 +1,12 @@
+import { Search } from 'lucide-react'
+
 export function SkeletonCartoes({ quantidade = 3 }) {
   return (
-    <div className="grade" aria-hidden="true">
+    <div className="grade-servicos" aria-hidden="true">
       {Array.from({ length: quantidade }).map((_, indice) => (
         <div key={indice} className="cartao esqueleto-cartao">
+          <div className="esqueleto esqueleto--circulo" />
           <div className="esqueleto esqueleto--linha-curta" />
-          <div className="esqueleto esqueleto--linha" />
-          <div className="esqueleto esqueleto--linha" />
         </div>
       ))}
     </div>
@@ -31,5 +32,16 @@ export default function Loading({ rotulo = 'Carregando informações' }) {
       <span className="spinner" aria-hidden="true" />
       {rotulo}
     </p>
+  )
+}
+
+export function EstadoVazioBusca({ termo }) {
+  return (
+    <div className="estado-vazio estado-vazio--compacto">
+      <span className="estado-vazio__icone" aria-hidden="true">
+        <Search />
+      </span>
+      <p>Nenhum serviço para “{termo}”.</p>
+    </div>
   )
 }

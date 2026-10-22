@@ -1,12 +1,14 @@
+import { ArrowUpRight, Clock3, Plus, Search, Sparkles } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ErrorState from '../components/ErrorState'
-import { IconeBusca, IconeSeta } from '../components/Icones'
-import { SkeletonCartoes } from '../components/Loading'
+import { IlustracaoCidade } from '../components/Ilustracoes'
+import { EstadoVazioBusca, SkeletonCartoes } from '../components/Loading'
 import { Badge } from '../components/StatusBadge'
 import { useRecurso } from '../hooks/useRecurso'
 import { listarAvisos, listarServicos } from '../lib/api'
 import { formatarData, infoPrioridade } from '../lib/format'
+import { visualAviso, visualServico } from '../lib/visual'
 
 export default function Home() {
   const [busca, setBusca] = useState('')
@@ -15,12 +17,10 @@ export default function Home() {
     [],
   )
 
-  const [dadosServicos, servicos] = useMemo(() => {
+  const [avisos, servicos] = useMemo(() => {
     const [listaAvisos, listaServicos] = dados ?? [[], []]
     return [listaAvisos, listaServicos]
   }, [dados])
-
-  const avisos = dadosServicos
 
   const servicosFiltrados = useMemo(() => {
     const termo = busca.trim().toLowerCase()
@@ -33,47 +33,78 @@ export default function Home() {
   return (
     <div className="pagina">
       <section className="hero" aria-labelledby="titulo-principal">
-        <p className="hero__sobre">Atendimento ao cidadão</p>
-        <h1 id="titulo-principal">O que você precisa resolver hoje?</h1>
-        <p className="hero__texto">
-          Abra uma solicitação, acompanhe um protocolo ou consulte os avisos da cidade.
-        </p>
-        <div className="hero__acoes">
-          <Link className="botao botao--primario" to="/nova-solicitacao">
-            Abrir solicitação
-          </Link>
-          <Link className="botao botao--fantasma" to="/acompanhar">
-            Acompanhar protocolo
-          </Link>
+        <div className="hero__conteudo">
+          <p className="hero__sobre">
+            <Sparkles aria-hidden="true" />
+            Atendimento digital
+          </p>
+          <h1 id="titulo-principal">Como podemos ajudar?</h1>
+          <p className="hero__texto">Solicite um serviço ou acompanhe seu protocolo.</p>
+          <div className="hero__acoes">
+            <Link className="botao botao--primario" to="/nova-solicitacao">
+              <Plus aria-hidden="true" />
+              Nova solicitação
+            </Link>
+            <Link className="botao botao--secundario" to="/acompanhar">
+              <Search aria-hidden="true" />
+              Acompanhar
+            </Link>
+          </div>
         </div>
+        <IlustracaoCidade className="hero__arte" />
       </section>
 
       {erro ? (
         <ErrorState erro={erro} aoTentarNovamente={recarregar} />
       ) : (
         <>
-          <section className="secao" aria-labelledby="titulo-avisos">
+          <section className="secao" aria-labelledby="titulo-servicos">
             <div className="secao__cabecalho">
-              <h2 id="titulo-avisos">Avisos da cidade</h2>
-              {!carregando && <span className="secao__contagem">{avisos.length} publicações</span>}
+              <h2 id="titulo-servicos">Serviços</h2>
+              {!carregando && <span className="secao__contagem">{servicosFiltrados.length}</span>}
+            </div>
+
+            <div className="campo-busca">
+              <Search className="campo-busca__icone" aria-hidden="true" />
+              <label className="sr-only" htmlFor="busca-servico">
+                Buscar serviço
+              </label>
+              <input
+                id="busca-servico"
+                type="search"
+                placeholder="Buscar serviço"
+                value={busca}
+                onChange={(evento) => setBusca(evento.target.value)}
+              />
             </div>
 
             {carregando ? (
-              <SkeletonCartoes quantidade={2} />
+              <SkeletonCartoes quantidade={6} />
+            ) : servicosFiltrados.length === 0 ? (
+              <EstadoVazioBusca termo={busca} />
             ) : (
-              <ul className="lista-avisos">
-                {avisos.map((aviso) => {
-                  const prioridade = infoPrioridade(aviso.prioridade)
+              <ul className="grade-servicos">
+                {servicosFiltrados.map((servico) => {
+                  const { rotulo, Icone, tom } = visualServico(servico.id)
                   return (
-                    <li key={aviso.id} className="cartao aviso">
-                      <div className="aviso__topo">
-                        <Badge tom={prioridade.tom}>{prioridade.rotulo}</Badge>
-                        <span className="texto-suave aviso__meta">
-                          {aviso.categoria} · {formatarData(aviso.publicadoEm)}
+                    <li key={servico.id}>
+                      <Link
+                        className={`servico-card tom-${tom}`}
+                        to={`/nova-solicitacao?tipo=${servico.id}`}
+                        aria-label={`${servico.titulo} — abrir solicitação`}
+                      >
+                        <span className="servico-card__topo">
+                          <span className="servico-card__icone">
+                            <Icone aria-hidden="true" />
+                          </span>
+                          <ArrowUpRight className="servico-card__seta" aria-hidden="true" />
                         </span>
-                      </div>
-                      <h3>{aviso.titulo}</h3>
-                      <p>{aviso.resumo}</p>
+                        <span className="servico-card__titulo">{rotulo}</span>
+                        <span className="servico-card__prazo">
+                          <Clock3 aria-hidden="true" />
+                          {servico.prazoDias} dias
+                        </span>
+                      </Link>
                     </li>
                   )
                 })}
@@ -81,57 +112,39 @@ export default function Home() {
             )}
           </section>
 
-          <section className="secao" aria-labelledby="titulo-servicos">
+          <section className="secao" aria-labelledby="titulo-avisos">
             <div className="secao__cabecalho">
-              <h2 id="titulo-servicos">Serviços disponíveis</h2>
-              {!carregando && <span className="secao__contagem">{servicosFiltrados.length} de {servicos.length}</span>}
-            </div>
-
-            <div className="campo-busca">
-              <IconeBusca className="campo-busca__icone" />
-              <label className="sr-only" htmlFor="busca-servico">
-                Buscar serviço
-              </label>
-              <input
-                id="busca-servico"
-                type="search"
-                placeholder="Buscar por serviço, categoria ou problema"
-                value={busca}
-                onChange={(evento) => setBusca(evento.target.value)}
-              />
+              <h2 id="titulo-avisos">Avisos</h2>
+              {!carregando && <span className="secao__contagem">{avisos.length}</span>}
             </div>
 
             {carregando ? (
-              <SkeletonCartoes quantidade={4} />
-            ) : servicosFiltrados.length === 0 ? (
-              <p className="vazio">Nenhum serviço encontrado para “{busca}”.</p>
+              <SkeletonCartoes quantidade={2} />
             ) : (
-              <ul className="grade grade--servicos">
-                {servicosFiltrados.map((servico) => (
-                  <li key={servico.id}>
-                    <Link className="cartao cartao--link servico" to={`/nova-solicitacao?tipo=${servico.id}`}>
-                      <span className="servico__categoria">{servico.categoria}</span>
-                      <h3>{servico.titulo}</h3>
-                      <p>{servico.descricao}</p>
-                      <span className="servico__rodape">
-                        <span>Prazo estimado: {servico.prazoDias} dias</span>
-                        <IconeSeta className="servico__seta" />
+              <ul className="lista-avisos">
+                {avisos.map((aviso) => {
+                  const { Icone, tom } = visualAviso(aviso.categoria)
+                  const prioridade = infoPrioridade(aviso.prioridade)
+                  return (
+                    <li key={aviso.id} className={`aviso tom-${tom}`}>
+                      <span className="aviso__icone">
+                        <Icone aria-hidden="true" />
                       </span>
-                    </Link>
-                  </li>
-                ))}
+                      <div className="aviso__corpo">
+                        <div className="aviso__topo">
+                          <Badge tom={prioridade.tom}>{prioridade.rotulo}</Badge>
+                          <span>{aviso.categoria}</span>
+                          <span aria-hidden="true">·</span>
+                          <time dateTime={aviso.publicadoEm}>{formatarData(aviso.publicadoEm)}</time>
+                        </div>
+                        <h3>{aviso.titulo}</h3>
+                        <p className="aviso__resumo">{aviso.resumo}</p>
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             )}
-          </section>
-
-          <section className="painel-cta" aria-labelledby="titulo-cta">
-            <div>
-              <h2 id="titulo-cta">Já abriu uma solicitação?</h2>
-              <p>Acompanhe o andamento usando o número do protocolo.</p>
-            </div>
-            <Link className="botao botao--claro" to="/acompanhar">
-              Consultar protocolo
-            </Link>
           </section>
         </>
       )}

@@ -1,11 +1,26 @@
+import {
+  AlertCircle,
+  ArrowRight,
+  CalendarDays,
+  Check,
+  Clock3,
+  Copy,
+  LoaderCircle,
+  MapPin,
+  Phone,
+  Send,
+  ShieldCheck,
+} from 'lucide-react'
 import { useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import ErrorState from '../components/ErrorState'
+import { IlustracaoSucesso } from '../components/Ilustracoes'
 import { SkeletonBloco } from '../components/Loading'
 import { useRecurso } from '../hooks/useRecurso'
 import { criarSolicitacao, listarServicos } from '../lib/api'
-import { formatarDataHora } from '../lib/format'
 import { registrarConsulta } from '../lib/consultas'
+import { formatarDataHora } from '../lib/format'
+import { visualServico } from '../lib/visual'
 
 const LIMITES = { descricaoMin: 10, descricaoMax: 1200, enderecoMin: 5, enderecoMax: 200 }
 
@@ -25,8 +40,6 @@ export default function NovaSolicitacao() {
 
   const resumoErroRef = useRef(null)
 
-  const servicoSelecionado = servicos?.find((servico) => servico.id === formulario.tipo)
-
   function alterar(campo, valor) {
     setFormulario((atual) => ({ ...atual, [campo]: valor }))
     setErros((atuais) => {
@@ -42,16 +55,16 @@ export default function NovaSolicitacao() {
     const descricao = formulario.descricao.trim()
     const endereco = formulario.endereco.trim()
 
-    if (!formulario.tipo) proximos.tipo = 'Selecione o tipo de solicitação.'
+    if (!formulario.tipo) proximos.tipo = 'Escolha um serviço.'
     if (descricao.length < LIMITES.descricaoMin) {
-      proximos.descricao = `Descreva o problema com pelo menos ${LIMITES.descricaoMin} caracteres.`
+      proximos.descricao = `Mínimo de ${LIMITES.descricaoMin} caracteres.`
     } else if (descricao.length > LIMITES.descricaoMax) {
-      proximos.descricao = `A descrição deve ter no máximo ${LIMITES.descricaoMax} caracteres.`
+      proximos.descricao = `Máximo de ${LIMITES.descricaoMax} caracteres.`
     }
     if (endereco.length < LIMITES.enderecoMin) {
       proximos.endereco = 'Informe o endereço com um ponto de referência.'
     } else if (endereco.length > LIMITES.enderecoMax) {
-      proximos.endereco = `O endereço deve ter no máximo ${LIMITES.enderecoMax} caracteres.`
+      proximos.endereco = `Máximo de ${LIMITES.enderecoMax} caracteres.`
     }
 
     setErros(proximos)
@@ -105,43 +118,73 @@ export default function NovaSolicitacao() {
   }
 
   if (protocolo) {
+    const servico = visualServico(protocolo.tipo)
+    const IconeServico = servico.Icone
+
     return (
       <div className="pagina pagina--estreita">
         <div className="cartao cartao--confirmacao">
-          <p className="selo selo--sucesso">Solicitação registrada</p>
-          <h1>Guarde o seu protocolo</h1>
-          <p>
-            Use este número para acompanhar o andamento. Ele também foi salvo neste dispositivo.
-          </p>
+          <IlustracaoSucesso className="confirmacao__arte" />
+          <span className="selo selo--sucesso">
+            <Check aria-hidden="true" />
+            Protocolo criado
+          </span>
+          <h1>Pronto!</h1>
+          <p className="texto-suave">Guarde o número para acompanhar.</p>
 
           <div className="protocolo-caixa">
             <code>{protocolo.protocolo}</code>
-            <button type="button" className="botao botao--secundario botao--pequeno" onClick={copiarProtocolo}>
-              {copiado ? 'Copiado!' : 'Copiar'}
+            <button
+              type="button"
+              className="botao botao--secundario botao--icone"
+              onClick={copiarProtocolo}
+              aria-label={copiado ? 'Protocolo copiado' : 'Copiar protocolo'}
+              title={copiado ? 'Protocolo copiado' : 'Copiar protocolo'}
+            >
+              {copiado ? <Check aria-hidden="true" /> : <Copy aria-hidden="true" />}
             </button>
           </div>
+          <span className="protocolo-caixa__status" role="status">
+            {copiado ? 'Copiado' : ''}
+          </span>
 
-          <dl className="resumo-dados">
-            <div>
-              <dt>Serviço</dt>
-              <dd>{protocolo.tipoTitulo}</dd>
-            </div>
-            <div>
-              <dt>Endereço</dt>
-              <dd>{protocolo.endereco}</dd>
-            </div>
-            <div>
-              <dt>Registrado em</dt>
-              <dd>{formatarDataHora(protocolo.criadoEm)}</dd>
-            </div>
-          </dl>
+          <ul className="lista-dados">
+            <li className="lista-dados__item">
+              <span className={`lista-dados__icone tom-${servico.tom}`}>
+                <IconeServico aria-hidden="true" />
+              </span>
+              <span className="lista-dados__texto">
+                <span className="lista-dados__rotulo">Serviço</span>
+                <strong className="lista-dados__valor">{protocolo.tipoTitulo}</strong>
+              </span>
+            </li>
+            <li className="lista-dados__item">
+              <span className="lista-dados__icone tom-azul">
+                <MapPin aria-hidden="true" />
+              </span>
+              <span className="lista-dados__texto">
+                <span className="lista-dados__rotulo">Endereço</span>
+                <strong className="lista-dados__valor">{protocolo.endereco}</strong>
+              </span>
+            </li>
+            <li className="lista-dados__item">
+              <span className="lista-dados__icone tom-azul">
+                <CalendarDays aria-hidden="true" />
+              </span>
+              <span className="lista-dados__texto">
+                <span className="lista-dados__rotulo">Registrado em</span>
+                <strong className="lista-dados__valor">{formatarDataHora(protocolo.criadoEm)}</strong>
+              </span>
+            </li>
+          </ul>
 
-          <div className="acoes">
+          <div className="acoes acoes--centro">
             <Link className="botao botao--primario" to={`/acompanhar?protocolo=${protocolo.protocolo}`}>
-              Acompanhar agora
+              Acompanhar
+              <ArrowRight aria-hidden="true" />
             </Link>
             <button type="button" className="botao botao--secundario" onClick={novaSolicitacao}>
-              Abrir outra solicitação
+              Nova solicitação
             </button>
           </div>
         </div>
@@ -153,10 +196,8 @@ export default function NovaSolicitacao() {
     <div className="pagina pagina--estreita">
       <header className="cabecalho-pagina">
         <p className="cabecalho-pagina__sobre">Nova solicitação</p>
-        <h1>Descreva o problema</h1>
-        <p className="texto-suave">
-          Quanto mais detalhes, mais rápido a equipe consegue localizar e resolver.
-        </p>
+        <h1>O que aconteceu?</h1>
+        <p className="texto-suave">Escolha o serviço e informe o local.</p>
       </header>
 
       {erroServicos ? (
@@ -168,96 +209,127 @@ export default function NovaSolicitacao() {
           <div ref={resumoErroRef} tabIndex={-1} className="resumo-validacao" aria-live="assertive">
             {(erroGeral || Object.values(erros).some(Boolean)) && (
               <div className="alerta alerta--erro" role="alert">
-                <strong>
-                  {Object.values(erros).some(Boolean)
-                    ? 'Revise os campos destacados.'
-                    : 'Não foi possível enviar a solicitação.'}
-                </strong>
-                {erroGeral?.message && <p>{erroGeral.message}</p>}
-                {erroGeral?.codigo === 'limite_excedido' && (
-                  <p>Aguarde um minuto antes de enviar outra solicitação.</p>
-                )}
+                <AlertCircle aria-hidden="true" />
+                <div>
+                  <strong>
+                    {Object.values(erros).some(Boolean)
+                      ? 'Revise os campos destacados.'
+                      : 'Não foi possível enviar.'}
+                  </strong>
+                  {erroGeral?.message && <p>{erroGeral.message}</p>}
+                  {erroGeral?.codigo === 'limite_excedido' && (
+                    <p>Aguarde um minuto antes de enviar outra solicitação.</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
 
-          <div className={`campo${erros.tipo ? ' campo--erro' : ''}`}>
-            <label htmlFor="tipo">Tipo de solicitação</label>
-            <select
-              id="tipo"
-              value={formulario.tipo}
-              onChange={(evento) => alterar('tipo', evento.target.value)}
-              aria-invalid={Boolean(erros.tipo)}
-              aria-describedby={erros.tipo ? 'erro-tipo' : undefined}
-            >
-              <option value="">Selecione uma opção</option>
-              {servicos.map((servico) => (
-                <option key={servico.id} value={servico.id}>
-                  {servico.titulo}
-                </option>
-              ))}
-            </select>
-            {servicoSelecionado && (
-              <p className="campo__ajuda">
-                {servicoSelecionado.descricao} Prazo estimado: {servicoSelecionado.prazoDias} dias.
+          <fieldset
+            className={`campo campo--servicos${erros.tipo ? ' campo--erro' : ''}`}
+            aria-describedby={erros.tipo ? 'erro-tipo' : undefined}
+          >
+            <legend>Serviço</legend>
+            <div className="escolha-servicos">
+              {servicos.map((servico) => {
+                const { rotulo, Icone, tom } = visualServico(servico.id)
+                const selecionado = formulario.tipo === servico.id
+                return (
+                  <label
+                    key={servico.id}
+                    className={`escolha-servico tom-${tom}${selecionado ? ' is-selecionado' : ''}`}
+                  >
+                    <input
+                      type="radio"
+                      name="tipo"
+                      value={servico.id}
+                      checked={selecionado}
+                      onChange={(evento) => alterar('tipo', evento.target.value)}
+                      className="sr-only"
+                    />
+                    <span className="escolha-servico__icone">
+                      <Icone aria-hidden="true" />
+                    </span>
+                    <span className="escolha-servico__rotulo">{rotulo}</span>
+                    <span className="escolha-servico__prazo">
+                      <Clock3 aria-hidden="true" />
+                      {servico.prazoDias} dias
+                    </span>
+                  </label>
+                )
+              })}
+            </div>
+            {erros.tipo && (
+              <p className="campo__erro" id="erro-tipo">
+                {erros.tipo}
               </p>
             )}
-            {erros.tipo && <p className="campo__erro" id="erro-tipo">{erros.tipo}</p>}
-          </div>
+          </fieldset>
 
           <div className={`campo${erros.descricao ? ' campo--erro' : ''}`}>
-            <label htmlFor="descricao">Descrição do problema</label>
+            <label htmlFor="descricao">Descrição</label>
             <textarea
               id="descricao"
-              rows={5}
+              rows={4}
               maxLength={LIMITES.descricaoMax}
               value={formulario.descricao}
               onChange={(evento) => alterar('descricao', evento.target.value)}
-              placeholder="Ex.: poste apagado em frente ao número 120, desde a noite de terça-feira."
+              placeholder="Ex.: poste apagado na Rua das Palmeiras, 120."
               aria-invalid={Boolean(erros.descricao)}
               aria-describedby={erros.descricao ? 'erro-descricao' : 'ajuda-descricao'}
             />
             <div className="campo__rodape">
               <p className="campo__ajuda" id="ajuda-descricao">
-                Não inclua dados pessoais de terceiros.
+                Sem dados de terceiros.
               </p>
               <span className="campo__contador" aria-hidden="true">
                 {formulario.descricao.length}/{LIMITES.descricaoMax}
               </span>
             </div>
-            {erros.descricao && <p className="campo__erro" id="erro-descricao">{erros.descricao}</p>}
+            {erros.descricao && (
+              <p className="campo__erro" id="erro-descricao">
+                {erros.descricao}
+              </p>
+            )}
           </div>
 
           <div className={`campo${erros.endereco ? ' campo--erro' : ''}`}>
             <label htmlFor="endereco">Endereço</label>
-            <input
-              id="endereco"
-              type="text"
-              maxLength={LIMITES.enderecoMax}
-              value={formulario.endereco}
-              onChange={(evento) => alterar('endereco', evento.target.value)}
-              placeholder="Rua, número e bairro (ou ponto de referência)"
-              aria-invalid={Boolean(erros.endereco)}
-              aria-describedby={erros.endereco ? 'erro-endereco' : undefined}
-            />
-            {erros.endereco && <p className="campo__erro" id="erro-endereco">{erros.endereco}</p>}
+            <div className="campo__controle">
+              <MapPin aria-hidden="true" />
+              <input
+                id="endereco"
+                type="text"
+                maxLength={LIMITES.enderecoMax}
+                value={formulario.endereco}
+                onChange={(evento) => alterar('endereco', evento.target.value)}
+                placeholder="Rua, número e bairro"
+                aria-invalid={Boolean(erros.endereco)}
+                aria-describedby={erros.endereco ? 'erro-endereco' : undefined}
+              />
+            </div>
+            {erros.endereco && (
+              <p className="campo__erro" id="erro-endereco">
+                {erros.endereco}
+              </p>
+            )}
           </div>
 
           <div className="campo">
             <label htmlFor="contato">
-              Contato para retorno <span className="campo__opcional">(opcional)</span>
+              Contato <span className="campo__opcional">(opcional)</span>
             </label>
-            <input
-              id="contato"
-              type="text"
-              maxLength={120}
-              value={formulario.contato}
-              onChange={(evento) => alterar('contato', evento.target.value)}
-              placeholder="Telefone ou e-mail"
-            />
-            <p className="campo__ajuda">
-              Usado apenas se a equipe precisar de mais informações sobre o local.
-            </p>
+            <div className="campo__controle">
+              <Phone aria-hidden="true" />
+              <input
+                id="contato"
+                type="text"
+                maxLength={120}
+                value={formulario.contato}
+                onChange={(evento) => alterar('contato', evento.target.value)}
+                placeholder="Telefone ou e-mail"
+              />
+            </div>
           </div>
 
           <div className="formulario__acoes">
@@ -265,13 +337,23 @@ export default function NovaSolicitacao() {
               Cancelar
             </Link>
             <button type="submit" className="botao botao--primario" disabled={enviando}>
-              {enviando ? 'Enviando…' : 'Enviar solicitação'}
+              {enviando ? (
+                <>
+                  <LoaderCircle className="girando" aria-hidden="true" />
+                  Enviando
+                </>
+              ) : (
+                <>
+                  <Send aria-hidden="true" />
+                  Enviar
+                </>
+              )}
             </button>
           </div>
 
-          <p className="texto-suave formulario__nota">
-            Ao enviar, você concorda com o uso destes dados apenas para atendimento desta solicitação
-            (LGPD, art. 7º, III).
+          <p className="formulario__nota">
+            <ShieldCheck aria-hidden="true" />
+            Dados usados apenas neste atendimento.
           </p>
         </form>
       )}

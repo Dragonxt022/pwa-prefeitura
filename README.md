@@ -110,10 +110,11 @@ Para depurar SW em desenvolvimento, altere `devOptions.enabled` para `true` em
 │       ├── middlewares/rate-limit.js
 │       └── routes/            # servicos, avisos, perfil, solicitacoes
 ├── frontend/
-│   ├── public/icons/          # 192, 512, maskable 512, apple-touch 180
+│   ├── public/icons/          # 192, 512, maskable 512, apple-touch 180, favicon 32
 │   ├── scripts/generate-icons.mjs
 │   ├── src/
-│   │   ├── components/        # Layout, StatusBadge, ErrorState, Loading, ícones
+│   │   ├── assets/            # marca oficial (colorida e branca)
+│   │   ├── components/        # Layout, StatusBadge, ErrorState, Loading, Ilustracoes
 │   │   ├── hooks/             # useRecurso, useOnlineStatus, usePwaInstall
 │   │   ├── lib/               # api.js, format.js, consultas.js (localStorage)
 │   │   └── pages/             # Home, NovaSolicitacao, Acompanhar, Perfil, 404
@@ -125,6 +126,7 @@ Para depurar SW em desenvolvimento, altere `devOptions.enabled` para `true` em
 │   ├── 04-validacao.md        # evidências do teste local
 │   ├── adr/                   # decisões de arquitetura
 │   ├── evidencias/            # screenshots da validação
+│   ├── imagens/logos/         # arquivos-fonte da marca oficial
 │   └── historico/             # plano original preservado
 └── package.json               # scripts de orquestração
 ```

@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
       react(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.svg', 'icons/apple-touch-icon-180.png'],
+        includeAssets: ['icons/favicon-32.png', 'icons/apple-touch-icon-180.png'],
         manifest: {
           id: '/',
           name: 'Prefeitura Digital - Piloto',
@@ -25,7 +25,7 @@ export default defineConfig(({ mode }) => {
           display: 'standalone',
           orientation: 'portrait',
           theme_color: '#1351B4',
-          background_color: '#F4F6FA',
+          background_color: '#F5F7FA',
           categories: ['government', 'productivity', 'utilities'],
           icons: [
             {
