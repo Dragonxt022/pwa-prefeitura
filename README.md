@@ -21,8 +21,16 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
   no aparelho.
 - Avaliação de 1 a 5 estrelas após a conclusão, com comentário opcional.
 - Notificações locais no app quando um status muda (sem push em segundo plano neste ciclo).
-- Painel de gestão em `/gestao`, protegido por token, com fila, filtros, estatísticas, prioridade,
-  mudança de status e histórico.
+- **Painel de gestão com login:** sessão por cookie `HttpOnly`, “manter conectado” por 30 dias e
+  restauração automática ao recarregar. Perfis `admin`, `triagem` e `setor`.
+- **Fila por setor:** a triagem central vê tudo; cada usuário de secretaria vê apenas os pedidos
+  encaminhados para o próprio setor.
+- **Transferência e reclassificação:** evento auditável em `transferencias`, selo “Transferida”, troca
+  de setor/serviço e preservação do SLA original por padrão.
+- **Impressão:** seleção de pedidos ou resultado dos filtros via CSS de impressão, sem expor foto.
+- **Mini IA de triagem:** classificador local por regras, desligado por padrão e ativável por
+  `TRIAGEM_IA_ATIVA=true`; quando ligado, sugere e aplica o setor automaticamente. A triagem manual
+  continua disponível.
 - Acessibilidade: atalho “Pular para o conteúdo”, foco visível, navegação por teclado, textos
   alternativos e controles de **fonte ampliada** e **alto contraste** no Perfil.
 
@@ -32,8 +40,9 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
 |---|---|
 | Frontend | React 19 + Vite 8 + react-router-dom 7 |
 | PWA | vite-plugin-pwa 2 (Workbox, `generateSW`, `autoUpdate`) |
-| Backend | Express 5 (ESM) + cors + persistência JSON |
+| Backend | Express 5 (ESM) + cors + persistência JSON + sessões com `scrypt` |
 | Estilo | CSS próprio, mobile-first, dark mode automático |
+| Triagem | Regras locais com contrato para mini IA/LLM local no futuro |
 | Qualidade | oxlint (frontend) |
 
 ## Pré-requisitos
@@ -84,9 +93,29 @@ Acesse **http://localhost:5173**. O front chama `/api/...`; o proxy do Vite enca
 
 ### Painel de gestão
 
-Abra **http://localhost:5173/gestao** e informe o token. No piloto o token padrão é
-`prefeitura-demo`; em produção defina `ADMIN_TOKEN` no backend. O token fica em `sessionStorage` e é
-enviado no cabeçalho `x-admin-token`.
+Abra **http://localhost:5173/gestao** e entre com e-mail e senha. A sessão é gravada em cookie
+`HttpOnly` (sem token em `localStorage`/`sessionStorage`) e, com “manter conectado”, dura 30 dias.
+
+Contas demonstrativas (senha padrão `prefeitura-demo`, configurável por `DEMO_PASSWORD`):
+
+| Conta | Papel | Escopo |
+|---|---|---|
+| `admin@prefeitura.demo` | Administrador | Todos os pedidos, setores e usuários |
+| `triagem@prefeitura.demo` | Triagem / Protocolo | Fila completa e encaminhamento |
+| `obras@prefeitura.demo` | Setor | Apenas Obras e Infraestrutura |
+| `zeladoria@prefeitura.demo` | Setor | Apenas Zeladoria e Serviços Urbanos |
+| `ambiente@prefeitura.demo` | Setor | Apenas Meio Ambiente |
+| `fiscalizacao@prefeitura.demo` | Setor | Apenas Fiscalização e Posturas |
+| `mobilidade@prefeitura.demo` | Setor | Apenas Mobilidade e Trânsito |
+| `ouvidoria@prefeitura.demo` | Setor | Apenas Ouvidoria |
+
+O administrador pode criar novos usuários de setor no próprio painel. A triagem central recebe as
+novas solicitações quando a automação está desligada. Com `TRIAGEM_IA_ATIVA=true`, o classificador
+local aplica o setor sugerido na criação; a equipe ainda pode transferir ou reclassificar manualmente.
+
+Para compatibilidade com scripts antigos, defina `ADMIN_TOKEN` explicitamente para habilitar o
+cabeçalho `x-admin-token` como acesso administrativo de emergência. Sem essa variável, o token legado
+fica desativado. O fluxo normal do navegador usa o cookie de sessão.
 
 ### Testar o PWA (obrigatório para Service Worker)
 
@@ -131,9 +160,11 @@ Para depurar SW em desenvolvimento, altere `devOptions.enabled` para `true` em
 │   ├── data/                  # estado.json (runtime, ignorado pelo Git)
 │   ├── server.js              # bootstrap + porta + shutdown
 │   └── src/
-│       ├── app.js             # middlewares, CORS, rotas, erros
+│       ├── app.js             # middlewares, CORS com credenciais, rotas, erros
+│       ├── auth.js            # hash scrypt, token de sessão e comparação segura
 │       ├── errors.js          # AppError e helpers
-│       ├── store.js           # catálogo, avisos, pedidos e persistência JSON
+│       ├── store.js           # catálogo, setores, usuários, sessões, pedidos e persistência JSON
+│       ├── triagem.js         # classificador local e contrato da futura mini IA
 │       ├── middlewares/rate-limit.js
 │       └── routes/            # servicos, avisos, perfil, solicitacoes e gestao
 ├── frontend/
@@ -171,19 +202,38 @@ Rotas públicas:
 | GET | `/avisos` | Avisos da cidade |
 | GET | `/perfil` | Perfil fictício |
 | GET | `/solicitacoes/semelhantes?tipo=&endereco=&latitude=&longitude=` | Pedidos parecidos (sem endereço/contato) |
-| POST | `/solicitacoes` | Cria solicitação e devolve protocolo |
-| GET | `/solicitacoes/:protocolo` | Consulta com histórico, sem contato/clientId |
-| GET | `/solicitacoes/:protocolo/status` | Status atual e SLA |
+| POST | `/solicitacoes` | Cria solicitação e devolve protocolo (com `setorNome` e `transferida` públicos) |
+| GET | `/solicitacoes/:protocolo` | Consulta com histórico, setor responsável e selo `transferida`, sem contato/clientId |
+| GET | `/solicitacoes/:protocolo/status` | Status atual, setor e SLA |
 | POST | `/solicitacoes/:protocolo/avaliacao` | Avaliação após conclusão |
 
-Rotas de gestão (todas exigem `x-admin-token`):
+Rotas de gestão (sessão por cookie `HttpOnly`; `x-admin-token` aceito como emergência somente com
+`ADMIN_TOKEN` definido):
 
 | Método | Rota | Descrição |
 |---|---|---|
-| GET | `/gestao/sessao` | Valida o token |
-| GET | `/gestao/solicitacoes?status=&tipo=&busca=&limite=` | Fila com total e estatísticas |
+| POST | `/gestao/login` | E-mail, senha e `lembrar`; grava o cookie de sessão |
+| POST | `/gestao/logout` | Revoga a sessão e limpa o cookie |
+| GET | `/gestao/sessao` | Restaura a sessão e informa usuário, papel, setor e triagem automática |
+| GET | `/gestao/setores` | Setores disponíveis (mapa demonstrativo) |
+| GET | `/gestao/solicitacoes?status=&tipo=&busca=&setor=&ids=&limite=` | Fila com total e estatísticas, escopada pelo setor do usuário |
 | GET | `/gestao/solicitacoes/:protocolo` | Detalhe completo para atendimento |
 | PATCH | `/gestao/solicitacoes/:protocolo/status` | Status, prioridade e observação |
+| PATCH | `/gestao/solicitacoes/:protocolo/transferir` | Setor/serviço de destino, motivo e `recalcularSla` opcional |
+| GET | `/gestao/usuarios` | Lista usuários (somente admin) |
+| POST | `/gestao/usuarios` | Cria usuário de setor, triagem ou admin (somente admin) |
+| PATCH | `/gestao/usuarios/:id` | Altera dados ou ativa/desativa usuário (somente admin) |
+
+Exemplo de login via PowerShell (o cookie fica na sessão do `Invoke-RestMethod`):
+
+```powershell
+$sessao = New-Object Microsoft.PowerShell.Commands.WebRequestSession
+$body = @{ email = 'triagem@prefeitura.demo'; senha = 'prefeitura-demo'; lembrar = $true } | ConvertTo-Json
+Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/gestao/login `
+  -ContentType 'application/json' -Body $body -WebSession $sessao
+
+Invoke-RestMethod -Uri http://localhost:3000/api/gestao/solicitacoes -WebSession $sessao
+```
 
 Exemplo de criação (o `clientId` é opcional; a UI o gera para idempotência):
 
@@ -218,13 +268,17 @@ Contrato completo, limites, códigos de erro e regras: [doc/02-requisitos.md](do
 
 ## Privacidade
 
-- Não há listagem pública de todas as solicitações. A listagem completa é exclusiva da gestão.
-- Respostas públicas de um pedido omitem `contato` e `clientId`.
+- A listagem completa é exclusiva da gestão e cada usuário de setor recebe apenas a própria fila.
+- Respostas públicas de um pedido omitem `contato`, `clientId`, metadados da triagem e o motivo
+  detalhado de transferências internas.
 - A detecção de duplicidade informa protocolo, serviço, status e, quando disponível, distância — sem
   devolver o endereço do pedido existente.
 - No piloto, o protocolo funciona como chave de acesso do cidadão. Não use dados reais.
 - O Service Worker não guarda respostas de gestão nem detalhes com foto/contato.
-- O token de gestão padrão é apenas para demonstração; defina `ADMIN_TOKEN` em produção.
+- Senhas são persistidas com `scrypt` + sal; tokens de sessão são persistidos apenas como hash SHA-256.
+- O cookie de sessão é `HttpOnly`, `SameSite=Lax` e, em produção, deve usar `Secure` (`COOKIE_SECURE=true`).
+- O token legado `ADMIN_TOKEN` é apenas compatibilidade/emergência quando definido; o login normal não
+  o utiliza.
 
 ## Acessibilidade
 
@@ -280,7 +334,11 @@ build em um host HTTPS. O piloto valida o PWA no desktop via `localhost`.
 | `MOCK_LATENCY_MS` | backend | `200` | Latência simulada (`0` desliga) |
 | `CORS_ORIGINS` | backend | 5173 e 4173 | Origens permitidas (vírgula) |
 | `DATA_FILE` | backend | `backend/data/estado.json` | Arquivo JSON de persistência |
-| `ADMIN_TOKEN` | backend | `prefeitura-demo` | Token do painel de gestão |
+| `ADMIN_TOKEN` | backend | desativado | Token legado opt-in de emergência; não é o login normal |
+| `DEMO_PASSWORD` | backend | `prefeitura-demo` | Senha das contas demonstrativas criadas no primeiro start |
+| `TRIAGEM_IA_ATIVA` | backend | `false` | Ativa a aplicação automática do setor sugerido pelo classificador local |
+| `SESSION_DAYS` | backend | `30` | Duração do cookie/sessão quando “manter conectado” está marcado |
+| `COOKIE_SECURE` | backend | `false` | Envia o cookie apenas por HTTPS quando `true` (produção) |
 
 ## Problemas comuns
 
@@ -288,9 +346,11 @@ build em um host HTTPS. O piloto valida o PWA no desktop via `localhost`.
 |---|---|---|
 | `EADDRINUSE` na API | Porta 3000 ocupada | `$env:PORT=3001; npm run dev:api` e ajuste `API_TARGET` |
 | `/api` retorna HTML | Proxy ausente/path errado | Confirme `server.proxy` e `API_TARGET`; teste `/api/health` |
-| Gestão responde 401 | Token inválido ou `ADMIN_TOKEN` diferente | Use o mesmo token configurado no backend; o painel não apaga a sessão em falha de rede |
+| Gestão responde 401 | Sessão expirada, cookie ausente ou token legado inválido | Entre novamente; em chamadas de script configure `ADMIN_TOKEN` e use `x-admin-token`, ou mantenha o cookie da sessão |
+| “Manter conectado” não persiste | Cookie bloqueado ou origem diferente | Use a mesma origem do front (`localhost:5173` via proxy) e permita cookies; em produção configure HTTPS e `COOKIE_SECURE=true` |
+| Usuário de setor não vê pedidos | Pedido ainda está na triagem central ou pertence a outro setor | Transfira/reclassifique na triagem; o escopo é aplicado no servidor |
 | Mudanças não aparecem no preview | SW antigo em cache | DevTools → Application → Unregister + reload; ou "Update on reload" |
-| Fila offline não envia | API fora do ar ou token/rota bloqueada | Confirme `/api/health`, volte online e abra o app; a fila tenta a cada 30 s |
+| Fila offline não envia | API fora do ar ou rota bloqueada | Confirme `/api/health`, volte online e abra o app; a fila tenta a cada 30 s |
 | Ícones quebrados | Build antigo sem os PNGs | `npm --prefix frontend run icons && npm run build` |
 | Service Worker não registra | Rodando em `dev` ou HTTP remoto | Use `build` + `preview` em HTTPS/`localhost`; em HTTP na LAN não registra (esperado) |
 | Celular não abre `http://IP:5173` | Firewall, rede Pública ou Wi-Fi diferente | Rode `.\scripts\liberar-firewall.ps1` como admin, confirme a mesma rede e desative "isolamento de clientes" no roteador |

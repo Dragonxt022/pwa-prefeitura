@@ -9,6 +9,7 @@ export class AppError extends Error {
     this.name = 'AppError'
     this.status = status
     this.codigo = codigo
+    this.mensagem = mensagem
     this.campos = campos
   }
 }

@@ -1,11 +1,13 @@
 import {
   ArrowRight,
+  Building2,
   CalendarDays,
   Clock3,
   LoaderCircle,
   MapPin,
   Plus,
   Search,
+  Send,
   Wrench,
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -14,7 +16,7 @@ import Avaliacao from '../components/Avaliacao'
 import ErrorState from '../components/ErrorState'
 import { IlustracaoBusca } from '../components/Ilustracoes'
 import { SkeletonBloco } from '../components/Loading'
-import { StatusBadge } from '../components/StatusBadge'
+import { Badge, StatusBadge } from '../components/StatusBadge'
 import { consultarSolicitacao } from '../lib/api'
 import {
   listarConsultas,
@@ -259,7 +261,15 @@ export default function Acompanhar() {
                 {resultado.protocolo}
               </h2>
             </div>
-            <StatusBadge status={resultado.status} />
+            <div className="resultado__selos">
+              <StatusBadge status={resultado.status} />
+              {resultado.transferida && (
+                <Badge tom="info">
+                  <Send aria-hidden="true" />
+                  Transferida
+                </Badge>
+              )}
+            </div>
           </div>
 
           <p className="resultado__descricao">{status.descricao}</p>
@@ -288,6 +298,17 @@ export default function Acompanhar() {
                 <strong className="lista-dados__valor">{resultado.tipoTitulo}</strong>
               </span>
             </li>
+            {resultado.setorNome && (
+              <li className="lista-dados__item">
+                <span className="lista-dados__icone tom-azul">
+                  <Building2 aria-hidden="true" />
+                </span>
+                <span className="lista-dados__texto">
+                  <span className="lista-dados__rotulo">Setor responsável</span>
+                  <strong className="lista-dados__valor">{resultado.setorNome}</strong>
+                </span>
+              </li>
+            )}
             <li className="lista-dados__item">
               <span className="lista-dados__icone tom-azul">
                 <MapPin aria-hidden="true" />
@@ -338,10 +359,18 @@ export default function Acompanhar() {
                 return (
                   <li key={`${evento.status}-${evento.em}`} className={atual ? 'is-atual' : undefined}>
                     <span className="linha-tempo__ponto">
-                      <visualEvento.Icone aria-hidden="true" />
+                      {evento.tipo === 'transferencia' ? (
+                        <Send aria-hidden="true" />
+                      ) : (
+                        <visualEvento.Icone aria-hidden="true" />
+                      )}
                     </span>
                     <div className="linha-tempo__conteudo">
-                      <strong>{infoStatus(evento.status).rotulo}</strong>
+                      <strong>
+                        {evento.tipo === 'transferencia'
+                          ? 'Transferência'
+                          : infoStatus(evento.status).rotulo}
+                      </strong>
                       <time dateTime={evento.em}>{formatarDataHora(evento.em)}</time>
                       {evento.observacao && <p>{evento.observacao}</p>}
                     </div>

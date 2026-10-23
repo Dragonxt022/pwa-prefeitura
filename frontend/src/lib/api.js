@@ -30,6 +30,8 @@ async function requisicao(
   try {
     const resposta = await fetch(`${BASE}${caminho}`, {
       method: metodo,
+      // O cookie HttpOnly da sessão de gestão é enviado pelo navegador.
+      credentials: 'include',
       headers: {
         Accept: 'application/json',
         ...(corpo ? { 'Content-Type': 'application/json' } : {}),
@@ -101,28 +103,54 @@ export const avaliarSolicitacao = (protocolo, dados) =>
     timeout: 12000,
   })
 
-const comGestao = (token, opcoes = {}) => ({
-  ...opcoes,
-  cabecalhos: { ...opcoes.cabecalhos, 'x-admin-token': token },
-})
+// ---------- gestão: sessão, setores, usuários e fila ----------
 
-export const validarAcessoGestao = (token) =>
-  requisicao('/gestao/sessao', comGestao(token))
+export const loginGestao = (dados) =>
+  requisicao('/gestao/login', { metodo: 'POST', corpo: dados, timeout: 12000 })
 
-export const listarGestao = (token, { status, tipo, busca, limite = 100 } = {}) => {
+export const logoutGestao = () =>
+  requisicao('/gestao/logout', { metodo: 'POST', timeout: 8000 })
+
+export const obterSessaoGestao = () => requisicao('/gestao/sessao', { timeout: 8000 })
+
+export const listarSetoresGestao = () => requisicao('/gestao/setores', { timeout: 8000 })
+
+export const listarUsuariosGestao = () => requisicao('/gestao/usuarios', { timeout: 10000 })
+
+export const criarUsuarioGestao = (dados) =>
+  requisicao('/gestao/usuarios', { metodo: 'POST', corpo: dados, timeout: 12000 })
+
+export const atualizarUsuarioGestao = (id, dados) =>
+  requisicao(`/gestao/usuarios/${encodeURIComponent(id)}`, {
+    metodo: 'PATCH',
+    corpo: dados,
+    timeout: 12000,
+  })
+
+export const listarGestao = ({ status, tipo, busca, setor, ids, limite = 100 } = {}) => {
   const query = new URLSearchParams()
   if (status) query.set('status', status)
   if (tipo) query.set('tipo', tipo)
   if (busca) query.set('busca', busca)
+  if (setor) query.set('setor', setor)
+  if (Array.isArray(ids) && ids.length > 0) query.set('ids', ids.join(','))
   if (limite) query.set('limite', String(limite))
-  return requisicao(
-    `/gestao/solicitacoes?${query.toString()}`,
-    comGestao(token, { timeout: 12000, completo: true }),
-  )
+  return requisicao(`/gestao/solicitacoes?${query.toString()}`, {
+    timeout: 12000,
+    completo: true,
+  })
 }
 
-export const atualizarStatusGestao = (token, protocolo, dados) =>
-  requisicao(
-    `/gestao/solicitacoes/${encodeURIComponent(protocolo)}/status`,
-    comGestao(token, { metodo: 'PATCH', corpo: dados, timeout: 12000 }),
-  )
+export const atualizarStatusGestao = (protocolo, dados) =>
+  requisicao(`/gestao/solicitacoes/${encodeURIComponent(protocolo)}/status`, {
+    metodo: 'PATCH',
+    corpo: dados,
+    timeout: 12000,
+  })
+
+export const transferirGestao = (protocolo, dados) =>
+  requisicao(`/gestao/solicitacoes/${encodeURIComponent(protocolo)}/transferir`, {
+    metodo: 'PATCH',
+    corpo: dados,
+    timeout: 12000,
+  })

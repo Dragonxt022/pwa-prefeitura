@@ -2,10 +2,10 @@
 
 | Campo | Valor |
 |---|---|
-| Data da execução | 22/10/2026 |
+| Data da execução | 23/10/2026 |
 | Ambiente | Windows, Node **24.12.0**, npm **11.6.2**, Chrome (Playwright) |
 | Versões | Vite **8.3.5**, vite-plugin-pwa **2.0.0**, React **19.3.1**, react-router-dom **7.18.4**, Express **5.3.0** |
-| Escopo | API com persistência, catálogo de 9 serviços, formulário com foto/CEP/localização, fila offline, acompanhamento, avaliação, gestão, acessibilidade e PWA |
+| Escopo | API com persistência, catálogo, formulário, fila offline, acompanhamento, avaliação, gestão com login/setores/transferência/impressão, triagem automática e PWA |
 | Resultado | **Aprovado nos critérios locais**; instalação em aparelho físico, push em segundo plano e auditoria formal de acessibilidade ficam pendentes |
 
 ## 1. Qualidade de código
@@ -13,21 +13,21 @@
 | Verificação | Comando | Resultado |
 |---|---|---|
 | Lint | `npm run lint` | **0 erros, 3 warnings** (`react(set-state-in-effect)`) |
-| Build | `npm run build` | Sucesso em 1,73 s |
+| Build | `npm run build` | Sucesso em 0,79 s |
 
 Saída do build:
 
 ```
 dist/registerSW.js                              0.13 kB
 dist/manifest.webmanifest                       0.67 kB
-dist/index.html                                 1.25 kB │ gzip: 0.58 kB
+dist/index.html                                 1.25 kB │ gzip:   0.57 kB
 dist/assets/logo-icone-branco-*.png             9.09 kB
 dist/assets/logo-icone-colorido-*.png          41.88 kB
-dist/assets/index-*.css                        52.81 kB │ gzip: 10.13 kB
-dist/assets/index-*.js                        371.12 kB │ gzip: 111.55 kB
+dist/assets/index-*.css                        58.44 kB │ gzip:  11.18 kB
+dist/assets/index-*.js                        388.43 kB │ gzip: 115.46 kB
 
 PWA v2.0.0  mode generateSW
-precache  17 entries (533.01 KiB)
+precache  17 entries (555.41 KiB)
 files generated: dist/sw.js, dist/workbox-*.js
 ```
 
@@ -46,6 +46,10 @@ Correções feitas durante esta rodada:
 - listagem pública de solicitações removida; respostas públicas não devolvem `contato` nem `clientId`;
 - busca sem acentos normalizada na Home, catálogo e gestão;
 - datas civis (`AAAA-MM-DD`) formatadas sem deslocamento de fuso.
+- mensagens de erro do backend passaram a incluir `mensagem` (antes o campo era omitido e o frontend
+  mostrava apenas “operação (401)”);
+- histórico público de transferência mostra o setor de destino sem expor o motivo interno;
+- a área de impressão permanece no DOM após `window.print()`, permitindo revisar a prévia e reimprimir.
 
 ## 2. PWA e Service Worker
 
@@ -126,16 +130,15 @@ Executado contra `http://localhost:3000` com dados fictícios persistidos em
 | POST | `/api/solicitacoes` válido | 201 + protocolo | 201 + protocolo |
 | POST | `/api/solicitacoes` com descrição curta | 422 com `campos` | 422 |
 | POST | mesma requisição com `clientId` repetido | 200 `criada: false` | 200, mesmo protocolo |
-| GET | `/api/gestao/solicitacoes` sem token | 401 | 401 |
-| GET | `/api/gestao/solicitacoes` com token | 200 + total + estatísticas | 200, total 8 |
+| GET | `/api/gestao/solicitacoes` sem sessão | 401 | 401 |
+| GET | `/api/gestao/solicitacoes` com sessão | 200 + total + estatísticas | 200, total 8 |
 | PATCH | `/api/gestao/solicitacoes/:protocolo/status` | 200 + histórico | 200 (validado via painel) |
 | POST | `/api/solicitacoes/:protocolo/avaliacao` | 201; segunda tentativa 409 | 201; avaliação única |
 | POST | 10 POSTs no mesmo minuto por IP | 429 no excedente | Validado em ciclo anterior; não repetido para preservar o estado |
 
-Detalhe público de `PREF-2026-000001` retornou exatamente:
-`protocolo, tipo, tipoTitulo, descricao, endereco, status, criadoEm, atualizadoEm, historico,
-prazoDias, slaEm, prioridade, foto, localizacao, avaliacao, slaDiasRestantes, slaVencido`.
-Não há `contato` nem `clientId`. Semelhantes retornaram apenas
+Detalhe público de `PREF-2026-000001` retornou os campos públicos esperados, incluindo `setor`,
+`setorNome` e `transferida`, sem `contato`, `clientId`, `triagem` ou `transferencias`. Semelhantes
+retornaram apenas
 `protocolo, tipo, tipoTitulo, status, criadoEm, atualizadoEm, distanciaMetros`.
 
 Estatísticas da gestão no fechamento: **total 8, abertas 7, atrasadas 1, concluídas 1,
@@ -229,12 +232,82 @@ Capturas do build de produção em 22/10/2026, em `doc/evidencias/v3/`:
 | Teste com usuários | Depende de recrutamento | 6 |
 | Carga, concorrência e banco real | Persistência JSON atende apenas ao piloto | Pós-piloto |
 | Autenticação de titularidade | No piloto o protocolo é a chave de acesso | Pós-piloto |
+| Lista oficial de secretarias/setores | Mapa demonstrativo em `store.js`; aguarda confirmação do município | Próximo ciclo |
+| Modelo local/LLM para a mini IA | Contrato e fallback por regras prontos; modelo real não integrado | Pós-piloto |
 | Testes automatizados em CI | A validação atual é manual + Playwright | 6 |
 
-## 9. Conclusão
+## 9. Evolução v4 — setores, sessão, transferência e impressão
+
+### 9.1 Teste de integração do backend
+
+Script Node isolado com `DATA_FILE` temporário e `MOCK_LATENCY_MS=0`. Resultado: **32 verificações
+aprovadas**, incluindo:
+
+| Verificação | Resultado |
+|---|---|
+| Login de triagem e cookie `HttpOnly` | OK |
+| Restauração de sessão via cookie | OK |
+| Triagem vê a fila completa | OK |
+| Login de `obras@prefeitura.demo` e escopo server-side | OK; apenas `infraestrutura` |
+| Acesso direto a protocolo de outro setor | `403 sem_permissao` |
+| Transferência com reclassificação e selo `transferida` | OK |
+| SLA original preservado na transferência | OK |
+| Consulta pública sem `transferencias`, `triagem` ou motivo interno | OK; evento genérico de encaminhamento |
+| Criação de usuário pelo admin e ausência de `senhaHash` nas respostas | OK |
+| Admin não consegue remover o próprio papel; estado permanece consistente | OK |
+| Logout revoga a sessão; senha incorreta retorna 401 | OK |
+
+Verificação complementar: sem `ADMIN_TOKEN`, o token legado padrão recebe `401`; o login por sessão
+continua funcionando. Com a variável definida, o modo de emergência é habilitado explicitamente.
+
+### 9.2 Triagem automática
+
+Com `TRIAGEM_IA_ATIVA=true`, **12 verificações aprovadas**:
+
+| Verificação | Resultado |
+|---|---|
+| Flag exposta em `/gestao/sessao` | `triagemAutomatica: true` |
+| Pedido de poda com árvore/fiação | Setor `meio_ambiente` atribuído automaticamente |
+| Metadados internos na resposta pública | Ausentes |
+| Painel de triagem vê sugestão, confiança e aplicação | OK |
+| Transferência manual com a automação ligada | OK; status preservado |
+| `recalcularSla: true` com troca de serviço | Novo `slaEm` e evento `recalculouSla` |
+
+Com a flag desligada (teste anterior), o novo pedido permaneceu em `triagem`, confirmando o fallback
+manual.
+
+### 9.3 Navegador (Playwright)
+
+| Passo | Resultado |
+|---|---|
+| Login da triagem e restauração após reload | OK |
+| Transferência para Zeladoria com reclassificação e selo “Transferida” | OK |
+| Histórico do painel com evento de transferência | OK |
+| Impressão acionando `window.print` e área de impressão | OK |
+| Prévia com `emulateMedia('print')` | Painel/topo ocultos; documento visível |
+| Login do setor de obras | Vê somente `PREF-2026-000003` |
+| Conta de setor criada e desativada pelo admin | Login bloqueado após desativação |
+| Sessão “manter conectado” após recarregar `/gestao` | OK |
+| Painel em 390 px | Sem overflow horizontal (`scrollWidth 375`) |
+| Consulta pública de protocolo transferido | Selo, setor responsável e evento “Transferência” visíveis |
+
+### 9.4 Evidências v4
+
+- [painel-setor.png](evidencias/v4/painel-setor.png) — visão restrita do setor de obras.
+- [painel-setor-mobile.png](evidencias/v4/painel-setor-mobile.png) — painel em 390 px.
+- [usuarios.png](evidencias/v4/usuarios.png) — criação e gestão de usuários pelo admin.
+- [transferencia.png](evidencias/v4/transferencia.png) — modal de transferência/reclassificação.
+- [impressao.png](evidencias/v4/impressao.png) — prévia de impressão somente com o documento.
+
+> Os testes de navegador usaram um arquivo temporário (`DATA_FILE`), sem alterar o estado de
+> demonstração do repositório. A lista oficial de secretarias continua pendente; o mapa atual é
+> demonstrativo.
+
+## 10. Conclusão
 
 O piloto atende aos critérios locais das fases implementadas: build e lint sem erros, API com contratos e
-erros consistentes, persistência em JSON, nove serviços, fila offline com idempotência, painel de gestão,
-SLA, avaliação, notificações locais, atalhos de acessibilidade e PWA com cache público controlado. A
+erros consistentes, persistência em JSON, nove serviços, fila offline com idempotência, painel de gestão
+com login e escopo por setor, transferência/reclassificação, impressão, triagem automática ativável, SLA,
+avaliação, notificações locais, atalhos de acessibilidade e PWA com cache público controlado. A
 recomendação é usar esta versão para demonstração e avançar para a validação em dispositivos reais e para
 as pendências de produção listadas acima.

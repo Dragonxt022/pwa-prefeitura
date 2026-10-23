@@ -4,15 +4,24 @@
  * O arquivo de dados fica fora do Git (backend/data/estado.json) e pode ser
  * trocado com a variavel DATA_FILE. A escrita e suficiente para o piloto,
  * mas nao substitui um banco de dados transacional.
+ *
+ * A partir da v4 o mesmo arquivo guarda tambem usuarios, setores (mapa
+ * demonstrativo) e sessoes. Senhas e tokens de sessao sao persistidos apenas
+ * como hash; nunca em texto puro.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { gerarHashSenha, gerarTokenSessao, hashToken, verificarSenha } from './auth.js'
+import { classificarSolicitacao, MODELO_TRIAGEM, triagemAutomaticaAtiva } from './triagem.js'
 
 const raizBackend = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const arquivoDados = process.env.DATA_FILE
   ? resolve(process.env.DATA_FILE)
   : resolve(raizBackend, 'data', 'estado.json')
+
+const DIAS_SESSAO_LEMBRAR = Math.max(1, Number(process.env.SESSION_DAYS) || 30)
+const HORAS_SESSAO_PADRAO = 12
 
 export const STATUS = {
   recebida: 'Recebida',
@@ -24,6 +33,83 @@ export const STATUS = {
 
 export const STATUS_ABERTOS = ['recebida', 'em_analise', 'em_execucao']
 export const STATUS_FINAIS = ['concluida', 'indeferida']
+
+export const PAPEIS = {
+  admin: 'Administrador geral',
+  triagem: 'Triagem / Protocolo',
+  setor: 'Setor',
+}
+
+/**
+ * Mapa demonstrativo. A lista oficial de secretarias ainda não foi informada;
+ * ajuste os nomes/serviços aqui (ou evolua para uma tabela no banco) quando o
+ * município confirmar a estrutura. A triagem central nunca deixa de ver tudo.
+ */
+export const setores = [
+  {
+    id: 'triagem',
+    nome: 'Triagem e Protocolo',
+    secretaria: 'Comunicação e Atendimento',
+    descricao: 'Recebe, classifica e encaminha as solicitações para os setores.',
+    servicos: [],
+    central: true,
+    ativo: true,
+  },
+  {
+    id: 'infraestrutura',
+    nome: 'Obras e Infraestrutura',
+    secretaria: 'Secretaria de Obras',
+    descricao: 'Iluminação pública e pavimentação.',
+    servicos: ['iluminacao', 'pavimentacao'],
+    central: false,
+    ativo: true,
+  },
+  {
+    id: 'zeladoria',
+    nome: 'Zeladoria e Serviços Urbanos',
+    secretaria: 'Secretaria de Serviços Urbanos',
+    descricao: 'Limpeza, coleta e conservação da cidade.',
+    servicos: ['limpeza', 'zeladoria'],
+    central: false,
+    ativo: true,
+  },
+  {
+    id: 'meio_ambiente',
+    nome: 'Meio Ambiente',
+    secretaria: 'Secretaria de Meio Ambiente',
+    descricao: 'Poda, arborização e proteção ambiental.',
+    servicos: ['poda', 'meio_ambiente'],
+    central: false,
+    ativo: true,
+  },
+  {
+    id: 'fiscalizacao',
+    nome: 'Fiscalização e Posturas',
+    secretaria: 'Secretaria de Fiscalização',
+    descricao: 'Terrenos, construções e posturas municipais.',
+    servicos: ['fiscalizacao'],
+    central: false,
+    ativo: true,
+  },
+  {
+    id: 'mobilidade',
+    nome: 'Mobilidade e Trânsito',
+    secretaria: 'Secretaria de Mobilidade',
+    descricao: 'Sinalização, trânsito e acessibilidade viária.',
+    servicos: ['sinalizacao'],
+    central: false,
+    ativo: true,
+  },
+  {
+    id: 'ouvidoria',
+    nome: 'Ouvidoria',
+    secretaria: 'Controladoria / Ouvidoria',
+    descricao: 'Elogios, reclamações, sugestões e denúncias.',
+    servicos: ['ouvidoria'],
+    central: false,
+    ativo: true,
+  },
+]
 
 export const servicos = [
   {
@@ -211,8 +297,73 @@ const SOLICITACOES_SEMENTE = [
   },
 ]
 
+const SENHA_DEMO = process.env.DEMO_PASSWORD || 'prefeitura-demo'
+
+const USUARIOS_SEMENTE = [
+  {
+    id: 'usuario-admin',
+    nome: 'Administrador Geral',
+    email: 'admin@prefeitura.demo',
+    papel: 'admin',
+    setorId: null,
+  },
+  {
+    id: 'usuario-triagem',
+    nome: 'Equipe de Triagem',
+    email: 'triagem@prefeitura.demo',
+    papel: 'triagem',
+    setorId: 'triagem',
+  },
+  {
+    id: 'usuario-obras',
+    nome: 'Equipe de Obras',
+    email: 'obras@prefeitura.demo',
+    papel: 'setor',
+    setorId: 'infraestrutura',
+  },
+  {
+    id: 'usuario-zeladoria',
+    nome: 'Equipe de Zeladoria',
+    email: 'zeladoria@prefeitura.demo',
+    papel: 'setor',
+    setorId: 'zeladoria',
+  },
+  {
+    id: 'usuario-meio-ambiente',
+    nome: 'Equipe de Meio Ambiente',
+    email: 'ambiente@prefeitura.demo',
+    papel: 'setor',
+    setorId: 'meio_ambiente',
+  },
+  {
+    id: 'usuario-fiscalizacao',
+    nome: 'Equipe de Fiscalização',
+    email: 'fiscalizacao@prefeitura.demo',
+    papel: 'setor',
+    setorId: 'fiscalizacao',
+  },
+  {
+    id: 'usuario-mobilidade',
+    nome: 'Equipe de Mobilidade',
+    email: 'mobilidade@prefeitura.demo',
+    papel: 'setor',
+    setorId: 'mobilidade',
+  },
+  {
+    id: 'usuario-ouvidoria',
+    nome: 'Equipe de Ouvidoria',
+    email: 'ouvidoria@prefeitura.demo',
+    papel: 'setor',
+    setorId: 'ouvidoria',
+  },
+]
+
 /** @type {Array<object>} */
 export const solicitacoes = []
+/** @type {Array<object>} */
+export const usuarios = []
+/** @type {Array<object>} */
+export const sessoes = []
 let sequencia = 3
 
 function adicionarDias(iso, dias) {
@@ -229,6 +380,16 @@ function normalizarTexto(valor) {
     .trim()
 }
 
+function normalizarEmail(valor) {
+  return String(valor ?? '').trim().toLowerCase()
+}
+
+function setorDoServico(tipo) {
+  return setores.find(
+    (setor) => !setor.central && Array.isArray(setor.servicos) && setor.servicos.includes(tipo),
+  ) ?? setores.find((setor) => setor.central)
+}
+
 function normalizarSolicitacao(item) {
   const servico = servicos.find((servicoAtual) => servicoAtual.id === item.tipo)
   const criadoEm = item.criadoEm || new Date().toISOString()
@@ -237,6 +398,7 @@ function normalizarSolicitacao(item) {
   const historico = Array.isArray(item.historico) && item.historico.length > 0
     ? item.historico
     : [{ status, em: criadoEm, observacao: 'Solicitação registrada pelo aplicativo.' }]
+  const setorId = item.setorId || setorDoServico(item.tipo)?.id || 'triagem'
 
   return {
     ...item,
@@ -251,8 +413,38 @@ function normalizarSolicitacao(item) {
     localizacao: item.localizacao || null,
     avaliacao: item.avaliacao || null,
     clientId: item.clientId || null,
+    setorId,
+    transferencias: Array.isArray(item.transferencias) ? item.transferencias : [],
+    triagem: item.triagem && typeof item.triagem === 'object' ? item.triagem : null,
     historico,
   }
+}
+
+function normalizarUsuario(item) {
+  const papel = PAPEIS[item.papel] ? item.papel : 'setor'
+  const setorId = papel === 'setor'
+    ? item.setorId || null
+    : item.setorId || (papel === 'triagem' ? 'triagem' : null)
+  return {
+    id: item.id,
+    nome: String(item.nome ?? '').trim(),
+    email: normalizarEmail(item.email),
+    senhaHash: item.senhaHash || (item.senha ? gerarHashSenha(item.senha) : null),
+    papel,
+    setorId,
+    ativo: item.ativo !== false,
+    criadoEm: item.criadoEm || new Date().toISOString(),
+  }
+}
+
+function criarUsuariosSemente() {
+  return USUARIOS_SEMENTE.map((usuario) =>
+    normalizarUsuario({
+      ...usuario,
+      senha: SENHA_DEMO,
+      criadoEm: new Date().toISOString(),
+    }),
+  )
 }
 
 function calcularSequencia() {
@@ -265,6 +457,8 @@ function calcularSequencia() {
 function carregar() {
   let carregadas = SOLICITACOES_SEMENTE
   let sequenciaSalva = 0
+  let usuariosCarregados = null
+  let sessoesCarregadas = []
 
   if (existsSync(arquivoDados)) {
     try {
@@ -273,6 +467,10 @@ function carregar() {
         carregadas = salvo.solicitacoes
         sequenciaSalva = Number(salvo.sequencia) || 0
       }
+      if (Array.isArray(salvo.usuarios) && salvo.usuarios.length > 0) {
+        usuariosCarregados = salvo.usuarios
+      }
+      if (Array.isArray(salvo.sessoes)) sessoesCarregadas = salvo.sessoes
     } catch (erro) {
       console.warn(`[dados] não foi possível ler ${arquivoDados}:`, erro.message)
     }
@@ -281,6 +479,20 @@ function carregar() {
   solicitacoes.length = 0
   solicitacoes.push(...carregadas.map(normalizarSolicitacao))
   sequencia = Math.max(sequenciaSalva, calcularSequencia())
+
+  usuarios.length = 0
+  usuarios.push(...(usuariosCarregados
+    ? usuariosCarregados.map(normalizarUsuario)
+    : criarUsuariosSemente()))
+
+  const agora = Date.now()
+  sessoes.length = 0
+  sessoes.push(
+    ...sessoesCarregadas.filter((sessao) => {
+      const expira = new Date(sessao.expiraEm).getTime()
+      return Number.isFinite(expira) && expira > agora && usuarios.some((u) => u.id === sessao.usuarioId && u.ativo)
+    }),
+  )
 }
 
 function persistir() {
@@ -288,7 +500,14 @@ function persistir() {
     mkdirSync(dirname(arquivoDados), { recursive: true })
     writeFileSync(
       arquivoDados,
-      JSON.stringify({ versao: 1, salvoEm: new Date().toISOString(), sequencia, solicitacoes }, null, 2),
+      JSON.stringify({
+        versao: 2,
+        salvoEm: new Date().toISOString(),
+        sequencia,
+        solicitacoes,
+        usuarios,
+        sessoes,
+      }, null, 2),
     )
   } catch (erro) {
     console.error(`[dados] não foi possível salvar ${arquivoDados}:`, erro.message)
@@ -309,6 +528,27 @@ export function listarAvisos() {
   return [...avisos].sort((a, b) => new Date(b.publicadoEm) - new Date(a.publicadoEm))
 }
 
+export function listarSetores({ incluirInativos = false } = {}) {
+  return setores
+    .filter((setor) => incluirInativos || setor.ativo)
+    .map((setor) => ({ ...setor, servicos: [...setor.servicos] }))
+}
+
+export function buscarSetor(id) {
+  return setores.find((setor) => setor.id === id) ?? null
+}
+
+export function setorPublico(id) {
+  const setor = buscarSetor(id)
+  if (!setor) return null
+  return {
+    id: setor.id,
+    nome: setor.nome,
+    secretaria: setor.secretaria,
+    central: Boolean(setor.central),
+  }
+}
+
 export function buscarSolicitacao(protocolo) {
   const alvo = String(protocolo ?? '').toUpperCase().trim()
   return solicitacoes.find((item) => item.protocolo === alvo)
@@ -319,25 +559,31 @@ export function buscarSolicitacaoPorClientId(clientId) {
   return solicitacoes.find((item) => item.clientId === clientId) ?? null
 }
 
-export function listarSolicitacoes({ status, tipo, busca, limite = 100 } = {}) {
+export function listarSolicitacoes({ status, tipo, busca, setorId, ids, limite = 100 } = {}) {
   let dados = [...solicitacoes].sort(
     (a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime(),
   )
 
   if (status) dados = dados.filter((item) => item.status === status)
   if (tipo) dados = dados.filter((item) => item.tipo === tipo)
+  if (setorId) dados = dados.filter((item) => item.setorId === setorId)
+  if (Array.isArray(ids) && ids.length > 0) {
+    const alvos = new Set(ids.map((id) => String(id).toUpperCase()))
+    dados = dados.filter((item) => alvos.has(item.protocolo))
+  }
 
   const termo = normalizarTexto(busca)
   if (termo) {
     dados = dados.filter((item) =>
       normalizarTexto(
-        `${item.protocolo} ${item.tipoTitulo} ${item.endereco} ${item.descricao}`,
+        `${item.protocolo} ${item.tipoTitulo} ${item.endereco} ${item.descricao} ${buscarSetor(item.setorId)?.nome ?? ''}`,
       ).includes(termo),
     )
   }
 
   const total = dados.length
-  return { dados: dados.slice(0, Math.max(1, Math.min(Number(limite) || 100, 100))), total }
+  const limiteSeguro = Math.max(1, Math.min(Number(limite) || 100, 500))
+  return { dados: dados.slice(0, limiteSeguro), total }
 }
 
 export function criarSolicitacao({
@@ -354,6 +600,11 @@ export function criarSolicitacao({
 
   const agora = new Date().toISOString()
   const servico = buscarServico(tipo)
+  const sugestao = classificarSolicitacao({ tipo, descricao, endereco, setores })
+  const automatica = triagemAutomaticaAtiva()
+  const setorInicialId = automatica && sugestao.confianca >= 0.5
+    ? sugestao.setorId
+    : 'triagem'
   sequencia += 1
 
   const solicitacao = normalizarSolicitacao({
@@ -371,6 +622,16 @@ export function criarSolicitacao({
     foto,
     localizacao,
     clientId,
+    setorId: setorInicialId,
+    transferencias: [],
+    triagem: {
+      ...sugestao,
+      automatica,
+      aplicada: automatica,
+      setorSugeridoId: sugestao.setorId,
+      setorInicialId,
+      modelo: sugestao.modelo || MODELO_TRIAGEM,
+    },
     historico: [
       { status: 'recebida', em: agora, observacao: 'Solicitação registrada pelo aplicativo.' },
     ],
@@ -381,7 +642,7 @@ export function criarSolicitacao({
   return { solicitacao, criada: true }
 }
 
-export function atualizarStatus(protocolo, { status, observacao, prioridade }) {
+export function atualizarStatus(protocolo, { status, observacao, prioridade, porUsuario }) {
   const solicitacao = buscarSolicitacao(protocolo)
   if (!solicitacao) return null
 
@@ -389,22 +650,77 @@ export function atualizarStatus(protocolo, { status, observacao, prioridade }) {
   solicitacao.status = status
   solicitacao.atualizadoEm = agora
   if (prioridade) solicitacao.prioridade = prioridade
-  if (observacao?.trim()) {
-    solicitacao.historico.push({
-      status,
-      em: agora,
-      observacao: observacao.trim(),
-    })
-  } else {
-    solicitacao.historico.push({
-      status,
-      em: agora,
-      observacao: `Status atualizado para ${STATUS[status]}.`,
-    })
-  }
+  solicitacao.historico.push({
+    status,
+    em: agora,
+    observacao: observacao?.trim() || `Status atualizado para ${STATUS[status]}.`,
+    ...(porUsuario ? { por: { id: porUsuario.id, nome: porUsuario.nome } } : {}),
+  })
   if (status === 'concluida') solicitacao.concluidoEm = agora
   persistir()
   return solicitacao
+}
+
+/**
+ * A transferência é um evento auditável: o status principal (em análise, em
+ * execução etc.) é preservado. O SLA original também é preservado, a menos que
+ * o operador marque explicitamente recalcularSla.
+ */
+export function transferirSolicitacao(protocolo, {
+  setorDestinoId,
+  motivo,
+  tipoDestino,
+  recalcularSla = false,
+  porUsuario,
+}) {
+  const solicitacao = buscarSolicitacao(protocolo)
+  if (!solicitacao) return { erro: 'nao_encontrada' }
+
+  const destino = buscarSetor(setorDestinoId)
+  if (!destino || !destino.ativo) return { erro: 'setor_invalido' }
+
+  const tipoFinal = tipoDestino || solicitacao.tipo
+  const servicoFinal = buscarServico(tipoFinal)
+  if (!servicoFinal) return { erro: 'servico_invalido' }
+
+  const deSetorId = solicitacao.setorId
+  const deTipo = solicitacao.tipo
+  const agora = new Date().toISOString()
+  const transferencia = {
+    deSetorId,
+    paraSetorId: destino.id,
+    deTipo,
+    paraTipo: tipoFinal,
+    motivo: String(motivo ?? '').trim(),
+    recalculouSla: Boolean(recalcularSla && tipoFinal !== deTipo),
+    por: porUsuario ? { id: porUsuario.id, nome: porUsuario.nome } : null,
+    em: agora,
+  }
+
+  solicitacao.setorId = destino.id
+  solicitacao.atualizadoEm = agora
+  solicitacao.transferencias.push(transferencia)
+
+  if (tipoFinal !== deTipo) {
+    solicitacao.tipo = tipoFinal
+    solicitacao.tipoTitulo = servicoFinal.titulo
+    if (recalcularSla) {
+      solicitacao.prazoDias = servicoFinal.prazoDias
+      solicitacao.slaEm = adicionarDias(solicitacao.criadoEm, servicoFinal.prazoDias)
+      transferencia.slaRecalculadoEm = solicitacao.slaEm
+    }
+  }
+
+  solicitacao.historico.push({
+    status: solicitacao.status,
+    em: agora,
+    tipo: 'transferencia',
+    observacao: `Transferida de ${buscarSetor(deSetorId)?.nome ?? 'Triagem'} para ${destino.nome}.${motivo ? ` Motivo: ${String(motivo).trim()}` : ''}`,
+    ...(porUsuario ? { por: { id: porUsuario.id, nome: porUsuario.nome } } : {}),
+  })
+
+  persistir()
+  return { solicitacao, transferencia }
 }
 
 export function avaliarSolicitacao(protocolo, { nota, comentario }) {
@@ -472,28 +788,168 @@ export function listarSemelhantes({ tipo, endereco, latitude, longitude }) {
     }))
 }
 
-export function estatisticasGestao() {
+export function estatisticasGestao({ setorId } = {}) {
+  const base = setorId ? solicitacoes.filter((item) => item.setorId === setorId) : solicitacoes
   const agora = Date.now()
-  const abertas = solicitacoes.filter((item) => STATUS_ABERTOS.includes(item.status))
+  const abertas = base.filter((item) => STATUS_ABERTOS.includes(item.status))
   const atrasadas = abertas.filter((item) => new Date(item.slaEm).getTime() < agora)
-  const avaliacoes = solicitacoes.filter((item) => item.avaliacao?.nota)
+  const avaliacoes = base.filter((item) => item.avaliacao?.nota)
   const mediaAvaliacao = avaliacoes.length
     ? avaliacoes.reduce((soma, item) => soma + item.avaliacao.nota, 0) / avaliacoes.length
     : null
 
   return {
-    total: solicitacoes.length,
+    total: base.length,
     abertas: abertas.length,
     atrasadas: atrasadas.length,
-    concluidas: solicitacoes.filter((item) => item.status === 'concluida').length,
+    concluidas: base.filter((item) => item.status === 'concluida').length,
     avaliacoes: avaliacoes.length,
     mediaAvaliacao: mediaAvaliacao ? Number(mediaAvaliacao.toFixed(1)) : null,
   }
+}
+
+export function autenticarUsuario(email, senha) {
+  const alvo = normalizarEmail(email)
+  const usuario = usuarios.find((item) => item.email === alvo)
+  if (!usuario || !usuario.ativo || !verificarSenha(senha, usuario.senhaHash)) return null
+  return usuario
+}
+
+export function usuarioPublico(usuario) {
+  if (!usuario) return null
+  return {
+    id: usuario.id,
+    nome: usuario.nome,
+    email: usuario.email,
+    papel: usuario.papel,
+    setorId: usuario.setorId,
+    setor: setorPublico(usuario.setorId),
+    ativo: usuario.ativo,
+  }
+}
+
+export function listarUsuarios() {
+  return [...usuarios]
+    .sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR'))
+    .map(usuarioPublico)
+}
+
+export function buscarUsuario(id) {
+  return usuarios.find((usuario) => usuario.id === id) ?? null
+}
+
+export function criarUsuario({ nome, email, senha, papel, setorId }) {
+  const emailNormalizado = normalizarEmail(email)
+  if (!emailNormalizado) return { erro: 'email_obrigatorio' }
+  if (usuarios.some((usuario) => usuario.email === emailNormalizado)) {
+    return { erro: 'email_em_uso' }
+  }
+  if (!PAPEIS[papel]) return { erro: 'papel_invalido' }
+  const setor = papel === 'setor' ? buscarSetor(setorId) : null
+  if (papel === 'setor' && (!setor || !setor.ativo)) return { erro: 'setor_invalido' }
+
+  const usuario = normalizarUsuario({
+    id: `usuario-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    nome,
+    email: emailNormalizado,
+    senha,
+    papel,
+    setorId: papel === 'setor' ? setorId : (papel === 'triagem' ? 'triagem' : null),
+    ativo: true,
+    criadoEm: new Date().toISOString(),
+  })
+  usuarios.push(usuario)
+  persistir()
+  return { usuario: usuarioPublico(usuario) }
+}
+
+export function atualizarUsuario(id, { nome, email, senha, papel, setorId, ativo }) {
+  const usuario = buscarUsuario(id)
+  if (!usuario) return { erro: 'nao_encontrado' }
+
+  let emailNormalizado
+  if (email !== undefined) {
+    emailNormalizado = normalizarEmail(email)
+    if (!emailNormalizado) return { erro: 'email_obrigatorio' }
+    if (usuarios.some((outro) => outro.id !== id && outro.email === emailNormalizado)) {
+      return { erro: 'email_em_uso' }
+    }
+  }
+  if (papel !== undefined && !PAPEIS[papel]) return { erro: 'papel_invalido' }
+
+  // Calcula o estado final antes de alterar o objeto: uma validação que falha
+  // não pode deixar o usuário em memória com papel/setor inconsistentes.
+  const papelFinal = papel ?? usuario.papel
+  let setorFinal = null
+  if (papelFinal === 'setor') {
+    setorFinal = setorId !== undefined
+      ? setorId
+      : (usuario.papel === 'setor' ? usuario.setorId : null)
+    const setor = buscarSetor(setorFinal)
+    if (!setor || !setor.ativo) return { erro: 'setor_invalido' }
+  } else if (papelFinal === 'triagem') {
+    setorFinal = 'triagem'
+  }
+
+  if (emailNormalizado !== undefined) usuario.email = emailNormalizado
+  if (nome !== undefined) usuario.nome = String(nome).trim()
+  if (senha) usuario.senhaHash = gerarHashSenha(senha)
+  usuario.papel = papelFinal
+  usuario.setorId = setorFinal
+  if (ativo !== undefined) usuario.ativo = Boolean(ativo)
+  persistir()
+  return { usuario: usuarioPublico(usuario) }
+}
+
+export function criarSessao(usuarioId, { lembrar = false } = {}) {
+  const agora = Date.now()
+  const duracaoMs = lembrar
+    ? DIAS_SESSAO_LEMBRAR * 24 * 60 * 60 * 1000
+    : HORAS_SESSAO_PADRAO * 60 * 60 * 1000
+  const token = gerarTokenSessao()
+  const sessao = {
+    tokenHash: hashToken(token),
+    usuarioId,
+    lembrar: Boolean(lembrar),
+    criadaEm: new Date(agora).toISOString(),
+    expiraEm: new Date(agora + duracaoMs).toISOString(),
+  }
+  sessoes.push(sessao)
+  persistir()
+  return { token, sessao }
+}
+
+export function usuarioDaSessao(token) {
+  if (!token) return null
+  const alvo = hashToken(token)
+  const indice = sessoes.findIndex((sessao) => sessao.tokenHash === alvo)
+  if (indice < 0) return null
+  const sessao = sessoes[indice]
+  if (new Date(sessao.expiraEm).getTime() <= Date.now()) {
+    sessoes.splice(indice, 1)
+    return null
+  }
+  const usuario = buscarUsuario(sessao.usuarioId)
+  if (!usuario || !usuario.ativo) return null
+  return usuario
+}
+
+export function revogarSessao(token) {
+  if (!token) return false
+  const alvo = hashToken(token)
+  const tamanho = sessoes.length
+  for (let indice = sessoes.length - 1; indice >= 0; indice -= 1) {
+    if (sessoes[indice].tokenHash === alvo) sessoes.splice(indice, 1)
+  }
+  const removeu = sessoes.length !== tamanho
+  if (removeu) persistir()
+  return removeu
 }
 
 export function reiniciar() {
   solicitacoes.length = 0
   solicitacoes.push(...SOLICITACOES_SEMENTE.map(normalizarSolicitacao))
   sequencia = calcularSequencia()
+  sessoes.length = 0
   persistir()
 }

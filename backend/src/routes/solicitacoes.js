@@ -10,6 +10,7 @@ import {
   buscarSolicitacaoPorClientId,
   criarSolicitacao,
   listarSemelhantes,
+  setorPublico,
 } from '../store.js'
 
 const router = Router()
@@ -115,10 +116,33 @@ function validarSolicitacao(body = {}) {
 
 function decorar(solicitacao) {
   const restanteMs = new Date(solicitacao.slaEm).getTime() - Date.now()
-  // A rota pública nunca devolve contato nem o identificador idempotente do envio.
-  const { clientId: _clientId, contato: _contato, ...publica } = solicitacao
+  const transferencias = solicitacao.transferencias ?? []
+  // A rota pública nunca devolve contato, identificador idempotente, dados da
+  // triagem interna, motivo detalhado de transferência nem o nome de servidores
+  // que movimentaram o pedido.
+  const {
+    clientId: _clientId,
+    contato: _contato,
+    triagem: _triagem,
+    transferencias: _transferencias,
+    ...publica
+  } = solicitacao
   return {
     ...publica,
+    historico: (publica.historico ?? []).map(({ por: _por, ...evento }) => {
+      if (evento.tipo !== 'transferencia') return evento
+      const transferencia = transferencias.find((item) => item.em === evento.em)
+      const destino = setorPublico(transferencia?.paraSetorId)
+      return {
+        ...evento,
+        observacao: destino
+          ? `Solicitação encaminhada para ${destino.nome}.`
+          : 'Solicitação encaminhada para outro setor.',
+      }
+    }),
+    setor: setorPublico(solicitacao.setorId),
+    setorNome: setorPublico(solicitacao.setorId)?.nome ?? null,
+    transferida: transferencias.length > 0,
     slaDiasRestantes: Math.ceil(restanteMs / 86_400_000),
     slaVencido: STATUS_ABERTOS.includes(solicitacao.status) && restanteMs < 0,
   }
@@ -195,6 +219,8 @@ router.get('/:protocolo/status', (req, res) => {
       status: solicitacao.status,
       statusDescricao: STATUS[solicitacao.status],
       atualizadoEm: solicitacao.atualizadoEm,
+      setorNome: setorPublico(solicitacao.setorId)?.nome ?? null,
+      transferida: (solicitacao.transferencias ?? []).length > 0,
       slaEm: solicitacao.slaEm,
       slaVencido: STATUS_ABERTOS.includes(solicitacao.status) && new Date(solicitacao.slaEm).getTime() < Date.now(),
       avaliacao: solicitacao.avaliacao,

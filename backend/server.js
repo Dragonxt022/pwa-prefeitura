@@ -7,7 +7,12 @@ const servidor = app.listen(porta, () => {
   console.log(`API mockada em http://localhost:${porta}/api/health`)
   console.log('Dados persistidos em backend/data/estado.json (ou em DATA_FILE).')
   console.log(
-    `Painel de gestão em /gestao (token: ${process.env.ADMIN_TOKEN ? 'definido em ADMIN_TOKEN' : 'prefeitura-demo'}).`,
+    `Painel de gestão em /gestao (login: admin@prefeitura.demo ou triagem@prefeitura.demo; ${
+      process.env.DEMO_PASSWORD ? 'senha definida em DEMO_PASSWORD' : 'senha demo: prefeitura-demo'
+    }).`,
+  )
+  console.log(
+    `Triagem automática: ${String(process.env.TRIAGEM_IA_ATIVA ?? 'false') === 'true' ? 'ativada' : 'desativada (triagem manual)'}.`,
   )
 })
 

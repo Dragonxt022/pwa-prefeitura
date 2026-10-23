@@ -25,7 +25,8 @@ export function criarApp({ latenciaMs = Number(process.env.MOCK_LATENCY_MS ?? 20
 
   app.disable('x-powered-by')
   app.set('json spaces', 2)
-  app.use(cors({ origin: origensPermitidas() }))
+  // Credenciais são necessárias para o cookie HttpOnly da sessão de gestão.
+  app.use(cors({ origin: origensPermitidas(), credentials: true }))
   // Fotos são reenquadradas no cliente, mas ainda podem chegar com alguns
   // centenas de KB em base64. O limite maior vale apenas para este piloto.
   app.use(express.json({ limit: '2mb' }))
