@@ -2,6 +2,7 @@
   "name": "pwa-prefeitura",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Piloto de PWA de atendimento ao cidadao (React + Vite + vite-plugin-pwa + Express)",
   "engines": {
     "node": ">=20.19.0"

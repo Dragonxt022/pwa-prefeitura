@@ -47,3 +47,39 @@ export async function prepararFoto(arquivo) {
     URL.revokeObjectURL(url)
   }
 }
+
+/**
+ * Prepara logo/ícone preservando transparência e limitando o tamanho antes do
+ * envio. O backend também valida o data URL.
+ */
+export async function prepararMarca(arquivo, { ladoMaximo = 512 } = {}) {
+  if (!arquivo) throw new Error('Escolha uma imagem.')
+  if (!arquivo.type.startsWith('image/')) {
+    throw new Error('Escolha um arquivo de imagem.')
+  }
+  if (arquivo.size > 6 * 1024 * 1024) {
+    throw new Error('A imagem deve ter no máximo 6 MB.')
+  }
+
+  const url = URL.createObjectURL(arquivo)
+  try {
+    const imagem = await carregarImagem(url)
+    const escala = Math.min(1, ladoMaximo / Math.max(imagem.width, imagem.height))
+    const largura = Math.max(1, Math.round(imagem.width * escala))
+    const altura = Math.max(1, Math.round(imagem.height * escala))
+    const canvas = document.createElement('canvas')
+    canvas.width = largura
+    canvas.height = altura
+    const contexto = canvas.getContext('2d')
+    contexto.clearRect(0, 0, largura, altura)
+    contexto.drawImage(imagem, 0, 0, largura, altura)
+
+    const dataUrl = canvas.toDataURL('image/png')
+    if (dataUrl.length > 1_200_000) {
+      throw new Error('A imagem ficou muito grande. Escolha um arquivo menor.')
+    }
+    return { dataUrl, largura, altura }
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}

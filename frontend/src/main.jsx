@@ -2,6 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
+import { ConfiguracoesProvider } from './context/Configuracoes.jsx'
+import { I18nProvider } from './i18n/index.jsx'
 import { aplicarPreferenciasAcessibilidade } from './lib/acessibilidade.js'
 import './index.css'
 
@@ -14,8 +16,12 @@ if (typeof caches !== 'undefined') {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
+    <I18nProvider>
+      <ConfiguracoesProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </ConfiguracoesProvider>
+    </I18nProvider>
   </StrictMode>,
 )

@@ -1,7 +1,9 @@
+import { CODIGOS_ERRO, mensagemDoErro } from './erros.js'
+
 const BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '')
 
 export class ApiError extends Error {
-  constructor(mensagem, { status = 0, codigo = 'desconhecido', campos, offline = false } = {}) {
+  constructor(mensagem, { status = 0, codigo = CODIGOS_ERRO.DESCONHECIDO, campos, offline = false } = {}) {
     super(mensagem)
     this.name = 'ApiError'
     this.status = status
@@ -11,15 +13,16 @@ export class ApiError extends Error {
   }
 }
 
-const SEM_CONEXAO = 'Sem conexão com a internet. Verifique sua rede e tente novamente.'
-
 async function requisicao(
   caminho,
   { metodo = 'GET', corpo, timeout = 8000, signal, cabecalhos, completo = false } = {},
 ) {
   // Escritas não podem ser respondidas pelo cache do Service Worker.
   if (metodo !== 'GET' && !navigator.onLine) {
-    throw new ApiError(SEM_CONEXAO, { codigo: 'offline', offline: true })
+    throw new ApiError(mensagemDoErro(CODIGOS_ERRO.OFFLINE), {
+      codigo: CODIGOS_ERRO.OFFLINE,
+      offline: true,
+    })
   }
 
   const controller = new AbortController()
@@ -46,11 +49,15 @@ async function requisicao(
 
     if (!resposta.ok) {
       const erro = payload?.erro
-      throw new ApiError(erro?.mensagem || `Não foi possível concluir a operação (${resposta.status}).`, {
-        status: resposta.status,
-        codigo: erro?.codigo || 'http_error',
-        campos: erro?.campos,
-      })
+      const codigo = erro?.codigo || CODIGOS_ERRO.HTTP_ERROR
+      throw new ApiError(
+        erro?.mensagem || mensagemDoErro(codigo, `Não foi possível concluir a operação (${resposta.status}).`),
+        {
+          status: resposta.status,
+          codigo,
+          campos: erro?.campos,
+        },
+      )
     }
 
     // A listagem da gestão precisa de dados + total + estatísticas no mesmo objeto.
@@ -59,13 +66,23 @@ async function requisicao(
     if (erro instanceof ApiError) throw erro
 
     if (erro?.name === 'AbortError') {
-      throw new ApiError('O serviço demorou para responder. Tente novamente em instantes.', {
-        codigo: 'timeout',
-        offline: !navigator.onLine,
+      const semRede = !navigator.onLine
+      throw new ApiError(mensagemDoErro(CODIGOS_ERRO.TIMEOUT), {
+        codigo: semRede ? CODIGOS_ERRO.OFFLINE : CODIGOS_ERRO.TIMEOUT,
+        offline: semRede,
       })
     }
 
-    throw new ApiError(SEM_CONEXAO, { codigo: 'offline', offline: true })
+    if (!navigator.onLine) {
+      throw new ApiError(mensagemDoErro(CODIGOS_ERRO.OFFLINE), {
+        codigo: CODIGOS_ERRO.OFFLINE,
+        offline: true,
+      })
+    }
+
+    throw new ApiError(mensagemDoErro(CODIGOS_ERRO.HTTP_ERROR), {
+      codigo: CODIGOS_ERRO.HTTP_ERROR,
+    })
   } finally {
     clearTimeout(timer)
     signal?.removeEventListener('abort', cancelar)
@@ -75,6 +92,8 @@ async function requisicao(
 export const listarServicos = () => requisicao('/servicos')
 
 export const listarAvisos = () => requisicao('/avisos')
+
+export const obterConfiguracoesPublicas = () => requisicao('/configuracoes', { timeout: 8000 })
 
 export const obterPerfil = () => requisicao('/perfil')
 
@@ -125,6 +144,30 @@ export const atualizarUsuarioGestao = (id, dados) =>
     metodo: 'PATCH',
     corpo: dados,
     timeout: 12000,
+  })
+
+export const obterConfiguracoesGestao = () =>
+  requisicao('/gestao/configuracoes', { timeout: 12000, completo: true })
+
+export const salvarConfiguracoesGestao = (secao, dados) =>
+  requisicao(`/gestao/configuracoes/${encodeURIComponent(secao)}`, {
+    metodo: 'PUT',
+    corpo: dados,
+    timeout: 15000,
+  })
+
+export const testarEmailGestao = (dados) =>
+  requisicao('/gestao/configuracoes/email/teste', {
+    metodo: 'POST',
+    corpo: dados,
+    timeout: 25000,
+  })
+
+export const testarIAConfiguracaoGestao = (dados) =>
+  requisicao('/gestao/configuracoes/ia/teste', {
+    metodo: 'POST',
+    corpo: dados,
+    timeout: 35000,
   })
 
 export const listarGestao = ({ status, tipo, busca, setor, ids, limite = 100 } = {}) => {

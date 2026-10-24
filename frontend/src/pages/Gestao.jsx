@@ -14,6 +14,7 @@ import {
   RefreshCw,
   Search,
   Send,
+  Settings2,
   ShieldCheck,
   Star,
   TriangleAlert,
@@ -25,6 +26,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import logoColorido from '../assets/logo-icone-colorido.png'
 import { Badge, StatusBadge } from '../components/StatusBadge'
+import { useConfiguracoes } from '../context/Configuracoes.jsx'
+import { useI18n } from '../i18n/index.jsx'
 import {
   atualizarStatusGestao,
   atualizarUsuarioGestao,
@@ -130,8 +133,12 @@ export default function Gestao() {
   const [formUsuario, setFormUsuario] = useState(FORM_USUARIO_INICIAL)
   const [salvandoUsuario, setSalvandoUsuario] = useState(false)
   const detalheRef = useRef(null)
+  const { identidade } = useConfiguracoes()
+  const { t } = useI18n()
 
   const usuario = sessao?.usuario ?? null
+  const nomeApp = identidade.nome || 'Prefeitura Digital'
+  const logoMarca = identidade.logo || logoColorido
   const podeVerTodos = usuario?.papel === 'admin' || usuario?.papel === 'triagem'
   const podeGerenciarUsuarios = usuario?.papel === 'admin'
 
@@ -500,8 +507,8 @@ export default function Gestao() {
           Pular para o conteúdo
         </a>
         <header className="gestao-login__marca">
-          <img src={logoColorido} alt="" />
-          <span>Prefeitura Digital</span>
+          <img src={logoMarca} alt="" />
+          <span>{nomeApp}</span>
           <span className="marca__selo">demo</span>
         </header>
 
@@ -601,9 +608,9 @@ export default function Gestao() {
       </a>
       <header className="gestao-topo">
         <Link className="gestao-topo__marca" to="/">
-          <img src={logoColorido} alt="" />
+          <img src={logoMarca} alt="" />
           <span>
-            <strong>Prefeitura Digital</strong>
+            <strong>{nomeApp}</strong>
             <small>Painel de gestão</small>
           </span>
         </Link>
@@ -625,6 +632,12 @@ export default function Gestao() {
                 <Users aria-hidden="true" />
                 {mostrarUsuarios ? 'Fechar usuários' : 'Usuários'}
               </button>
+            )}
+            {podeGerenciarUsuarios && (
+              <Link className="botao botao--secundario botao--pequeno" to="/gestao/configuracoes">
+                <Settings2 aria-hidden="true" />
+                {t('admin.configuracoes')}
+              </Link>
             )}
             <Link className="botao botao--secundario botao--pequeno" to="/">
               <ArrowLeft aria-hidden="true" />
@@ -1374,7 +1387,7 @@ export default function Gestao() {
         <section className="area-impressao" aria-label={`Impressão: ${impressao.rotulo}`}>
           <header className="impressao__cabecalho">
             <div>
-              <strong>Prefeitura Digital</strong>
+              <strong>{nomeApp}</strong>
               <span>Painel de gestão · {impressao.rotulo}</span>
             </div>
             <span>{formatarDataHora(impressao.criadoEm)}</span>

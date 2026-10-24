@@ -1,11 +1,26 @@
-import { BellRing, Check, Home, Plus, Search, UploadCloud, UserRound, WifiOff } from 'lucide-react'
+import {
+  BellRing,
+  Check,
+  ExternalLink,
+  Home,
+  Mail,
+  Phone,
+  Plus,
+  Search,
+  UploadCloud,
+  UserRound,
+  WifiOff,
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import logoColorido from '../assets/logo-icone-colorido.png'
 import logoBranco from '../assets/logo-icone-branco.png'
+import { useConfiguracoes } from '../context/Configuracoes.jsx'
 import { useAtualizacoes } from '../hooks/useAtualizacoes'
 import { useFilaSolicitacoes } from '../hooks/useFilaSolicitacoes'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
+import { ROTULOS_REDES } from '../lib/identidade'
+import { useI18n } from '../i18n/index.jsx'
 
 const ITENS = [
   { para: '/', rotulo: 'Início', Icone: Home, fim: true },
@@ -24,7 +39,26 @@ export default function Layout() {
   const { pathname } = useLocation()
   const { naoLidas } = useAtualizacoes()
   const { pendentes, ultimo } = useFilaSolicitacoes()
+  const { identidade, rodape } = useConfiguracoes()
+  const { t } = useI18n()
   const [envioRecente, setEnvioRecente] = useState(null)
+  const nomeApp = identidade.nome || 'Prefeitura Digital'
+  const logo = identidade.logo || null
+  const contatos = [
+    ...(identidade.emails ?? []).map((email) => ({
+      tipo: 'email',
+      valor: email,
+      href: `mailto:${email}`,
+      Icone: Mail,
+    })),
+    ...(identidade.telefones ?? []).map((telefone) => ({
+      tipo: 'telefone',
+      valor: telefone,
+      href: `tel:${telefone.replace(/[^\d+]/g, '')}`,
+      Icone: Phone,
+    })),
+  ]
+  const redes = identidade.redesSociais ?? []
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
@@ -47,19 +81,23 @@ export default function Layout() {
   return (
     <div className="app">
       <a className="pular-para-conteudo" href="#conteudo">
-        Pular para o conteúdo
+        {t('app.pularConteudo')}
       </a>
 
       <header className="cabecalho">
         <div className="cabecalho__interno">
-          <NavLink to="/" className="marca" aria-label="Prefeitura Digital, página inicial">
+          <NavLink to="/" className="marca" aria-label={`${nomeApp}, página inicial`}>
             <span className="marca__simbolo" aria-hidden="true">
-              <picture>
-                <source srcSet={logoBranco} media="(prefers-color-scheme: dark)" />
-                <img src={logoColorido} alt="" />
-              </picture>
+              {logo ? (
+                <img src={logo} alt="" />
+              ) : (
+                <picture>
+                  <source srcSet={logoBranco} media="(prefers-color-scheme: dark)" />
+                  <img src={logoColorido} alt="" />
+                </picture>
+              )}
             </span>
-            <span className="marca__nome">Prefeitura Digital</span>
+            <span className="marca__nome">{nomeApp}</span>
             <span className="marca__selo">demo</span>
           </NavLink>
 
@@ -114,18 +152,47 @@ export default function Layout() {
       </main>
 
       <footer className="rodape">
-        <span className="rodape__ponto" aria-hidden="true" />
-        <span>Demonstração com dados fictícios · v0.1.0</span>
-        <span className="rodape__links">
-          <Link to="/servicos">Catálogo</Link>
-          <Link to="/gestao">Gestão</Link>
-        </span>
-        {naoLidas > 0 && (
-          <span className="rodape__aviso">
-            <BellRing aria-hidden="true" />
-            {naoLidas === 1 ? '1 atualização' : `${naoLidas} atualizações`}
-          </span>
+        <div className="rodape__identidade">
+          <span className="rodape__ponto" aria-hidden="true" />
+          <span>{rodape}</span>
+        </div>
+
+        {(contatos.length > 0 || redes.length > 0) && (
+          <div className="rodape__dados">
+            {contatos.map(({ tipo, valor, href, Icone }) => (
+              <a key={`${tipo}-${valor}`} href={href} className="rodape__contato">
+                <Icone aria-hidden="true" />
+                <span>{valor}</span>
+              </a>
+            ))}
+            {redes.map((rede) => (
+              <a
+                key={rede.id}
+                href={rede.url}
+                className="rodape__rede"
+                target="_blank"
+                rel="noreferrer noopener"
+                aria-label={`${rede.rotulo || ROTULOS_REDES[rede.rede] || rede.rede} (abre em nova aba)`}
+              >
+                <ExternalLink aria-hidden="true" />
+                <span>{rede.rotulo || ROTULOS_REDES[rede.rede] || rede.rede}</span>
+              </a>
+            ))}
+          </div>
         )}
+
+        <div className="rodape__links">
+          <Link to="/servicos">{t('app.catalogo')}</Link>
+          <Link to="/gestao">{t('app.gestao')}</Link>
+          {naoLidas > 0 && (
+            <span className="rodape__aviso">
+              <BellRing aria-hidden="true" />
+              {naoLidas === 1
+                ? t('app.atualizacao')
+                : t('app.atualizacoes', { quantidade: naoLidas })}
+            </span>
+          )}
+        </div>
       </footer>
 
       <nav className="nav-mobile" aria-label="Navegação principal">

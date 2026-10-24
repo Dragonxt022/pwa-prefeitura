@@ -18,6 +18,7 @@ import { IlustracaoBusca } from '../components/Ilustracoes'
 import { SkeletonBloco } from '../components/Loading'
 import { Badge, StatusBadge } from '../components/StatusBadge'
 import { consultarSolicitacao } from '../lib/api'
+import { CODIGOS_ERRO } from '../lib/erros'
 import {
   listarConsultas,
   listarPedidos,
@@ -124,7 +125,7 @@ export default function Acompanhar() {
   const status = resultado ? infoStatus(resultado.status) : null
   const visual = resultado ? visualStatus(resultado.status) : null
   const prazo = resultado ? infoPrazo(resultado) : null
-  const naoEncontrado = erro?.codigo === 'nao_encontrado'
+  const naoEncontrado = erro?.codigo === CODIGOS_ERRO.NAO_ENCONTRADO
 
   return (
     <div className="pagina pagina--estreita">

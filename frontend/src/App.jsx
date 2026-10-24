@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
 import Acompanhar from './pages/Acompanhar'
 import Gestao from './pages/Gestao'
+import GestaoConfiguracoes from './pages/GestaoConfiguracoes'
 import Home from './pages/Home'
 import NaoEncontrada from './pages/NaoEncontrada'
 import NovaSolicitacao from './pages/NovaSolicitacao'
@@ -12,6 +13,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="gestao" element={<Gestao />} />
+      <Route path="gestao/configuracoes" element={<GestaoConfiguracoes />} />
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="servicos" element={<Servicos />} />

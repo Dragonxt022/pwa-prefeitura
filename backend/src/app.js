@@ -1,7 +1,14 @@
 import cors from 'cors'
 import express from 'express'
-import { AppError, naoEncontrado } from './errors.js'
+import {
+  AppError,
+  CODIGOS_ERRO,
+  corpoErro,
+  naoEncontrado,
+  statusDoErro,
+} from './errors.js'
 import avisosRouter from './routes/avisos.js'
+import configuracoesRouter from './routes/configuracoes.js'
 import gestaoRouter from './routes/gestao.js'
 import perfilRouter from './routes/perfil.js'
 import servicosRouter from './routes/servicos.js'
@@ -50,6 +57,7 @@ export function criarApp({ latenciaMs = Number(process.env.MOCK_LATENCY_MS ?? 20
 
   app.use('/api/servicos', servicosRouter)
   app.use('/api/avisos', avisosRouter)
+  app.use('/api/configuracoes', configuracoesRouter)
   app.use('/api/perfil', perfilRouter)
   app.use('/api/solicitacoes', solicitacoesRouter)
   app.use('/api/gestao', gestaoRouter)
@@ -60,27 +68,35 @@ export function criarApp({ latenciaMs = Number(process.env.MOCK_LATENCY_MS ?? 20
 
   app.use((erro, req, res, _next) => {
     if (erro instanceof AppError) {
-      return res.status(erro.status).json({
-        erro: { codigo: erro.codigo, mensagem: erro.mensagem, campos: erro.campos },
-      })
+      return res
+        .status(erro.status)
+        .json(corpoErro(erro.codigo, { mensagem: erro.mensagem, campos: erro.campos }))
     }
 
     if (erro?.type === 'entity.parse.failed') {
-      return res.status(400).json({
-        erro: { codigo: 'json_invalido', mensagem: 'O corpo da requisição não é um JSON válido.' },
-      })
+      return res
+        .status(statusDoErro(CODIGOS_ERRO.JSON_INVALIDO))
+        .json(corpoErro(CODIGOS_ERRO.JSON_INVALIDO))
     }
 
     if (erro?.type === 'entity.too.large') {
-      return res.status(413).json({
-        erro: { codigo: 'corpo_muito_grande', mensagem: 'O conteúdo enviado excede o limite de 2 MB.' },
-      })
+      return res
+        .status(statusDoErro(CODIGOS_ERRO.CORPO_MUITO_GRANDE))
+        .json(
+          corpoErro(CODIGOS_ERRO.CORPO_MUITO_GRANDE, {
+            mensagem: 'O conteúdo enviado excede o limite de 2 MB.',
+          }),
+        )
     }
 
     console.error('[erro não tratado]', erro)
-    return res.status(500).json({
-      erro: { codigo: 'erro_interno', mensagem: 'Erro inesperado no servidor de simulação.' },
-    })
+    return res
+      .status(statusDoErro(CODIGOS_ERRO.ERRO_INTERNO))
+      .json(
+        corpoErro(CODIGOS_ERRO.ERRO_INTERNO, {
+          mensagem: 'Erro inesperado no servidor de simulação.',
+        }),
+      )
   })
 
   return app

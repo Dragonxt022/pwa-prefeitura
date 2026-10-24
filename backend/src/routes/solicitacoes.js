@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { naoEncontrado, validacao } from '../errors.js'
+import { classificarComModelo } from '../ia.js'
 import { criarRateLimit } from '../middlewares/rate-limit.js'
+import { notificarEvento } from '../notificacoes.js'
 import {
   STATUS,
   STATUS_ABERTOS,
@@ -8,10 +10,13 @@ import {
   buscarServico,
   buscarSolicitacao,
   buscarSolicitacaoPorClientId,
+  configuracoes,
   criarSolicitacao,
   listarSemelhantes,
   setorPublico,
+  setores,
 } from '../store.js'
+import { classificarSolicitacao, MODELO_TRIAGEM } from '../triagem.js'
 
 const router = Router()
 
@@ -158,14 +163,53 @@ router.get('/semelhantes', (req, res) => {
   res.json({ dados })
 })
 
-router.post('/', criarRateLimit({ janelaMs: 60_000, maximo: 10 }), (req, res) => {
+async function obterSugestao(dados) {
+  const ia = configuracoes.ia
+  if (!ia.ativo || ia.provedor === 'regras') {
+    return classificarSolicitacao({ ...dados, setores })
+  }
+
+  try {
+    return await classificarComModelo({
+      config: ia,
+      solicitacao: dados,
+      setores,
+    })
+  } catch (erro) {
+    // A triagem manual nunca fica bloqueada por indisponibilidade do modelo.
+    return {
+      ...classificarSolicitacao({ ...dados, setores }),
+      origem: 'regras-fallback',
+      modelo: MODELO_TRIAGEM,
+      fallback: true,
+      erroModelo: String(erro?.message || 'Falha ao consultar o modelo.').slice(0, 300),
+    }
+  }
+}
+
+router.post('/', criarRateLimit({ janelaMs: 60_000, maximo: 10 }), async (req, res) => {
   const dados = validarSolicitacao(req.body)
   const existente = buscarSolicitacaoPorClientId(dados.clientId)
   if (existente) {
     return res.status(200).json({ dados: decorar(existente), criada: false })
   }
 
-  const { solicitacao, criada } = criarSolicitacao(dados)
+  const sugestao = await obterSugestao(dados)
+  const { solicitacao, criada } = criarSolicitacao({ ...dados, sugestao })
+  if (criada) {
+    void notificarEvento('nova_solicitacao', {
+      protocolo: solicitacao.protocolo,
+      tipo: solicitacao.tipo,
+      tipoTitulo: solicitacao.tipoTitulo,
+      setorNome: setorPublico(solicitacao.setorId)?.nome,
+      status: solicitacao.status,
+      endereco: solicitacao.endereco,
+      descricao: solicitacao.descricao,
+      detalhe: solicitacao.triagem?.automatica
+        ? `Triagem automática aplicada (${solicitacao.triagem.origem ?? 'regras'}).`
+        : 'Aguardando triagem manual.',
+    }).catch((erro) => console.warn('[notificacao]', erro.message))
+  }
   return res.status(criada ? 201 : 200).json({ dados: decorar(solicitacao), criada })
 })
 
@@ -197,6 +241,15 @@ router.post('/:protocolo/avaliacao', (req, res) => {
   }
 
   const atualizada = avaliarSolicitacao(solicitacao.protocolo, { nota, comentario })
+  void notificarEvento('avaliacao', {
+    protocolo: atualizada.protocolo,
+    tipo: atualizada.tipo,
+    tipoTitulo: atualizada.tipoTitulo,
+    setorNome: setorPublico(atualizada.setorId)?.nome,
+    status: atualizada.status,
+    nota,
+    comentario,
+  }).catch((erro) => console.warn('[notificacao]', erro.message))
   return res.status(201).json({ dados: decorar(atualizada) })
 })
 

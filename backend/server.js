@@ -1,4 +1,5 @@
 import { criarApp } from './src/app.js'
+import { triagemAutomaticaAtiva } from './src/store.js'
 
 const porta = Number(process.env.PORT ?? 3000)
 const app = criarApp()
@@ -11,8 +12,9 @@ const servidor = app.listen(porta, () => {
       process.env.DEMO_PASSWORD ? 'senha definida em DEMO_PASSWORD' : 'senha demo: prefeitura-demo'
     }).`,
   )
+  console.log('Configurações administrativas em /gestao/configuracoes (somente admin).')
   console.log(
-    `Triagem automática: ${String(process.env.TRIAGEM_IA_ATIVA ?? 'false') === 'true' ? 'ativada' : 'desativada (triagem manual)'}.`,
+    `Triagem automática: ${triagemAutomaticaAtiva() ? 'ativada' : 'desativada (triagem manual)'}.`,
   )
 })
 

@@ -7,9 +7,9 @@
  *
  *   { setorId, setorNome, confianca, justificativa, origem, modelo }
  *
- * Para ativar a triagem automática, defina TRIAGEM_IA_ATIVA=true no backend.
- * Quando o classificador evoluir, basta substituir a implementação de
- * classificarSolicitacao mantendo o mesmo contrato.
+ * Para ativar a triagem automática, use a aba de IA do painel de gestão. O
+ * valor inicial pode ser semeado com TRIAGEM_IA_ATIVA=true no backend. Quando
+ * um modelo externo é escolhido, o adaptador em ia.js usa este mesmo contrato.
  */
 
 const REGRAS = [
@@ -81,15 +81,6 @@ function normalizar(valor) {
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
-}
-
-function ativaPorVariavel(valor) {
-  return ['1', 'true', 'sim', 'on'].includes(String(valor ?? '').toLowerCase())
-}
-
-/** A flag pode ser consultada pela API e pelo painel administrativo. */
-export function triagemAutomaticaAtiva() {
-  return ativaPorVariavel(process.env.TRIAGEM_IA_ATIVA)
 }
 
 /**

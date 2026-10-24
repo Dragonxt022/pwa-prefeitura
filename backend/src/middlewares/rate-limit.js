@@ -1,3 +1,9 @@
+import {
+  CODIGOS_ERRO,
+  corpoErro,
+  statusDoErro,
+} from '../../../shared/codigos-erro.js'
+
 /**
  * Rate limit simples em memoria (fixed window por IP).
  * Suficiente para o piloto; em producao usar Redis e limites por rota/usuario.
@@ -18,12 +24,9 @@ export function criarRateLimit({ janelaMs = 60_000, maximo = 10 } = {}) {
     registro.total += 1
     if (registro.total > maximo) {
       res.set('Retry-After', String(Math.ceil((registro.inicio + janelaMs - agora) / 1000)))
-      return res.status(429).json({
-        erro: {
-          codigo: 'limite_excedido',
-          mensagem: 'Muitas solicitacoes em sequencia. Aguarde um minuto e tente novamente.',
-        },
-      })
+      return res
+        .status(statusDoErro(CODIGOS_ERRO.LIMITE_EXCEDIDO))
+        .json(corpoErro(CODIGOS_ERRO.LIMITE_EXCEDIDO))
     }
 
     return next()

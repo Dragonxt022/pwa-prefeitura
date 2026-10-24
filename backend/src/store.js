@@ -13,7 +13,13 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { gerarHashSenha, gerarTokenSessao, hashToken, verificarSenha } from './auth.js'
-import { classificarSolicitacao, MODELO_TRIAGEM, triagemAutomaticaAtiva } from './triagem.js'
+import {
+  configuracoesAdmin,
+  configuracoesPublicas,
+  criarConfiguracoesPadrao,
+  normalizarConfiguracoes,
+} from './configuracoes.js'
+import { classificarSolicitacao, MODELO_TRIAGEM } from './triagem.js'
 
 const raizBackend = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const arquivoDados = process.env.DATA_FILE
@@ -364,6 +370,7 @@ export const solicitacoes = []
 export const usuarios = []
 /** @type {Array<object>} */
 export const sessoes = []
+export const configuracoes = criarConfiguracoesPadrao()
 let sequencia = 3
 
 function adicionarDias(iso, dias) {
@@ -459,6 +466,7 @@ function carregar() {
   let sequenciaSalva = 0
   let usuariosCarregados = null
   let sessoesCarregadas = []
+  let configuracoesCarregadas = null
 
   if (existsSync(arquivoDados)) {
     try {
@@ -471,6 +479,9 @@ function carregar() {
         usuariosCarregados = salvo.usuarios
       }
       if (Array.isArray(salvo.sessoes)) sessoesCarregadas = salvo.sessoes
+      if (salvo.configuracoes && typeof salvo.configuracoes === 'object') {
+        configuracoesCarregadas = salvo.configuracoes
+      }
     } catch (erro) {
       console.warn(`[dados] não foi possível ler ${arquivoDados}:`, erro.message)
     }
@@ -484,6 +495,8 @@ function carregar() {
   usuarios.push(...(usuariosCarregados
     ? usuariosCarregados.map(normalizarUsuario)
     : criarUsuariosSemente()))
+
+  Object.assign(configuracoes, normalizarConfiguracoes(configuracoesCarregadas ?? {}))
 
   const agora = Date.now()
   sessoes.length = 0
@@ -501,12 +514,13 @@ function persistir() {
     writeFileSync(
       arquivoDados,
       JSON.stringify({
-        versao: 2,
+        versao: 3,
         salvoEm: new Date().toISOString(),
         sequencia,
         solicitacoes,
         usuarios,
         sessoes,
+        configuracoes,
       }, null, 2),
     )
   } catch (erro) {
@@ -515,6 +529,51 @@ function persistir() {
 }
 
 carregar()
+
+/** A configuração persistida passa a ser a fonte de verdade da automação. */
+export function triagemAutomaticaAtiva() {
+  return Boolean(configuracoes.ia.aplicarAutomaticamente)
+}
+
+export function obterConfiguracoesAdmin() {
+  return configuracoesAdmin(configuracoes)
+}
+
+export function obterConfiguracoesPublicas() {
+  return configuracoesPublicas(configuracoes)
+}
+
+export function salvarSecaoConfiguracoes(secao, dados, usuario) {
+  if (!['identidade', 'email', 'ia'].includes(secao)) return null
+  configuracoes[secao] = dados
+  configuracoes.atualizadoEm = new Date().toISOString()
+  configuracoes.atualizadoPor = usuario
+    ? { id: usuario.id, nome: usuario.nome }
+    : null
+  persistir()
+  return configuracoesAdmin(configuracoes)
+}
+
+export function registrarNotificacao(registro) {
+  const notificacao = {
+    id: `notificacao-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    evento: String(registro.evento ?? 'evento'),
+    canal: 'email',
+    status: ['enviado', 'erro', 'ignorado'].includes(registro.status)
+      ? registro.status
+      : 'erro',
+    destinatarios: Array.isArray(registro.destinatarios) ? registro.destinatarios : [],
+    assunto: String(registro.assunto ?? ''),
+    protocolo: registro.protocolo ? String(registro.protocolo) : null,
+    codigo: registro.codigo ? String(registro.codigo).slice(0, 80) : null,
+    erro: registro.erro ? String(registro.erro).slice(0, 400) : null,
+    em: new Date().toISOString(),
+  }
+  configuracoes.notificacoes.unshift(notificacao)
+  configuracoes.notificacoes = configuracoes.notificacoes.slice(0, 30)
+  persistir()
+  return notificacao
+}
 
 export function listarServicos() {
   return [...servicos].sort((a, b) => a.ordem - b.ordem)
@@ -594,16 +653,20 @@ export function criarSolicitacao({
   foto = null,
   localizacao = null,
   clientId = null,
+  sugestao: sugestaoExterna = null,
 }) {
   const existente = buscarSolicitacaoPorClientId(clientId)
   if (existente) return { solicitacao: existente, criada: false }
 
   const agora = new Date().toISOString()
   const servico = buscarServico(tipo)
-  const sugestao = classificarSolicitacao({ tipo, descricao, endereco, setores })
+  const sugestao = sugestaoExterna ?? classificarSolicitacao({ tipo, descricao, endereco, setores })
   const automatica = triagemAutomaticaAtiva()
-  const setorInicialId = automatica && sugestao.confianca >= 0.5
-    ? sugestao.setorId
+  const setorSugerido = setores.find(
+    (setor) => setor.id === sugestao.setorId && !setor.central,
+  )
+  const setorInicialId = automatica && sugestao.confianca >= 0.5 && setorSugerido
+    ? setorSugerido.id
     : 'triagem'
   sequencia += 1
 

@@ -1,6 +1,25 @@
 import { Router } from 'express'
-import { AppError, naoEncontrado, validacao } from '../errors.js'
+import {
+  CODIGOS_ERRO,
+  mensagemDoErro,
+} from '../../../shared/codigos-erro.js'
+import {
+  opcoesConfiguracoes,
+  prepararEmail,
+  prepararIA,
+  prepararIdentidade,
+  provedorIA,
+} from '../configuracoes.js'
+import {
+  credenciaisInvalidas,
+  naoAutorizado,
+  naoEncontrado,
+  semPermissao,
+  validacao,
+} from '../errors.js'
+import { testarModelo } from '../ia.js'
 import { criarRateLimit } from '../middlewares/rate-limit.js'
+import { notificarEvento, testarEnvioEmail } from '../notificacoes.js'
 import {
   PAPEIS,
   STATUS,
@@ -11,20 +30,23 @@ import {
   buscarServico,
   buscarSolicitacao,
   buscarUsuario,
+  configuracoes,
   criarSessao,
   criarUsuario,
   estatisticasGestao,
   listarSetores,
   listarSolicitacoes,
   listarUsuarios,
+  obterConfiguracoesAdmin,
   revogarSessao,
+  salvarSecaoConfiguracoes,
   setorPublico,
   transferirSolicitacao,
+  triagemAutomaticaAtiva,
   usuarioDaSessao,
   usuarioPublico,
   usuarios,
 } from '../store.js'
-import { triagemAutomaticaAtiva } from '../triagem.js'
 
 const router = Router()
 const COOKIE_SESSAO = 'prefeitura_sessao'
@@ -97,7 +119,7 @@ function autenticacaoDaRequisicao(req) {
 function exigirSessao(req, _res, next) {
   const autenticacao = autenticacaoDaRequisicao(req)
   if (!autenticacao) {
-    throw new AppError(401, 'nao_autorizado', 'Sessão ausente ou expirada. Entre novamente.')
+    throw naoAutorizado('Sessão ausente ou expirada. Entre novamente.')
   }
   req.usuario = autenticacao.usuario
   req.sessaoToken = autenticacao.token
@@ -106,7 +128,7 @@ function exigirSessao(req, _res, next) {
 
 function exigirAdmin(req, _res, next) {
   if (req.usuario?.papel !== 'admin') {
-    throw new AppError(403, 'sem_permissao', 'Apenas administradores podem executar esta ação.')
+    throw semPermissao('Apenas administradores podem executar esta ação.')
   }
   next()
 }
@@ -185,7 +207,7 @@ router.post('/login', criarRateLimit({ janelaMs: 60_000, maximo: 20 }), (req, re
 
   const usuario = autenticarUsuario(email, senha)
   if (!usuario) {
-    throw new AppError(401, 'credenciais_invalidas', 'E-mail ou senha inválidos.')
+    throw credenciaisInvalidas('E-mail ou senha inválidos.')
   }
 
   const lembrar = booleano(req.body?.lembrar)
@@ -221,6 +243,69 @@ router.get('/sessao', (req, res) => {
 
 router.get('/setores', (_req, res) => {
   res.json({ dados: listarSetores() })
+})
+
+router.get('/configuracoes', exigirAdmin, (_req, res) => {
+  res.json({
+    dados: obterConfiguracoesAdmin(),
+    opcoes: opcoesConfiguracoes(),
+  })
+})
+
+router.put('/configuracoes/:secao', exigirAdmin, (req, res) => {
+  const secao = texto(req.params.secao)
+  let preparado
+  if (secao === 'identidade') {
+    preparado = prepararIdentidade(req.body, configuracoes.identidade)
+  } else if (secao === 'email') {
+    preparado = prepararEmail(req.body, configuracoes.email)
+  } else if (secao === 'ia') {
+    preparado = prepararIA(req.body, configuracoes.ia)
+  } else {
+    throw naoEncontrado('Seção de configuração desconhecida.')
+  }
+
+  if (preparado.campos) {
+    throw validacao(preparado.campos, 'Revise os campos destacados.')
+  }
+
+  const dados = salvarSecaoConfiguracoes(secao, preparado.dados, req.usuario)
+  res.json({ dados })
+})
+
+router.post('/configuracoes/email/teste', exigirAdmin, async (req, res) => {
+  const destinatario = texto(req.body?.destinatario)
+  const resultado = await testarEnvioEmail({ destinatario })
+  res.json({
+    dados: {
+      ...resultado,
+      notificacoes: obterConfiguracoesAdmin().notificacoes,
+    },
+  })
+})
+
+router.post('/configuracoes/ia/teste', exigirAdmin, async (req, res) => {
+  const preparado = prepararIA(req.body, configuracoes.ia)
+  if (preparado.campos) {
+    throw validacao(preparado.campos, 'Revise a configuração antes de testar.')
+  }
+  const provedor = provedorIA(preparado.dados.provedor)
+  if (provedor.requerChave && !preparado.dados.apiKey) {
+    return res.json({
+      dados: {
+        ok: false,
+        codigo: CODIGOS_ERRO.IA_SEM_CHAVE,
+        esperado: 'meio_ambiente',
+        obtido: null,
+        mensagem: mensagemDoErro(CODIGOS_ERRO.IA_SEM_CHAVE),
+        erro: 'Chave de API ausente.',
+        provedor: provedor.id,
+        latenciaMs: 0,
+      },
+    })
+  }
+  const resultado = await testarModelo(preparado.dados, listarSetores())
+  return res.json({ dados: resultado })
 })
 
 router.get('/usuarios', exigirAdmin, (_req, res) => {
@@ -303,7 +388,7 @@ router.get('/solicitacoes/:protocolo', (req, res) => {
   const solicitacao = buscarSolicitacao(req.params.protocolo)
   if (!solicitacao) throw naoEncontrado('Solicitação não encontrada.')
   if (!podeAcessar(req.usuario, solicitacao)) {
-    throw new AppError(403, 'sem_permissao', 'Esta solicitação pertence a outro setor.')
+    throw semPermissao('Esta solicitação pertence a outro setor.')
   }
   res.json({ dados: decorar(solicitacao) })
 })
@@ -312,7 +397,7 @@ router.patch('/solicitacoes/:protocolo/status', (req, res) => {
   const solicitacao = buscarSolicitacao(req.params.protocolo)
   if (!solicitacao) throw naoEncontrado('Solicitação não encontrada.')
   if (!podeAcessar(req.usuario, solicitacao)) {
-    throw new AppError(403, 'sem_permissao', 'Esta solicitação pertence a outro setor.')
+    throw semPermissao('Esta solicitação pertence a outro setor.')
   }
 
   const status = texto(req.body?.status)
@@ -338,6 +423,18 @@ router.patch('/solicitacoes/:protocolo/status', (req, res) => {
     porUsuario: req.usuario,
   })
 
+  const evento = ['concluida', 'indeferida'].includes(status) ? 'conclusao' : 'mudanca_status'
+  void notificarEvento(evento, {
+    protocolo: atualizada.protocolo,
+    tipo: atualizada.tipo,
+    tipoTitulo: atualizada.tipoTitulo,
+    setorNome: setorPublico(atualizada.setorId)?.nome,
+    status: atualizada.status,
+    endereco: atualizada.endereco,
+    descricao: atualizada.descricao,
+    detalhe: observacao || (prioridade ? `Prioridade alterada para ${prioridade}.` : null),
+  }).catch((erro) => console.warn('[notificacao]', erro.message))
+
   res.json({
     dados: decorar(atualizada),
     estatisticas: estatisticasGestao({ setorId: setorDoFiltro(req) }),
@@ -348,7 +445,7 @@ router.patch('/solicitacoes/:protocolo/transferir', (req, res) => {
   const solicitacao = buscarSolicitacao(req.params.protocolo)
   if (!solicitacao) throw naoEncontrado('Solicitação não encontrada.')
   if (!podeAcessar(req.usuario, solicitacao)) {
-    throw new AppError(403, 'sem_permissao', 'Você só pode transferir solicitações do seu setor.')
+    throw semPermissao('Você só pode transferir solicitações do seu setor.')
   }
 
   const setorDestinoId = texto(req.body?.setorDestinoId)
@@ -385,6 +482,19 @@ router.patch('/solicitacoes/:protocolo/transferir', (req, res) => {
   if (resultado.erro) {
     throw validacao({}, 'Não foi possível transferir a solicitação.')
   }
+
+  const deSetor = setorPublico(resultado.transferencia.deSetorId)?.nome ?? 'Triagem'
+  const paraSetor = setorPublico(resultado.transferencia.paraSetorId)?.nome ?? setorDestinoId
+  void notificarEvento('transferencia', {
+    protocolo: resultado.solicitacao.protocolo,
+    tipo: resultado.solicitacao.tipo,
+    tipoTitulo: resultado.solicitacao.tipoTitulo,
+    setorNome: paraSetor,
+    status: resultado.solicitacao.status,
+    endereco: resultado.solicitacao.endereco,
+    descricao: resultado.solicitacao.descricao,
+    detalhe: `Transferida de ${deSetor} para ${paraSetor}.${motivo ? ` Motivo: ${motivo}` : ''}`,
+  }).catch((erro) => console.warn('[notificacao]', erro.message))
 
   res.json({
     dados: decorar(resultado.solicitacao),
