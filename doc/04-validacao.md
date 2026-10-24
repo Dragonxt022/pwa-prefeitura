@@ -2,40 +2,42 @@
 
 | Campo | Valor |
 |---|---|
-| Data da execução | 23/10/2026 |
+| Data da execução | 24/10/2026 |
 | Ambiente | Windows, Node **24.12.0**, npm **11.6.2**, Chrome (Playwright) |
 | Versões | Vite **8.3.5**, vite-plugin-pwa **2.0.0**, React **19.3.1**, react-router-dom **7.18.4**, Express **5.3.0** |
-| Escopo | API com persistência, catálogo, formulário, fila offline, acompanhamento, avaliação, gestão com login/setores/transferência/impressão, triagem automática e PWA |
+| Escopo | API com persistência, catálogo, formulário, fila offline, acompanhamento, avaliação, gestão com login/setores/transferência/impressão, triagem automática, PWA e refatoração em camadas das duas aplicações |
 | Resultado | **Aprovado nos critérios locais**; instalação em aparelho físico, push em segundo plano e auditoria formal de acessibilidade ficam pendentes |
 
 ## 1. Qualidade de código
 
 | Verificação | Comando | Resultado |
 |---|---|---|
-| Lint | `npm run lint` | **0 erros, 3 warnings** (`react(set-state-in-effect)`) |
-| Build | `npm run build` | Sucesso em 0,79 s |
+| Lint | `npm run lint` | **0 erros, 9 warnings** (`react(set-state-in-effect)` e `react(only-export-components)`) |
+| Build | `npm run build` | Sucesso em 0,53 s |
 
 Saída do build:
 
 ```
 dist/registerSW.js                              0.13 kB
 dist/manifest.webmanifest                       0.67 kB
-dist/index.html                                 1.25 kB │ gzip:   0.57 kB
+dist/index.html                                 1.25 kB │ gzip:   0.58 kB
 dist/assets/logo-icone-branco-*.png             9.09 kB
 dist/assets/logo-icone-colorido-*.png          41.88 kB
-dist/assets/index-*.css                        58.44 kB │ gzip:  11.18 kB
-dist/assets/index-*.js                        388.43 kB │ gzip: 115.46 kB
+dist/assets/index-*.css                        75.78 kB │ gzip:  13.93 kB
+dist/assets/index-*.js                        457.52 kB │ gzip: 133.43 kB
 
 PWA v2.0.0  mode generateSW
-precache  17 entries (555.41 KiB)
+precache  17 entries (639.81 KiB)
 files generated: dist/sw.js, dist/workbox-*.js
 ```
 
-Os warnings são informativos e ficam em `frontend/src/hooks/useAtualizacoes.js:85`,
-`frontend/src/components/Layout.jsx:38` e `frontend/src/pages/NovaSolicitacao.jsx:161`. Eles apontam
-chamadas de `setState` dentro de efeitos de sincronização com APIs externas; não impedem o build nem
-geram erro em execução. O bundle JS cresceu em relação ao ciclo anterior por causa das novas telas
-(catálogo, gestão, avaliação, acessibilidade e fila offline).
+Os 9 warnings são informativos e ficam em `frontend/src/hooks/useAtualizacoes.js:85`,
+`frontend/src/contexto/Configuracoes.jsx:28` e `:50`, `frontend/src/i18n/index.jsx:8` e `:50`,
+`frontend/src/componentes/Layout.jsx:72`, `frontend/src/paginas/GestaoConfiguracoes.jsx:94` e `:139`
+e `frontend/src/paginas/NovaSolicitacao.jsx:162`. Eles apontam chamadas de `setState` dentro de efeitos
+de sincronização com APIs externas e exportações mistas em arquivos de contexto/i18n; não impedem o
+build nem geram erro em execução. O bundle JS cresceu em relação ao ciclo anterior por causa das novas
+telas (catálogo, gestão, avaliação, acessibilidade e fila offline).
 
 Correções feitas durante esta rodada:
 
@@ -111,6 +113,26 @@ confirmando a idempotência.
 | Recarregar o formulário | Tipo, descrição e endereço restaurados |
 | Mensagem após 1,4 s da restauração | “Rascunho restaurado. Continue de onde parou.” |
 | Foto processada no cliente | Pré-visualização gerada; imagem reduzida para JPEG antes do envio |
+
+### 2.4 Revalidação após a refatoração do frontend
+
+O build de produção foi servido em `http://127.0.0.1:4173`. A rodada inicial usou um proxy temporário
+para a API em `:3001`; a rodada final, após a extração da integração ViaCEP, usou o preview padrão. A
+configuração temporária foi removida ao final. Resultado:
+
+| Verificação | Resultado |
+|---|---|
+| Service Worker controlando a página | `navigator.serviceWorker.controller === true` |
+| Registro do Service Worker | OK |
+| Cache de precache | `workbox-precache-v2-http://127.0.0.1:4173/` |
+| Cache de API pública | `api-public-v2` presente |
+| Manifest | `/manifest.webmanifest` acessível |
+| Home offline | Abriu com o título “Como podemos ajudar?” |
+| Catálogo offline | Abriu com o título “Todos os serviços” |
+| Aviso de conexão | “Sem conexão — usando dados salvos.” nas duas rotas |
+| Overflow horizontal | Ausente na Home, catálogo e painel em 390 × 844 |
+| Rotas públicas | `/`, `/servicos`, `/acompanhar` e `/nova-solicitacao` carregaram com os títulos esperados |
+| Formulário de solicitação | Abriu com o campo de CEP após a extração da integração para `servicos/cep.js` |
 
 ## 3. Contratos da API
 
@@ -232,7 +254,7 @@ Capturas do build de produção em 22/10/2026, em `doc/evidencias/v3/`:
 | Teste com usuários | Depende de recrutamento | 6 |
 | Carga, concorrência e banco real | Persistência JSON atende apenas ao piloto | Pós-piloto |
 | Autenticação de titularidade | No piloto o protocolo é a chave de acesso | Pós-piloto |
-| Lista oficial de secretarias/setores | Mapa demonstrativo em `store.js`; aguarda confirmação do município | Próximo ciclo |
+| Lista oficial de secretarias/setores | Mapa demonstrativo em `dominio/catalogo.js`; aguarda confirmação do município | Próximo ciclo |
 | Modelo local/LLM para a mini IA | Contrato e fallback por regras prontos; modelo real não integrado | Pós-piloto |
 | Testes automatizados em CI | A validação atual é manual + Playwright | 6 |
 
@@ -303,11 +325,70 @@ manual.
 > demonstração do repositório. A lista oficial de secretarias continua pendente; o mapa atual é
 > demonstrativo.
 
+### 9.5 Refatoração do backend em camadas
+
+O backend foi separado em `rotas`, `controladores`, `servicos`, `repositorios`, `middlewares`,
+`dominio`, `validadores`, `apresentadores` e `utils`, sem alterar os contratos HTTP. A suíte de
+regressão foi repetida após a migração: **32/32** verificações de solicitações e sessão, **23/23** de
+configurações, **12/12** de triagem automática e o opt-in do token legado passou.
+
+Um smoke test adicional cobriu **38/38** verificações: saúde da API, catálogo público, configuração
+pública e administrativa, proteção de segredos, criação idempotente, consulta de protocolo, avaliação,
+`409 ja_avaliada`, atualização de status, transferência, escopo por setor, 404, JSON inválido e logout.
+
+### 9.6 Refatoração do frontend em camadas
+
+O frontend foi migrado para a estrutura plana em português: `componentes`, `paginas`, `contexto`,
+`servicos`, `utils`, `estilos`, `hooks` e `i18n`. As pastas antigas `lib`, `components`, `pages`,
+`context` e o arquivo `index.css` deixaram de existir. O codemod final reescreveu **89 imports** e
+nenhuma referência às pastas antigas permaneceu.
+
+A página `paginas/Gestao.jsx`, que antes concentrava toda a funcionalidade, passou a apenas compor a
+tela. A lógica foi separada em:
+
+- `useGestaoSessao`: login, logout, restauração e expiração da sessão;
+- `useGestaoFila`: fila, filtros, detalhe, status, seleção e impressão;
+- `useGestaoTransferencia`: modal, reclassificação e transferência;
+- `useGestaoImpressao`: estado e acionamento da impressão;
+- `useGestaoUsuarios`: cadastro, listagem, ativação e desativação de usuários.
+
+A apresentação da gestão foi dividida em `componentes/gestao/`: `GestaoLogin`, `GestaoTopo`,
+`GestaoResumo`, `GestaoUsuarios`, `GestaoFiltros`, `GestaoAcoes`, `GestaoLista`, `GestaoDetalhe`,
+`GestaoTransferencia` e `GestaoImpressao`. Constantes e helpers puros ficaram em `utils/gestao.js`.
+O CSS global foi preservado em `estilos/global.css`; não houve fragmentação artificial. A integração
+externa de CEP foi movida de `NovaSolicitacao` para `servicos/cep.js`, eliminando o último `fetch`
+disperso em página.
+
+Validação após a divisão, com backend isolado em `:3001` e `DATA_FILE` temporário, frontend em `:5174`:
+
+| Fluxo | Resultado |
+|---|---|
+| Login do admin e carregamento da fila com estatísticas | OK |
+| Filtro por status com debounce e limpeza dos filtros | OK |
+| Abertura do detalhe e foco no título do painel | OK |
+| Atualização de status/prioridade e observação no histórico | OK |
+| Transferência com reclassificação, setor sugerido e selo “Transferida” | OK |
+| Fechamento do modal por `Escape` e por botão | OK |
+| Criação e desativação de usuário de teste no arquivo temporário | OK |
+| Impressão de 3 solicitações com `window.print` e área de impressão | OK |
+| Logout, novo login e escopo correto do setor Meio Ambiente | OK |
+| Impressão e modal de transferência abertos antes do logout | Ausentes após o novo login; detalhe e dados privilegiados limpos |
+| Expiração de sessão por remoção do cookie e retorno ao login | OK |
+| Carregamento de `/gestao/configuracoes` | OK |
+| Painel em 390 × 844 | Sem overflow horizontal (`scrollWidth 375`) |
+| Console | Apenas os `401` esperados da checagem/expiração de sessão |
+
+O build de produção e o Service Worker foram revalidados conforme a seção 2.4. O arquivo temporário
+`frontend/vite.ui-test.config.js`, o `DATA_FILE` de teste e os servidores nas portas `3001`, `4173` e
+`5174` foram removidos/encerrados. O lint ficou em **0 erros e 9 warnings**, igual à linha de base
+após a correção das dependências do efeito de limpeza da sessão.
+
 ## 10. Conclusão
 
 O piloto atende aos critérios locais das fases implementadas: build e lint sem erros, API com contratos e
 erros consistentes, persistência em JSON, nove serviços, fila offline com idempotência, painel de gestão
 com login e escopo por setor, transferência/reclassificação, impressão, triagem automática ativável, SLA,
-avaliação, notificações locais, atalhos de acessibilidade e PWA com cache público controlado. A
-recomendação é usar esta versão para demonstração e avançar para a validação em dispositivos reais e para
-as pendências de produção listadas acima.
+avaliação, notificações locais, atalhos de acessibilidade e PWA com cache público controlado. O frontend
+também foi reorganizado em componentes, páginas, serviços, hooks e utilitários, com a API centralizada e
+a gestão decomposta em responsabilidades menores. A recomendação é usar esta versão para demonstração e
+avançar para a validação em dispositivos reais e para as pendências de produção listadas acima.

@@ -296,7 +296,7 @@ A lista oficial ainda não foi confirmada pelo município. Enquanto isso, o pilo
 | Mobilidade e Trânsito | sinalização | — |
 | Ouvidoria | ouvidoria | — |
 
-O mapa fica em `backend/src/store.js` e pode ser ajustado quando as secretarias oficiais forem definidas.
+O mapa fica em `backend/src/dominio/catalogo.js` e pode ser ajustado quando as secretarias oficiais forem definidas.
 
 ## 5. Máquina de estados e SLA
 
@@ -552,7 +552,7 @@ Exemplo 422:
 | RNF-02 | Cache de API | `NetworkFirst` para GETs públicos, timeout 3 s, 50 entradas, 24 h |
 | RNF-03 | Privacidade no cache | Detalhe do pedido, foto, localização e gestão fora do cache; `api-get-v1` removido no boot |
 | RNF-04 | Atualização do app | `autoUpdate` (novo SW assume no próximo carregamento) |
-| RNF-05 | Performance | JS atual ≈ 388 KB bruto / 115,4 KB gzip; CSS 58,4 KB / 11,2 KB gzip; revisar antes de produção |
+| RNF-05 | Performance | JS atual ≈ 457 KB bruto / 133,4 KB gzip; CSS 75,8 KB / 13,9 KB gzip; revisar antes de produção |
 | RNF-06 | Acessibilidade | WCAG 2.1 A com revisão manual de AA: foco visível, contraste, atalho, labels, alvos ≥ 44 px, diálogo com foco |
 | RNF-07 | Responsividade | 320 px a 1440 px, safe-area do iOS; sem overflow com fonte ampliada |
 | RNF-08 | Compatibilidade | Chrome/Edge últimas 2 versões; Safari iOS 16.4+; Chrome Android |
@@ -560,7 +560,7 @@ Exemplo 422:
 | RNF-10 | Privacidade de dados | Sem dados reais; contato/clientId/triagem fora das respostas públicas; listagem apenas na gestão e escopada por setor |
 | RNF-11 | Segurança básica | `x-powered-by` desabilitado, corpo limitado a 2 MB, CORS com credenciais restrito, senha `scrypt`, sessão `HttpOnly` e `SameSite=Lax` |
 | RNF-12 | Persistência | JSON em `backend/data/estado.json` (ignorado pelo Git), configurável por `DATA_FILE` |
-| RNF-13 | Qualidade de código | `oxlint` com 0 erros (3 warnings conhecidos de `set-state-in-effect`) e build sem erros |
+| RNF-13 | Qualidade de código | `oxlint` com 0 erros (9 warnings conhecidos de `set-state-in-effect` e `only-export-components`) e build sem erros |
 | RNF-14 | Sessão | Cookie `HttpOnly`; “manter conectado” 30 dias, sessão curta 12 h; token persistido apenas como hash |
 | RNF-15 | Triagem automática | Classificador local sem envio de dados a terceiros; flag desligada por padrão; fallback para triagem central |
 
@@ -568,15 +568,15 @@ Exemplo 422:
 
 | Requisito | Tela / componente | Verificação |
 |---|---|---|
-| RF-01, RF-02, RF-03 | `pages/Home.jsx`, `pages/Servicos.jsx` | Manual + Playwright |
-| RF-04, RF-05, RF-06, RF-07 | `pages/NovaSolicitacao.jsx`, `lib/rascunho.js`, `lib/fila.js` | Manual + Playwright offline |
-| RF-08, RF-09, RF-10, RF-11 | `pages/Acompanhar.jsx`, `components/Avaliacao.jsx`, `hooks/useAtualizacoes.js` | Manual + Playwright |
-| RF-12 | `pages/Gestao.jsx`, `routes/gestao.js` | Manual + API HTTP + Playwright |
-| RF-13 | `pages/Perfil.jsx`, `lib/acessibilidade.js` | Manual + Playwright |
-| RF-14, RF-15 | `vite.config.js`, `components/Layout.jsx`, Service Worker | DevTools + Playwright offline |
-| RF-16, RF-18 | `pages/Gestao.jsx`, `routes/gestao.js`, `store.js` | Playwright + API HTTP |
-| RF-17 | `pages/Gestao.jsx`, `index.css` | Playwright com mídia de impressão |
-| RF-19 | `triagem.js`, `store.js`, `routes/solicitacoes.js` | Teste de integração com a flag ligada/desligada |
+| RF-01, RF-02, RF-03 | `paginas/Home.jsx`, `paginas/Servicos.jsx` | Manual + Playwright |
+| RF-04, RF-05, RF-06, RF-07 | `paginas/NovaSolicitacao.jsx`, `servicos/cep.js`, `servicos/rascunho.js`, `servicos/fila.js` | Manual + Playwright offline |
+| RF-08, RF-09, RF-10, RF-11 | `paginas/Acompanhar.jsx`, `componentes/Avaliacao.jsx`, `hooks/useAtualizacoes.js` | Manual + Playwright |
+| RF-12 | `paginas/Gestao.jsx`, `componentes/gestao/`, `hooks/useGestao*.js`, `controladores/gestao/`, `rotas/gestao.js` | Manual + API HTTP + Playwright |
+| RF-13 | `paginas/Perfil.jsx`, `utils/acessibilidade.js` | Manual + Playwright |
+| RF-14, RF-15 | `vite.config.js`, `componentes/Layout.jsx`, Service Worker | DevTools + Playwright offline |
+| RF-16, RF-18 | `paginas/Gestao.jsx`, `componentes/gestao/`, `hooks/useGestao*.js`, `controladores/gestao/`, `servicos/`, `repositorios/` | Playwright + API HTTP |
+| RF-17 | `paginas/Gestao.jsx`, `componentes/gestao/GestaoImpressao.jsx`, `estilos/global.css` | Playwright com mídia de impressão |
+| RF-19 | `dominio/triagem.js`, `servicos/solicitacoes.js`, `rotas/solicitacoes.js` | Teste de integração com a flag ligada/desligada |
 | RN-01..RN-23 | `backend/src/**` | Contratos conferidos por HTTP |
 
 ## 9. Pendências conhecidas (fora deste ciclo)

@@ -1,5 +1,5 @@
 import { criarApp } from './src/app.js'
-import { triagemAutomaticaAtiva } from './src/store.js'
+import { triagemAutomaticaAtiva } from './src/servicos/configuracoes.js'
 
 const porta = Number(process.env.PORT ?? 3000)
 const app = criarApp()

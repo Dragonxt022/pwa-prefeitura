@@ -1,13 +1,13 @@
 import { Route, Routes } from 'react-router-dom'
-import Layout from './components/Layout'
-import Acompanhar from './pages/Acompanhar'
-import Gestao from './pages/Gestao'
-import GestaoConfiguracoes from './pages/GestaoConfiguracoes'
-import Home from './pages/Home'
-import NaoEncontrada from './pages/NaoEncontrada'
-import NovaSolicitacao from './pages/NovaSolicitacao'
-import Perfil from './pages/Perfil'
-import Servicos from './pages/Servicos'
+import Layout from './componentes/Layout'
+import Acompanhar from './paginas/Acompanhar'
+import Gestao from './paginas/Gestao'
+import GestaoConfiguracoes from './paginas/GestaoConfiguracoes'
+import Home from './paginas/Home'
+import NaoEncontrada from './paginas/NaoEncontrada'
+import NovaSolicitacao from './paginas/NovaSolicitacao'
+import Perfil from './paginas/Perfil'
+import Servicos from './paginas/Servicos'
 
 export default function App() {
   return (

@@ -161,21 +161,28 @@ Para depurar SW em desenvolvimento, altere `devOptions.enabled` para `true` em
 │   ├── server.js              # bootstrap + porta + shutdown
 │   └── src/
 │       ├── app.js             # middlewares, CORS com credenciais, rotas, erros
-│       ├── auth.js            # hash scrypt, token de sessão e comparação segura
-│       ├── errors.js          # AppError e helpers
-│       ├── store.js           # catálogo, setores, usuários, sessões, pedidos e persistência JSON
-│       ├── triagem.js         # classificador local e contrato da futura mini IA
-│       ├── middlewares/rate-limit.js
-│       └── routes/            # servicos, avisos, perfil, solicitacoes e gestao
+│       ├── rotas/             # declaração dos endpoints e middlewares
+│       ├── controladores/     # entrada e saída HTTP
+│       ├── servicos/          # regras de negócio, sessões e notificações
+│       ├── repositorios/      # estado e persistência JSON
+│       ├── dominio/           # catálogo, sementes, normalização e triagem
+│       ├── validadores/       # validação de solicitações, usuários e configurações
+│       ├── apresentadores/    # contratos públicos e administrativos
+│       ├── middlewares/       # autenticação, erros e rate limit
+│       └── utils/             # erros, segurança, datas e texto
 ├── frontend/
 │   ├── public/icons/          # 192, 512, maskable 512, apple-touch 180, favicon 32
 │   ├── scripts/generate-icons.mjs
 │   ├── src/
 │   │   ├── assets/            # marca oficial (colorida e branca)
-│   │   ├── components/        # Layout, Avaliação, StatusBadge, ErrorState, Loading
-│   │   ├── hooks/             # useRecurso, useOnlineStatus, usePwaInstall, fila e atualizações
-│   │   ├── lib/               # api, format, consultas, fila, rascunho, imagem, prazos, acessibilidade
-│   │   └── pages/             # Home, Servicos, NovaSolicitacao, Acompanhar, Perfil, Gestao, 404
+│   │   ├── componentes/       # Layout, StatusBadge e componentes de apresentação da gestão
+│   │   ├── contexto/          # configurações compartilhadas da aplicação
+│   │   ├── estilos/           # global.css e tokens visuais
+│   │   ├── hooks/             # recursos, conexão, PWA e hooks da gestão
+│   │   ├── i18n/              # infraestrutura de idioma e traduções
+│   │   ├── paginas/           # Home, Servicos, NovaSolicitacao, Acompanhar, Perfil, Gestao, 404
+│   │   ├── servicos/          # cliente HTTP, API, integrações, consultas, fila e rascunho
+│   │   └── utils/             # formatação, prazos, imagem, acessibilidade e helpers da gestão
 │   └── vite.config.js         # PWA, proxy, portas
 ├── doc/
 │   ├── 01-projeto-inicial.md  # visão, escopo, métricas, riscos
@@ -188,6 +195,11 @@ Para depurar SW em desenvolvimento, altere `devOptions.enabled` para `true` em
 │   └── historico/             # plano original preservado
 └── package.json               # scripts de orquestração
 ```
+
+O frontend usa uma estrutura plana em português. A página `paginas/Gestao.jsx` apenas compõe a
+tela; sessão, fila, transferência, impressão e usuários ficam em hooks próprios, e a apresentação
+é dividida em `componentes/gestao/`. A comunicação com a API permanece centralizada em `servicos/`.
+O CSS global continua em `estilos/global.css`, sem fragmentação artificial.
 
 ## API
 

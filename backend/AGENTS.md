@@ -8,26 +8,46 @@ Estas instruções se aplicam ao projeto backend Node.js. Siga também as regras
 - Localize endpoints semelhantes e siga padrões consistentes já adotados.
 - Identifique como variáveis de ambiente, autenticação, autorização, logs e erros são tratados.
 
-## 2. Responsabilidades por camada
-Adapte a separação à arquitetura existente, mas evite concentrar tudo nas rotas ou controllers.
+## 2. Estrutura e responsabilidades
+Estrutura-alvo:
 
-Uma divisão comum é:
-- **Routes:** declaram caminhos e associam middleware/controllers.
-- **Controllers/handlers:** interpretam a requisição, chamam a camada apropriada e formam a resposta HTTP.
-- **Services/use cases:** implementam regras de negócio e coordenam operações.
-- **Repositories/data access:** encapsulam acesso a banco quando isso for útil ou já adotado.
-- **Schemas/validators:** validam e normalizam entradas.
-- **Middleware:** executa preocupações transversais, como autenticação, autorização, limites de requisição e tratamento de erros.
-- **Types/DTOs:** descrevem contratos de entrada e saída, conforme a linguagem utilizada.
+```text
+src/
+├── rotas/           # caminhos e associação de middlewares/controladores
+├── controladores/   # entrada e saída HTTP
+├── servicos/        # regras de negócio e casos de uso
+├── repositorios/    # estado, consultas e persistência
+├── middlewares/     # autenticação, autorização, erros e limites
+├── utils/           # funções puras e helpers
+├── dominio/         # catálogo, sementes, normalização e regras puras
+├── validadores/     # validação e normalização de entrada
+└── apresentadores/  # montagem dos contratos de saída
+```
 
-Não crie todas essas camadas mecanicamente para cada endpoint. Use as necessárias para manter responsabilidades claras.
+Responsabilidades:
+- **Rotas:** declaram caminhos, métodos e middlewares; encaminham para controladores. Não contêm regra de negócio nem acesso ao estado.
+- **Controladores:** interpretam `req`, chamam validadores/serviços e formam a resposta HTTP com status, headers e apresentador. Não acessam o estado global diretamente.
+- **Serviços:** implementam regras de negócio, autorização de domínio e coordenação de repositórios. Não importam Express, não recebem `req`/`res` e não definem status HTTP.
+- **Repositórios:** encapsulam o estado em memória e a persistência JSON. Não tomam decisões de negócio nem montam respostas HTTP. Retornam cópias ou dados próprios para evitar mutação externa.
+- **Middlewares:** tratam autenticação, autorização, limites e erros de forma transversal.
+- **Utils:** funções puras, sem dependência de HTTP ou persistência.
+- **Domínio:** catálogo, sementes, normalização e regras puras que não pertencem a uma camada de infraestrutura.
+- **Validadores:** validam e normalizam a entrada antes do serviço.
+- **Apresentadores:** montam os contratos públicos/administrativos e removem campos internos.
 
-## 3. Rotas e controllers
+Não crie todas essas camadas mecanicamente para cada endpoint. Rotas triviais, como `health`, podem permanecer na própria rota; operações de domínio passam por controlador e serviço.
+
+O antigo `store.js` não deve ser recriado. Não mantenha dois estados, dois módulos de persistência ou duas implementações da mesma regra durante a migração. Mova uma responsabilidade por vez e valide a regressão antes de remover o código antigo.
+
+## 3. Rotas, controladores e serviços
 - Mantenha arquivos de rotas focados na declaração de endpoints e middleware.
-- Evite colocar consultas SQL, regras de negócio extensas e validações repetidas diretamente nas rotas.
-- Mantenha controllers objetivos e delegue operações complexas a serviços ou casos de uso.
-- Não crie controllers gigantes com operações de domínios diferentes.
+- Evite colocar consultas, regras de negócio extensas e validações repetidas diretamente nas rotas.
+- Mantenha controladores objetivos e delegue operações complexas a serviços ou casos de uso.
+- Não crie controladores gigantes com operações de domínios diferentes.
 - Preserve métodos HTTP, códigos de status e formatos de resposta existentes, salvo quando a mudança exigir e considerar os consumidores.
+- Não faça controladores importarem repositórios apenas para contornar uma regra que deveria estar no serviço.
+- Serviços devem ser testáveis sem Express e sem cookies.
+- Evite dependências circulares entre rotas, controladores, serviços e repositórios; se surgirem, reavalie a direção das dependências.
 
 ## 4. Regras de negócio
 - Mantenha regras de negócio autoritativas no backend.

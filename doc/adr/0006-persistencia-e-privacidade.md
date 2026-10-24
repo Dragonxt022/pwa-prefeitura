@@ -24,8 +24,8 @@ SLA e avaliação. Dois pontos do desenho inicial passaram a atrapalhar:
 - Permitir outro caminho por `DATA_FILE`; o arquivo fica fora do Git.
 - Carregar o JSON no boot e usar `Math.max(sequenciaSalva, calcularSequencia())` para não reaproveitar
   protocolos.
-- Manter `store.js` como fronteira de repositório para permitir troca por SQLite/Postgres sem alterar as
-  rotas.
+- Manter a camada de repositórios (`backend/src/repositorios/`) como fronteira de persistência para
+  permitir troca por SQLite/Postgres sem alterar rotas, controladores ou serviços.
 
 Isso **não** é um banco de dados: não há transação, concorrência real nem migração. O arquivo serve para
 demonstração e testes locais; dados pessoais reais continuam proibidos.
@@ -61,8 +61,8 @@ demonstração e testes locais; dados pessoais reais continuam proibidos.
 ## Consequências
 
 **Positivas:** protocolos sobrevivem a restart, retry não duplica, a gestão tem uma visão completa e o
-cache offline fica restrito a dados públicos. A fronteira de `store.js` continua preparada para um banco
-real.
+cache offline fica restrito a dados públicos. A fronteira de repositórios continua preparada para um
+banco real.
 
 **Negativas:** o JSON pode corromper ou perder escritas concorrentes; não há autenticação de cidadão; o
 `clientId` ainda não é uma `Idempotency-Key` HTTP padronizada; o cache de status continua no aparelho e

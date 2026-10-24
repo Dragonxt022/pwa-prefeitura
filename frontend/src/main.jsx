@@ -2,10 +2,10 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
-import { ConfiguracoesProvider } from './context/Configuracoes.jsx'
+import { ConfiguracoesProvider } from './contexto/Configuracoes.jsx'
 import { I18nProvider } from './i18n/index.jsx'
-import { aplicarPreferenciasAcessibilidade } from './lib/acessibilidade.js'
-import './index.css'
+import { aplicarPreferenciasAcessibilidade } from './utils/acessibilidade.js'
+import './estilos/global.css'
 
 aplicarPreferenciasAcessibilidade()
 

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { consultarStatus } from '../lib/api'
+import { consultarStatus } from '../servicos/api'
 import {
   adicionarNotificacao,
   atualizarPedido,
   contarNotificacoesNaoLidas,
   listarPedidos,
   marcarNotificacoesLidas,
-} from '../lib/consultas'
+} from '../servicos/consultas'
 import { useOnlineStatus } from './useOnlineStatus'
 
 function mostrarNotificacaoDoNavegador(protocolo, descricao) {

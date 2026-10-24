@@ -3,6 +3,8 @@
 - **Status:** Aceito
 - **Data:** 22/10/2026
 - **Decisores:** Dev front
+- **Nota:** os caminhos citados foram atualizados em 24/10/2026 após a migração para a estrutura em
+  português; a decisão permanece a mesma.
 
 ## Contexto
 
@@ -14,9 +16,9 @@ aprendizado e tempo de revisão — e nenhuma resolve um problema que o piloto r
 
 - **Estado**: `useState`/`useEffect` locais + um hook genérico `useRecurso` para carregamento
   (dados, carregando, erro, recarregar) com descarte de resposta após desmontagem.
-- **HTTP**: `fetch` encapsulado em `src/lib/api.js`, com `AbortController` (timeout de 8 s), classe
+- **HTTP**: `fetch` encapsulado em `src/servicos/api.js`, com `AbortController` (timeout de 8 s), classe
   `ApiError` (`status`, `codigo`, `campos`, `offline`) e tratamento de fallback de rede.
-- **Persistência local**: `localStorage` isolado em `src/lib/consultas.js`, com try/catch para modo privado.
+- **Persistência local**: `localStorage` isolado em `src/servicos/consultas.js`, com try/catch para modo privado.
 - **Estilo**: CSS próprio com variáveis, mobile-first e `prefers-color-scheme`; sem framework de UI.
 - **Validação**: duplicada de propósito (cliente para UX, servidor como fonte da verdade).
 

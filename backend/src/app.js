@@ -1,18 +1,12 @@
 import cors from 'cors'
 import express from 'express'
-import {
-  AppError,
-  CODIGOS_ERRO,
-  corpoErro,
-  naoEncontrado,
-  statusDoErro,
-} from './errors.js'
-import avisosRouter from './routes/avisos.js'
-import configuracoesRouter from './routes/configuracoes.js'
-import gestaoRouter from './routes/gestao.js'
-import perfilRouter from './routes/perfil.js'
-import servicosRouter from './routes/servicos.js'
-import solicitacoesRouter from './routes/solicitacoes.js'
+import { apiNaoEncontrada, tratarErro } from './middlewares/erros.js'
+import avisosRouter from './rotas/avisos.js'
+import configuracoesRouter from './rotas/configuracoes.js'
+import gestaoRouter from './rotas/gestao.js'
+import perfilRouter from './rotas/perfil.js'
+import servicosRouter from './rotas/servicos.js'
+import solicitacoesRouter from './rotas/solicitacoes.js'
 
 const ORIGENS_PADRAO = [
   'http://localhost:5173',
@@ -62,42 +56,9 @@ export function criarApp({ latenciaMs = Number(process.env.MOCK_LATENCY_MS ?? 20
   app.use('/api/solicitacoes', solicitacoesRouter)
   app.use('/api/gestao', gestaoRouter)
 
-  app.use('/api', (req) => {
-    throw naoEncontrado(`Rota de API inexistente: ${req.method} ${req.originalUrl}`)
-  })
+  app.use('/api', apiNaoEncontrada)
 
-  app.use((erro, req, res, _next) => {
-    if (erro instanceof AppError) {
-      return res
-        .status(erro.status)
-        .json(corpoErro(erro.codigo, { mensagem: erro.mensagem, campos: erro.campos }))
-    }
-
-    if (erro?.type === 'entity.parse.failed') {
-      return res
-        .status(statusDoErro(CODIGOS_ERRO.JSON_INVALIDO))
-        .json(corpoErro(CODIGOS_ERRO.JSON_INVALIDO))
-    }
-
-    if (erro?.type === 'entity.too.large') {
-      return res
-        .status(statusDoErro(CODIGOS_ERRO.CORPO_MUITO_GRANDE))
-        .json(
-          corpoErro(CODIGOS_ERRO.CORPO_MUITO_GRANDE, {
-            mensagem: 'O conteúdo enviado excede o limite de 2 MB.',
-          }),
-        )
-    }
-
-    console.error('[erro não tratado]', erro)
-    return res
-      .status(statusDoErro(CODIGOS_ERRO.ERRO_INTERNO))
-      .json(
-        corpoErro(CODIGOS_ERRO.ERRO_INTERNO, {
-          mensagem: 'Erro inesperado no servidor de simulação.',
-        }),
-      )
-  })
+  app.use(tratarErro)
 
   return app
 }

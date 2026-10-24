@@ -39,3 +39,47 @@ Estas regras se aplicam ao sistema completo, composto por frontend React e backe
 
 ## 6. Princípio arquitetural
 Cada módulo deve ter responsabilidade clara. Evite tanto arquivos gigantes que misturem camadas quanto fragmentação artificial em muitos arquivos pequenos. A arquitetura deve acompanhar as necessidades reais do sistema e os padrões válidos já existentes.
+
+## 7. Estrutura de referência
+Adotamos a mesma separação conceitual nas duas camadas, com nomes de pasta, código, mensagens e interface em português.
+
+Frontend:
+
+```text
+frontend/src/
+├── componentes/    # componentes reutilizáveis
+├── paginas/        # telas e composição das rotas
+├── servicos/       # cliente HTTP, chamadas de API e integrações
+├── hooks/          # estado e comportamento reutilizável
+├── utils/          # funções puras e helpers
+├── estilos/        # estilos globais e tokens
+├── contexto/       # estado compartilhado de aplicação
+└── i18n/           # traduções e infraestrutura de idioma
+```
+
+Backend:
+
+```text
+backend/src/
+├── rotas/           # declaração de endpoints e middlewares
+├── controladores/   # entrada e saída HTTP
+├── servicos/        # regras de negócio e casos de uso
+├── repositorios/    # acesso ao estado e à persistência
+├── middlewares/     # autenticação, autorização, erros e limites
+├── utils/           # funções puras e helpers
+├── dominio/         # catálogo, sementes, normalização e regras puras
+├── validadores/     # validação e normalização de entrada
+└── apresentadores/  # montagem dos contratos de saída
+```
+
+As pastas complementares (`dominio`, `validadores`, `apresentadores`, `contexto` e `i18n`) existem quando a responsabilidade justificar um módulo próprio. Não crie todas as camadas mecanicamente para cada endpoint.
+
+Regras gerais:
+- Rotas não contêm regra de negócio, acesso direto à persistência nem montagem complexa de resposta.
+- Controladores não acessam o estado global diretamente; delegam aos serviços e repositórios apropriados.
+- Serviços não importam Express, não recebem `req`/`res` e não definem status HTTP.
+- Repositórios não decidem regras de negócio nem montam respostas HTTP.
+- O frontend não faz `fetch` disperso em componentes ou páginas; comunicação com a API fica em `servicos`.
+- Helpers puros e sem estado ficam em `utils`; estilos globais e tokens ficam em `estilos`.
+- A migração para essa estrutura deve ser incremental, preservando contratos, comportamento e testes. Não mantenha duas implementações concorrentes durante a transição.
+- Mudanças estruturais amplas exigem justificativa e validação das duas camadas quando houver impacto de contrato.

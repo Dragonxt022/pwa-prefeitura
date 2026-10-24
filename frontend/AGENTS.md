@@ -20,28 +20,29 @@ Estas instruções se aplicam ao projeto frontend. Siga também as regras gerais
 Não coloque páginas inteiras, requisições, validações complexas, regras de negócio e muitos componentes em um único arquivo. Também não crie um arquivo para cada pequena função trivial. Extraia responsabilidades quando houver benefício real.
 
 ## 3. Organização
-Organize por funcionalidade/domínio quando isso ajudar a manter o sistema. Uma referência possível:
+Estrutura adotada:
 
 ```text
 src/
-├── app/                 # inicialização, providers e configuração
-├── components/          # componentes realmente compartilhados
-├── features/
-│   └── users/
-│       ├── pages/
-│       ├── components/
-│       ├── hooks/
-│       ├── services/
-│       ├── schemas/
-│       └── types/
-├── services/            # infraestrutura compartilhada, se necessária
-├── hooks/               # hooks compartilhados
-├── utils/
-├── types/
-└── styles/
+├── componentes/    # componentes reutilizáveis
+├── paginas/        # telas e composição das rotas
+├── servicos/       # cliente HTTP, chamadas de API e integrações
+├── hooks/          # estado e comportamento reutilizável
+├── utils/          # funções puras e helpers
+├── estilos/        # estilos globais e tokens
+├── contexto/       # estado compartilhado de aplicação
+└── i18n/           # traduções e infraestrutura de idioma
 ```
 
-Essa estrutura é ilustrativa. Não reorganize o projeto inteiro para fazê-lo corresponder ao exemplo. Mantenha a estrutura existente quando for funcional.
+- A pasta `lib/` foi removida. O cliente HTTP e as operações de API ficam em `servicos`; helpers puros ficam em `utils`.
+- `servicos` concentra contratos de comunicação com a API, fila offline, consultas e integrações. Componentes e páginas não devem chamar `fetch` diretamente.
+- `utils` contém funções puras e sem estado React, como formatação, prazos, imagem e acessibilidade.
+- `estilos` contém estilos globais e tokens. Só divida CSS em vários arquivos quando houver uma responsabilidade real; não crie um arquivo por componente.
+- `contexto` é reservado para estado compartilhado entre áreas. Não coloque regras de negócio complexas nele.
+- `i18n` concentra traduções e infraestrutura de idioma; mantenha `pt-BR` como padrão.
+- Não crie uma pasta `features/` agora. A estrutura plana atende ao tamanho atual; reavalie apenas se o domínio crescer e a separação por funcionalidade trouxer benefício claro.
+
+A migração deve ser incremental e preservar rotas, contratos, acessibilidade e comportamento offline. Não reorganize arquivos não relacionados durante uma correção localizada.
 
 ## 4. Rotas
 - Siga o roteador já instalado; não introduza outro sem justificativa.

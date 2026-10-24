@@ -16,9 +16,10 @@ depender de infraestrutura de banco. Havia o risco de o mock "virar produção" 
 ## Decisão
 
 Manter serviços, avisos, perfil e solicitações em **arrays em memória** no processo Node, com reinício
-zerando as solicitações criadas e o contador de protocolo. O código fica isolado em
-`backend/src/store.js`, atrás de funções (`listarServicos`, `criarSolicitacao`, ...), para permitir
-troca por repositório real sem alterar rotas.
+zerando as solicitações criadas e o contador de protocolo. O código fica isolado no módulo de dados
+(originalmente `backend/src/store.js`, hoje dividido entre `dominio/` e `repositorios/`), atrás de
+funções (`listarServicos`, `criarSolicitacao`, ...), para permitir troca por repositório real sem
+alterar rotas.
 
 **Limites explícitos:** sem persistência, sem transação, sem concorrência real, sem idempotência e sem
 histórico de auditoria. **Proibido usar com dados pessoais reais.**

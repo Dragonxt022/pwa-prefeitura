@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { listarFila, processarFila, ultimoEnvio } from '../lib/fila'
+import { listarFila, processarFila, ultimoEnvio } from '../servicos/fila'
 
 function estadoAtual() {
   return { pendentes: listarFila().length, ultimo: ultimoEnvio() }

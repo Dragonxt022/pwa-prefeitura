@@ -11,6 +11,7 @@ export const CODIGOS_ERRO = Object.freeze({
   NAO_AUTORIZADO: 'nao_autorizado',
   CREDENCIAIS_INVALIDAS: 'credenciais_invalidas',
   SEM_PERMISSAO: 'sem_permissao',
+  JA_AVALIADA: 'ja_avaliada',
   LIMITE_EXCEDIDO: 'limite_excedido',
   JSON_INVALIDO: 'json_invalido',
   CORPO_MUITO_GRANDE: 'corpo_muito_grande',
@@ -65,6 +66,11 @@ export const CATALOGO_ERROS = Object.freeze({
     status: 403,
     titulo: 'Sem permissão',
     mensagem: 'Sua conta não tem permissão para executar esta ação.',
+  },
+  [CODIGOS_ERRO.JA_AVALIADA]: {
+    status: 409,
+    titulo: 'Atendimento já avaliado',
+    mensagem: 'Este atendimento já foi avaliado.',
   },
   [CODIGOS_ERRO.LIMITE_EXCEDIDO]: {
     status: 429,
