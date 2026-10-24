@@ -13,7 +13,7 @@
 | Verificação | Comando | Resultado |
 |---|---|---|
 | Lint | `npm run lint` | **0 erros, 9 warnings** (`react(set-state-in-effect)` e `react(only-export-components)`) |
-| Build | `npm run build` | Sucesso em 0,53 s |
+| Build | `npm run build` | Sucesso em 0,51 s |
 
 Saída do build:
 
@@ -24,17 +24,17 @@ dist/index.html                                 1.25 kB │ gzip:   0.58 kB
 dist/assets/logo-icone-branco-*.png             9.09 kB
 dist/assets/logo-icone-colorido-*.png          41.88 kB
 dist/assets/index-*.css                        75.78 kB │ gzip:  13.93 kB
-dist/assets/index-*.js                        457.52 kB │ gzip: 133.43 kB
+dist/assets/index-*.js                        461.09 kB │ gzip: 134.50 kB
 
 PWA v2.0.0  mode generateSW
-precache  17 entries (639.81 KiB)
+precache  17 entries (643.30 KiB)
 files generated: dist/sw.js, dist/workbox-*.js
 ```
 
 Os 9 warnings são informativos e ficam em `frontend/src/hooks/useAtualizacoes.js:85`,
 `frontend/src/contexto/Configuracoes.jsx:28` e `:50`, `frontend/src/i18n/index.jsx:8` e `:50`,
 `frontend/src/componentes/Layout.jsx:72`, `frontend/src/paginas/GestaoConfiguracoes.jsx:94` e `:139`
-e `frontend/src/paginas/NovaSolicitacao.jsx:162`. Eles apontam chamadas de `setState` dentro de efeitos
+e `frontend/src/hooks/useSolicitacaoSemelhante.js:12`. Eles apontam chamadas de `setState` dentro de efeitos
 de sincronização com APIs externas e exportações mistas em arquivos de contexto/i18n; não impedem o
 build nem geram erro em execução. O bundle JS cresceu em relação ao ciclo anterior por causa das novas
 telas (catálogo, gestão, avaliação, acessibilidade e fila offline).
@@ -133,6 +133,34 @@ configuração temporária foi removida ao final. Resultado:
 | Overflow horizontal | Ausente na Home, catálogo e painel em 390 × 844 |
 | Rotas públicas | `/`, `/servicos`, `/acompanhar` e `/nova-solicitacao` carregaram com os títulos esperados |
 | Formulário de solicitação | Abriu com o campo de CEP após a extração da integração para `servicos/cep.js` |
+
+### 2.5 Divisão da página de nova solicitação
+
+`frontend/src/paginas/NovaSolicitacao.jsx` passou de **1.023 para 76 linhas**. O estado, as validações,
+o rascunho, o envio e a fila ficam em `useNovaSolicitacao`; CEP, foto, localização e pedidos semelhantes
+têm hooks próprios. A apresentação foi dividida em `componentes/nova-solicitacao/`: formulário, seleção
+de serviço, dados, localização, foto, semelhantes, resumo de validação, confirmação e pedido pendente.
+
+Validação em `http://localhost:5173/nova-solicitacao` (servidor de desenvolvimento):
+
+| Verificação | Resultado |
+|---|---|
+| Busca de serviço | `poda` reduziu a lista ao serviço correspondente; a seleção permaneceu funcional |
+| Envio com campos vazios | Erros de serviço, descrição e endereço; resumo recebeu foco |
+| CEP `01001-000` | Endereço preenchido, número existente preservado e foco movido para o endereço |
+| Localização | Captura simulada anexada com precisão e remoção com mensagem de status |
+| Foto válida | Imagem convertida para JPEG, prévia exibida e metadados removidos |
+| Arquivo inválido | Erro de imagem exibido no resumo de validação e input limpo |
+| Rascunho | Salvo após 700 ms e restaurado com a mensagem de retomada após reload |
+| Envio online | Protocolo `PREF-2026-000010` criado e confirmação exibida |
+| Copiar protocolo | Área de transferência preenchida; status e `aria-label` atualizados |
+| Envio offline | Tela “Pedido salvo”, item na fila e reenvio automático ao reconectar |
+| Reconexão | Protocolo `PREF-2026-000011` exibido e fila esvaziada |
+| Erro de API simulado | Mensagem, erro de foto, foco no resumo e valores digitados preservados |
+| Mobile 390 × 844 | Sem overflow horizontal |
+| Console | Apenas os erros esperados de rede offline e da resposta 400 simulada |
+
+Os protocolos criados durante esta rodada foram removidos do estado local após a validação.
 
 ## 3. Contratos da API
 

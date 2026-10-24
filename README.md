@@ -198,8 +198,11 @@ Para depurar SW em desenvolvimento, altere `devOptions.enabled` para `true` em
 
 O frontend usa uma estrutura plana em português. A página `paginas/Gestao.jsx` apenas compõe a
 tela; sessão, fila, transferência, impressão e usuários ficam em hooks próprios, e a apresentação
-é dividida em `componentes/gestao/`. A comunicação com a API permanece centralizada em `servicos/`.
-O CSS global continua em `estilos/global.css`, sem fragmentação artificial.
+é dividida em `componentes/gestao/`. A `paginas/NovaSolicitacao.jsx` segue o mesmo princípio:
+formulário, rascunho, envio e fila ficam em `useNovaSolicitacao`, com hooks específicos para CEP,
+foto, localização e semelhantes, e apresentação em `componentes/nova-solicitacao/`. A comunicação
+com a API permanece centralizada em `servicos/`. O CSS global continua em `estilos/global.css`,
+sem fragmentação artificial.
 
 ## API
 

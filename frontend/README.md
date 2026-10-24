@@ -15,10 +15,10 @@ npm run preview    # http://localhost:4173 (Service Worker ativo)
 ```text
 src/
 ├── assets/         # marca oficial
-├── componentes/    # componentes reutilizáveis e componentes/gestao/
+├── componentes/    # componentes reutilizáveis, componentes/gestao/ e componentes/nova-solicitacao/
 ├── contexto/       # configurações compartilhadas
 ├── estilos/        # global.css e tokens
-├── hooks/          # recursos, conexão, PWA e hooks da gestão
+├── hooks/          # recursos, conexão, PWA, hooks da gestão e da nova solicitação
 ├── i18n/           # infraestrutura de idioma (pt-BR padrão)
 ├── paginas/        # telas e composição das rotas
 ├── servicos/       # cliente HTTP, API, integrações, consultas, fila e rascunho
@@ -27,7 +27,10 @@ src/
 
 A página `paginas/Gestao.jsx` é somente composição. A lógica está separada em
 `useGestaoSessao`, `useGestaoFila`, `useGestaoTransferencia`, `useGestaoImpressao` e
-`useGestaoUsuarios`; a interface da gestão fica em `componentes/gestao/`. Não há `fetch`
+`useGestaoUsuarios`; a interface da gestão fica em `componentes/gestao/`. A página
+`paginas/NovaSolicitacao.jsx` também é composição: `useNovaSolicitacao` concentra formulário,
+rascunho, envio e fila, enquanto CEP, foto, localização e semelhantes têm hooks próprios em
+`hooks/` e a interface fica em `componentes/nova-solicitacao/`. Não há `fetch`
 disperso em componentes ou páginas: a API própria passa por `servicos/api.js` e integrações
 externas, como o ViaCEP, por `servicos/cep.js`.
 
