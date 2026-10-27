@@ -1,0 +1,1320 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#071b31">
+  <meta name="description" content="Apresentação institucional da Prefeitura Digital — plataforma de atendimento ao cidadão com protocolo, acompanhamento, gestão por setor, segurança e auditoria.">
+  <title>Prefeitura Digital — Apresentação institucional</title>
+  <link rel="icon" type="image/png" href="imagens/logo-icone.png">
+  <link rel="stylesheet" href="estilos/apresentacao.css">
+</head>
+<body>
+
+<svg xmlns="http://www.w3.org/2000/svg" class="sprite-icones" aria-hidden="true">
+  <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-documento-check" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></symbol>
+  <symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-mapa" viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z"/><circle cx="12" cy="13" r="3"/></symbol>
+  <symbol id="i-sino" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+  <symbol id="i-grafico" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></symbol>
+  <symbol id="i-pessoas" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-predio" viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 2.5 2.5L16 9"/></symbol>
+  <symbol id="i-seta" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></symbol>
+  <symbol id="i-seta-esq" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="m11 18-6-6 6-6"/></symbol>
+  <symbol id="i-cadeado" viewBox="0 0 24 24"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-olho" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-historico" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-transferir" viewBox="0 0 24 24"><path d="M17 3l4 4-4 4"/><path d="M3 7h18"/><path d="M7 21l-4-4 4-4"/><path d="M21 17H3"/></symbol>
+  <symbol id="i-impressora" viewBox="0 0 24 24"><path d="M6 9V3h12v6"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></symbol>
+  <symbol id="i-acessibilidade" viewBox="0 0 24 24"><circle cx="12" cy="4" r="2"/><path d="M4 8h16"/><path d="M12 8v6"/><path d="m8 21 4-7 4 7"/></symbol>
+  <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M2 2l20 20"/><path d="M8.5 8.5A10.9 10.9 0 0 1 12 8c4 0 7.5 1.8 9.5 3.5"/><path d="M5 12.5A14.9 14.9 0 0 1 8 10.5"/><path d="M8.5 16.5a6.9 6.9 0 0 1 7 0"/><path d="M12 20h.01"/></symbol>
+  <symbol id="i-celular" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="i-velocimetro" viewBox="0 0 24 24"><path d="M12 14l4-4"/><path d="M3.3 19a9 9 0 1 1 17.4 0"/><circle cx="12" cy="14" r="1"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></symbol>
+  <symbol id="i-globo" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18Z"/></symbol>
+  <symbol id="i-documento" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h6"/></symbol>
+  <symbol id="i-estrela" viewBox="0 0 24 24"><path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 20.9l1.1-6.5L2.6 9.8l6.5-.9Z"/></symbol>
+  <symbol id="i-usuario" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-config" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></symbol>
+  <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></symbol>
+  <symbol id="i-calendario" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></symbol>
+  <symbol id="i-dinheiro" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></symbol>
+  <symbol id="i-coracao" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></symbol>
+  <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+  <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-grade" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+  <symbol id="i-tela-cheia" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
+  <symbol id="i-mensagem" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4Z"/><path d="M8 9h8M8 13h5"/></symbol>
+  <symbol id="i-ajuda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2-3 4"/><path d="M12 17h.01"/></symbol>
+  <symbol id="i-folha" viewBox="0 0 24 24"><path d="M11 20A7 7 0 0 1 4 13c0-5 4-9 16-9 0 12-4 16-9 16Z"/><path d="M4 21c3-6 7-9 12-11"/></symbol>
+  <symbol id="i-ferramenta" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.5-2.5 2.5-2.5Z"/></symbol>
+  <symbol id="i-lixeira" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></symbol>
+  <symbol id="i-sol" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-caminhao" viewBox="0 0 24 24"><path d="M3 6h11v11H3z"/><path d="M14 10h4l3 3v4h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></symbol>
+</svg>
+
+<div class="app" id="app">
+  <div class="progresso" id="progresso" aria-hidden="true"></div>
+
+  <header class="barra-superior" id="barra-superior">
+    <div class="marca">
+      <img src="imagens/logo-icone.png" alt="" class="marca__icone">
+      <div class="marca__texto">
+        <strong>PREFEITURA DIGITAL</strong>
+        <span>Apresentação institucional</span>
+      </div>
+    </div>
+    <div class="barra-superior__centro">
+      <span class="barra-superior__secao" id="secao-atual">Abertura</span>
+      <span class="barra-superior__titulo" id="titulo-atual">Uma cidade que escuta, responde e presta contas</span>
+    </div>
+    <nav class="barra-superior__acoes" aria-label="Controles da apresentação">
+      <button class="botao-barra" type="button" data-acao="indice" title="Índice de slides (O)" aria-label="Abrir índice de slides">
+        <svg class="icone" aria-hidden="true"><use href="#i-grade"></use></svg><span>Índice</span>
+      </button>
+      <button class="botao-barra" type="button" data-acao="notas" title="Notas do apresentador (N)" aria-label="Mostrar notas do apresentador">
+        <svg class="icone" aria-hidden="true"><use href="#i-mensagem"></use></svg><span>Notas</span>
+      </button>
+      <button class="botao-barra" type="button" data-acao="tela-cheia" title="Tela cheia (F)" aria-label="Entrar ou sair da tela cheia">
+        <svg class="icone" aria-hidden="true"><use href="#i-tela-cheia"></use></svg><span>Tela cheia</span>
+      </button>
+      <button class="botao-barra" type="button" data-acao="imprimir" title="Imprimir ou salvar em PDF (P)" aria-label="Imprimir a apresentação">
+        <svg class="icone" aria-hidden="true"><use href="#i-impressora"></use></svg><span>PDF</span>
+      </button>
+      <button class="botao-barra botao-barra--icone" type="button" data-acao="ajuda" title="Ajuda e atalhos (?)" aria-label="Abrir ajuda">
+        <svg class="icone" aria-hidden="true"><use href="#i-ajuda"></use></svg>
+      </button>
+    </nav>
+  </header>
+
+  <main class="palco-wrap" id="palco-wrap">
+    <div class="palco" id="palco">
+      <!-- 01 · CAPA -->
+      <section class="slide slide--capa" data-secao="Abertura" data-titulo="Uma cidade que escuta, responde e presta contas" id="slide-1">
+        <div class="capa__brilho" aria-hidden="true"></div>
+        <div class="capa__grade" aria-hidden="true"></div>
+        <div class="capa">
+          <div class="capa__texto">
+            <img src="imagens/logo-branca.png" alt="Prefeitura Digital" class="capa__logo">
+            <span class="rotulo rotulo--claro">APRESENTAÇÃO INSTITUCIONAL · OUTUBRO DE 2026</span>
+            <h1>Uma cidade que <em>escuta</em>, responde e presta contas.</h1>
+            <p class="capa__sub">A Prefeitura Digital transforma cada pedido do cidadão em um protocolo com responsável, prazo, histórico e resultado — do primeiro clique à conclusão.</p>
+            <div class="capa__chips">
+              <span class="chip chip--escuro"><svg class="icone" aria-hidden="true"><use href="#i-celular"></use></svg> PWA instalável</span>
+              <span class="chip chip--escuro"><svg class="icone" aria-hidden="true"><use href="#i-wifi-off"></use></svg> Funciona offline</span>
+              <span class="chip chip--escuro"><svg class="icone" aria-hidden="true"><use href="#i-acessibilidade"></use></svg> Acessível</span>
+              <span class="chip chip--escuro"><svg class="icone" aria-hidden="true"><use href="#i-escudo"></use></svg> Auditável</span>
+            </div>
+            <p class="capa__publico">Para o Gabinete do Prefeito, Secretarias e Câmara Municipal</p>
+          </div>
+          <div class="capa__visual" aria-hidden="true">
+            <div class="telefone telefone--capa">
+              <div class="telefone__notch"></div>
+              <img src="imagens/app-home.png" alt="">
+            </div>
+            <div class="flutuante flutuante--protocolo">
+              <span class="flutuante__icone flutuante__icone--verde"><svg class="icone"><use href="#i-check"></use></svg></span>
+              <div><small>Protocolo gerado</small><strong>PREF-2026-000123</strong></div>
+            </div>
+            <div class="flutuante flutuante--prazo">
+              <span class="flutuante__icone"><svg class="icone"><use href="#i-relogio"></use></svg></span>
+              <div><small>Meta de atendimento</small><strong>85% no prazo</strong></div>
+            </div>
+          </div>
+        </div>
+        <footer class="rodape-slide rodape-slide--claro">
+          <span>Prefeitura Digital · Apresentação institucional</span>
+          <span class="num-slide"></span>
+        </footer>
+        <template class="nota">
+          <p>Boa tarde. O objetivo desta apresentação não é convencer Vossas Excelências de que a tecnologia resolve tudo. É mostrar como uma plataforma simples, já construída e testada, pode devolver clareza ao atendimento público.</p>
+          <p>A pergunta central é: quantos pedidos chegam à prefeitura todos os dias e quantos deles conseguimos enxergar, acompanhar e comprovar? A Prefeitura Digital nasce dessa pergunta.</p>
+        </template>
+      </section>
+
+      <!-- 02 · AGENDA -->
+      <section class="slide" data-secao="Abertura" data-titulo="O caminho da apresentação" id="slide-2">
+        <header class="slide-topo">
+          <span class="rotulo">ROTEIRO</span>
+          <h2>O caminho da apresentação</h2>
+          <p class="lead">Do problema real à decisão de avançar. Em 25 minutos, vamos percorrer a solução, a demonstração, os controles de segurança e o impacto estimado.</p>
+        </header>
+        <div class="agenda">
+          <article class="agenda__item">
+            <span class="agenda__num">01</span>
+            <span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-alerta"></use></svg></span>
+            <div><h3>O problema</h3><p>A demanda existe, mas a cidade não a enxerga por inteiro.</p></div>
+          </article>
+          <article class="agenda__item">
+            <span class="agenda__num">02</span>
+            <span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-celular"></use></svg></span>
+            <div><h3>A solução</h3><p>Um canal único, do cidadão à conclusão, com protocolo e histórico.</p></div>
+          </article>
+          <article class="agenda__item">
+            <span class="agenda__num">03</span>
+            <span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-olho"></use></svg></span>
+            <div><h3>Demonstração</h3><p>O app do cidadão e o painel de gestão em funcionamento.</p></div>
+          </article>
+          <article class="agenda__item">
+            <span class="agenda__num">04</span>
+            <span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-escudo"></use></svg></span>
+            <div><h3>Segurança e auditoria</h3><p>Confiança desde o desenho, com rastreabilidade de ponta a ponta.</p></div>
+          </article>
+          <article class="agenda__item">
+            <span class="agenda__num">05</span>
+            <span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-grafico"></use></svg></span>
+            <div><h3>Impacto</h3><p>Números, projeções e benefícios para a administração e a população.</p></div>
+          </article>
+          <article class="agenda__item">
+            <span class="agenda__num">06</span>
+            <span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-calendario"></use></svg></span>
+            <div><h3>Decisão</h3><p>O que propomos para os próximos 90 dias e o que precisamos decidir.</p></div>
+          </article>
+        </div>
+        <div class="faixa-rodape">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-relogio"></use></svg> 25 minutos de apresentação</span>
+          <span><svg class="icone" aria-hidden="true"><use href="#i-mensagem"></use></svg> Perguntas ao final</span>
+          <span><svg class="icone" aria-hidden="true"><use href="#i-documento"></use></svg> Roteiro e resumo executivo disponíveis</span>
+        </div>
+        <footer class="rodape-slide"><span>Prefeitura Digital · Apresentação institucional</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>O roteiro está dividido em seis blocos. Os três primeiros respondem “o que é e como funciona”. Os três últimos respondem “por que confiar, quanto impacta e o que decidir”.</p>
+          <p>Se o tempo estiver curto, os slides 17 a 21 podem ser apresentados em bloco, com foco nas premissas e nos três gráficos principais.</p>
+        </template>
+      </section>
+
+      <!-- 03 · PROBLEMA -->
+      <section class="slide" data-secao="O problema" data-titulo="O cidadão pede. A cidade não enxerga." id="slide-3">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">O PROBLEMA</span>
+          <h2>O cidadão pede. A cidade não enxerga.</h2>
+          <p class="lead">A demanda chega por telefone, e-mail, WhatsApp e balcão. Cada canal produz um registro diferente — e nenhum deles garante protocolo, prazo ou histórico. O resultado é fila, retrabalho e desconfiança.</p>
+        </header>
+        <div class="grade grade-3 problema-fotos">
+          <figure class="foto-cartao">
+            <img src="imagens/cidade-iluminacao.jpg" alt="Poste de iluminação pública apagado durante a noite">
+            <figcaption>
+              <span class="foto-cartao__tag">Iluminação pública</span>
+              <strong>“O poste está apagado há dias.”</strong>
+              <p>O pedido foi feito por telefone, mas não há número para acompanhar.</p>
+            </figcaption>
+          </figure>
+          <figure class="foto-cartao">
+            <img src="imagens/cidade-buraco.jpg" alt="Buraco com água acumulada em via asfaltada">
+            <figcaption>
+              <span class="foto-cartao__tag">Pavimentação</span>
+              <strong>“A mesma rua foi reportada por várias pessoas.”</strong>
+              <p>A prefeitura não consegue agrupar, priorizar nem medir a reincidência.</p>
+            </figcaption>
+          </figure>
+          <figure class="foto-cartao">
+            <img src="imagens/cidade-entulho.jpg" alt="Entulho e móvel descartados irregularmente em via pública">
+            <figcaption>
+              <span class="foto-cartao__tag">Limpeza e zeladoria</span>
+              <strong>“A equipe chega sem foto e sem localização exata.”</strong>
+              <p>Volta para pedir mais informação. O cidadão precisa ligar de novo.</p>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="problema-dores">
+          <div><svg class="icone" aria-hidden="true"><use href="#i-documento"></use></svg><strong>Sem confirmação</strong><span>O cidadão não sabe se o pedido existe.</span></div>
+          <div><svg class="icone" aria-hidden="true"><use href="#i-velocimetro"></use></svg><strong>Sem prioridade</strong><span>A urgência real se perde na pilha.</span></div>
+          <div><svg class="icone" aria-hidden="true"><use href="#i-grafico"></use></svg><strong>Sem indicador</strong><span>A gestão decide no escuro.</span></div>
+        </div>
+        <footer class="rodape-slide"><span>Fotos ilustrativas de demandas urbanas · Outubro de 2026</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Estas três imagens representam o tipo de demanda que toda prefeitura recebe. O problema não é a falta de pedidos. É a falta de um lugar único onde o pedido exista com começo, meio e fim.</p>
+          <p>Quando o cidadão liga, ele não recebe protocolo. Quando manda mensagem, o registro fica no celular de um servidor. Quando vai ao balcão, o papel se perde. A gestão não consegue responder a pergunta mais básica: “quantos pedidos temos, de quê e em que pé estão?”.</p>
+        </template>
+      </section>
+
+      <!-- 04 · VISÃO -->
+      <section class="slide" data-secao="A solução" data-titulo="Um único caminho para toda solicitação" id="slide-4">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">A VISÃO</span>
+          <h2>Um único caminho para toda solicitação.</h2>
+        </header>
+        <div class="visao">
+          <blockquote class="visao__frase">
+            <span class="visao__aspas" aria-hidden="true">“</span>
+            <span class="visao__texto">Do primeiro clique à conclusão, cada pedido tem <em>protocolo</em>, <em>responsável</em>, <em>prazo</em> e <em>histórico</em>.</span>
+          </blockquote>
+          <div class="visao__pilares">
+            <article class="pilar"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-celular"></use></svg></span><div><h3>Simples para o cidadão</h3><p>Sem cadastro, sem senha, sem fila.</p></div></article>
+            <article class="pilar"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-grafico"></use></svg></span><div><h3>Claro para a gestão</h3><p>Fila por setor, prioridade e SLA.</p></div></article>
+            <article class="pilar"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-escudo"></use></svg></span><div><h3>Seguro por padrão</h3><p>Dados minimizados e acessos controlados.</p></div></article>
+            <article class="pilar"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-historico"></use></svg></span><div><h3>Auditável de ponta a ponta</h3><p>Quem, quando, onde e por quê.</p></div></article>
+          </div>
+        </div>
+        <div class="fluxo">
+          <div class="fluxo__item"><span class="fluxo__icone"><svg class="icone" aria-hidden="true"><use href="#i-celular"></use></svg></span><strong>Cidadão</strong></div>
+          <span class="fluxo__seta" aria-hidden="true"><svg class="icone"><use href="#i-seta"></use></svg></span>
+          <div class="fluxo__item"><span class="fluxo__icone"><svg class="icone" aria-hidden="true"><use href="#i-documento-check"></use></svg></span><strong>Protocolo</strong></div>
+          <span class="fluxo__seta" aria-hidden="true"><svg class="icone"><use href="#i-seta"></use></svg></span>
+          <div class="fluxo__item"><span class="fluxo__icone"><svg class="icone" aria-hidden="true"><use href="#i-busca"></use></svg></span><strong>Triagem</strong></div>
+          <span class="fluxo__seta" aria-hidden="true"><svg class="icone"><use href="#i-seta"></use></svg></span>
+          <div class="fluxo__item"><span class="fluxo__icone"><svg class="icone" aria-hidden="true"><use href="#i-predio"></use></svg></span><strong>Setor</strong></div>
+          <span class="fluxo__seta" aria-hidden="true"><svg class="icone"><use href="#i-seta"></use></svg></span>
+          <div class="fluxo__item"><span class="fluxo__icone"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg></span><strong>Conclusão</strong></div>
+          <span class="fluxo__seta" aria-hidden="true"><svg class="icone"><use href="#i-seta"></use></svg></span>
+          <div class="fluxo__item"><span class="fluxo__icone"><svg class="icone" aria-hidden="true"><use href="#i-estrela"></use></svg></span><strong>Avaliação</strong></div>
+        </div>
+        <footer class="rodape-slide"><span>Prefeitura Digital · Apresentação institucional</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Esta é a ideia em uma frase: um único caminho para toda solicitação. Não importa se o pedido entrou pelo app, pelo telefone ou pelo balcão. Ele precisa existir em um lugar só, com protocolo, responsável, prazo e histórico.</p>
+          <p>Os quatro pilares são os critérios de decisão: simplicidade para o cidadão, clareza para a gestão, segurança por padrão e auditoria de ponta a ponta.</p>
+        </template>
+      </section>
+
+      <!-- 05 · SOLUÇÃO -->
+      <section class="slide" data-secao="A solução" data-titulo="Duas experiências. Uma só verdade." id="slide-5">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">A SOLUÇÃO</span>
+          <h2>Duas experiências. Uma só verdade.</h2>
+          <p class="lead">O cidadão tem uma porta de entrada simples. A gestão tem uma mesa de trabalho completa. Os dois lados leem e escrevem na mesma base, com as mesmas regras.</p>
+        </header>
+        <div class="solucao">
+          <div class="solucao__lado">
+            <span class="rotulo rotulo--azul">PARA O CIDADÃO</span>
+            <div class="telefone telefone--solucao">
+              <div class="telefone__notch"></div>
+              <img src="imagens/app-home.png" alt="Tela inicial do aplicativo do cidadão">
+            </div>
+            <ul class="lista-check lista-check--compacta">
+              <li>Abrir e acompanhar em poucos toques.</li>
+              <li>Funciona offline e instala como app.</li>
+              <li>Protocolo + código de acesso.</li>
+            </ul>
+          </div>
+          <div class="solucao__conector" aria-hidden="true">
+            <span class="solucao__linha"></span>
+            <div class="solucao__selo">
+              <svg class="icone"><use href="#i-escudo"></use></svg>
+              <strong>API única</strong>
+              <small>regras no servidor<br>trilha de auditoria</small>
+            </div>
+            <span class="solucao__linha"></span>
+          </div>
+          <div class="solucao__lado solucao__lado--painel">
+            <span class="rotulo rotulo--azul">PARA A GESTÃO</span>
+            <div class="navegador navegador--solucao">
+              <div class="navegador__topo"><span></span><span></span><span></span><em>gestao.prefeitura.gov.br</em></div>
+              <img src="imagens/painel-fila.png" alt="Painel de gestão com fila de solicitações por setor">
+            </div>
+            <ul class="lista-check lista-check--compacta">
+              <li>Fila única, escopada por setor.</li>
+              <li>Triagem, transferência e impressão.</li>
+              <li>Indicadores de prazo e satisfação.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="status-piloto">
+          <div><span class="status-piloto__selo status-piloto__selo--verde"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg> Já no piloto</span><p>9 serviços, app + painel, offline, acessibilidade, testes automatizados e trilha de auditoria.</p></div>
+          <div><span class="status-piloto__selo status-piloto__selo--ambar"><svg class="icone" aria-hidden="true"><use href="#i-relogio"></use></svg> Para produção</span><p>Banco transacional, gov.br, push, integrações de OS, LGPD/DPIA e operação 24×7.</p></div>
+        </div>
+        <footer class="rodape-slide"><span>Piloto funcional com dados fictícios · Outubro de 2026</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>A plataforma tem duas metades. A primeira é o app do cidadão: leve, sem login, com protocolo e código de acesso. A segunda é o painel de gestão: fila por setor, triagem, transferência, impressão e indicadores.</p>
+          <p>O ponto importante é que não são dois sistemas. É uma API só, com as mesmas regras. O que o cidadão vê e o que a gestão vê são recortes diferentes da mesma verdade.</p>
+        </template>
+      </section>
+
+      <!-- 06 · JORNADA -->
+      <section class="slide" data-secao="A solução" data-titulo="Menos de três minutos. Nenhuma fila." id="slide-6">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">JORNADA DO CIDADÃO</span>
+          <h2>Menos de três minutos. Nenhuma fila.</h2>
+          <p class="lead">O cidadão escolhe o serviço, descreve o problema, anexa uma foto e recebe um protocolo na hora. Depois, acompanha cada etapa pelo celular.</p>
+        </header>
+        <div class="jornada">
+          <ol class="jornada__passos">
+            <li>
+              <span class="jornada__num">1</span>
+              <span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-busca"></use></svg></span>
+              <div><h3>Escolhe o serviço</h3><p>9 categorias, busca sem acento e prazo estimado.</p></div>
+            </li>
+            <li>
+              <span class="jornada__num">2</span>
+              <span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-camera"></use></svg></span>
+              <div><h3>Descreve e localiza</h3><p>Foto, CEP assistido e geolocalização opcionais.</p></div>
+            </li>
+            <li>
+              <span class="jornada__num">3</span>
+              <span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-documento-check"></use></svg></span>
+              <div><h3>Recebe o protocolo</h3><p>Formato PREF-AAAA-000000 + código de acesso.</p></div>
+            </li>
+            <li>
+              <span class="jornada__num">4</span>
+              <span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-historico"></use></svg></span>
+              <div><h3>Acompanha</h3><p>Status, prazo, histórico e setor responsável.</p></div>
+            </li>
+            <li>
+              <span class="jornada__num">5</span>
+              <span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-estrela"></use></svg></span>
+              <div><h3>Avalia</h3><p>De 1 a 5 estrelas após a conclusão.</p></div>
+            </li>
+          </ol>
+          <div class="jornada__visual">
+            <div class="telefone telefone--jornada">
+              <div class="telefone__notch"></div>
+              <img src="imagens/app-acompanhar-mobile.png" alt="Tela de acompanhamento com status, prazo e histórico do pedido">
+            </div>
+            <div class="cartao-selo cartao-selo--jornada">
+              <span class="flutuante__icone flutuante__icone--verde"><svg class="icone"><use href="#i-check"></use></svg></span>
+              <div><small>Experiência validada</small><strong>Protocolo em &lt; 3 min</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="faixa-rodape faixa-rodape--destaque">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-cadeado"></use></svg> Sem cadastro e sem senha. O código é gerado no aparelho; o servidor guarda apenas o hash.</span>
+          <span><svg class="icone" aria-hidden="true"><use href="#i-wifi-off"></use></svg> Se a conexão cair, o rascunho e a fila preservam o pedido.</span>
+        </div>
+        <footer class="rodape-slide"><span>Fluxo validado no piloto com dados fictícios</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>A jornada tem cinco passos. O cidadão não cria conta, não escolhe senha e não baixa nada de loja de aplicativos. Ele abre o app, escolhe o serviço, anexa uma foto se quiser e recebe um protocolo.</p>
+          <p>O código de acesso é a chave do pedido. Ele é gerado no aparelho e o servidor guarda apenas o hash. Isso significa que nem quem administra o banco consegue ler o código em texto claro.</p>
+        </template>
+      </section>
+
+      <!-- 07 · PWA -->
+      <section class="slide" data-secao="A solução" data-titulo="Um app que cabe na realidade da cidade" id="slide-7">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">TECNOLOGIA</span>
+          <h2>Um app que cabe na realidade da cidade.</h2>
+          <p class="lead">PWA é uma aplicação web que instala no celular, abre como app e continua funcionando quando a conexão cai. Não depende de loja de aplicativos nem de dois times de desenvolvimento.</p>
+        </header>
+        <div class="grade grade-4 pwa-cards">
+          <article class="cartao cartao--pwa"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-download"></use></svg></span><h3>Instalável</h3><p>“Adicionar à tela de início” no Android e no iPhone, sem passar pela loja.</p></article>
+          <article class="cartao cartao--pwa"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-wifi-off"></use></svg></span><h3>Offline</h3><p>Telas visitadas e rascunhos continuam disponíveis; a fila reenvia ao reconectar.</p></article>
+          <article class="cartao cartao--pwa"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-velocimetro"></use></svg></span><h3>Leve</h3><p>Uma base de código, atualização imediata e menos custo de manutenção.</p></article>
+          <article class="cartao cartao--pwa"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-acessibilidade"></use></svg></span><h3>Acessível</h3><p>Fonte ampliada, alto contraste, teclado e alvos de toque de 44 px.</p></article>
+        </div>
+        <div class="comparativo">
+          <div class="comparativo__coluna comparativo__coluna--neutra">
+            <span class="rotulo">APP NATIVO</span>
+            <ul>
+              <li>Duas equipes, duas lojas, dois ciclos de atualização.</li>
+              <li>Instalação depende de aprovação e versão do sistema.</li>
+              <li>Custo maior para o mesmo fluxo.</li>
+            </ul>
+          </div>
+          <div class="comparativo__seta" aria-hidden="true"><svg class="icone"><use href="#i-seta"></use></svg></div>
+          <div class="comparativo__coluna comparativo__coluna--azul">
+            <span class="rotulo">PWA</span>
+            <ul>
+              <li>Uma base, atualização imediata, instalação direta.</li>
+              <li>Funciona no navegador e como app instalado.</li>
+              <li>Menor custo marginal por novo serviço.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="faixa-rodape">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-globo"></use></svg> Chrome, Edge, Safari iOS 16.4+ e Chrome Android.</span>
+          <span><svg class="icone" aria-hidden="true"><use href="#i-celular"></use></svg> Layout de 320 px a 1440 px.</span>
+        </div>
+        <footer class="rodape-slide"><span>Decisão de arquitetura registrada no piloto</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>PWA não é um app menor. É uma escolha de arquitetura: uma base só, que roda no navegador e instala no celular. Para a prefeitura, isso reduz custo e acelera a correção de problemas.</p>
+          <p>Para o cidadão, a diferença aparece na prática: o app abre rápido, funciona com internet instável e não ocupa espaço como um aplicativo tradicional.</p>
+        </template>
+      </section>
+
+      <!-- 08 · DEMONSTRAÇÃO CIDADÃO -->
+      <section class="slide slide--demo" data-secao="Demonstração" data-titulo="A experiência do cidadão, ponta a ponta" id="slide-8">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">DEMONSTRAÇÃO · CIDADÃO</span>
+          <h2>A experiência do cidadão, ponta a ponta.</h2>
+        </header>
+        <div class="demo-cidadao">
+          <figure class="demo-tela">
+            <div class="telefone telefone--demo"><div class="telefone__notch"></div><img src="imagens/app-home.png" alt="Tela inicial com avisos e busca de serviços"></div>
+            <figcaption><strong>Home</strong><span>Busca de serviços e avisos da cidade.</span></figcaption>
+          </figure>
+          <figure class="demo-tela">
+            <div class="telefone telefone--demo"><div class="telefone__notch"></div><img src="imagens/app-solicitacao.png" alt="Tela de nova solicitação com escolha de serviço"></div>
+            <figcaption><strong>Nova solicitação</strong><span>Rascunho automático, foto, CEP e localização.</span></figcaption>
+          </figure>
+          <figure class="demo-tela">
+            <div class="telefone telefone--demo"><div class="telefone__notch"></div><img src="imagens/app-acompanhar-mobile.png" alt="Tela de acompanhamento com status e histórico"></div>
+            <figcaption><strong>Acompanhar</strong><span>Status, prazo, histórico e avaliação.</span></figcaption>
+          </figure>
+        </div>
+        <div class="demo-cidadao__notas">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-busca"></use></svg> Busca sem acento e catálogo com prazos.</span>
+          <span><svg class="icone" aria-hidden="true"><use href="#i-wifi-off"></use></svg> Se a conexão cair, o pedido fica salvo no aparelho.</span>
+          <span><svg class="icone" aria-hidden="true"><use href="#i-cadeado"></use></svg> O código de acesso nunca aparece na URL.</span>
+        </div>
+        <footer class="rodape-slide"><span>Telas reais do piloto · Dados fictícios</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Estas são telas reais do piloto. A Home mostra os avisos e a busca. A nova solicitação tem rascunho automático, foto e localização. O acompanhamento mostra status, prazo e histórico.</p>
+          <p>Vale destacar a busca sem acento: o cidadão digita “iluminacao” e encontra “Iluminação pública”. Parece detalhe, mas é a diferença entre conseguir e desistir.</p>
+        </template>
+      </section>
+
+      <!-- 09 · PAINEL DE GESTÃO -->
+      <section class="slide" data-secao="Demonstração" data-titulo="A cidade inteira na mesma fila" id="slide-9">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">DEMONSTRAÇÃO · GESTÃO</span>
+          <h2>A cidade inteira na mesma fila.</h2>
+          <p class="lead">A triagem central recebe tudo. Cada secretaria vê apenas o que é seu. O gestor acompanha prazos, prioridades e satisfação sem pedir planilha.</p>
+        </header>
+        <div class="gestao-demo">
+          <div class="navegador navegador--gestao">
+            <div class="navegador__topo"><span></span><span></span><span></span><em>gestao.prefeitura.gov.br/solicitacoes</em></div>
+            <img src="imagens/painel-fila.png" alt="Painel de gestão com fila do setor de Obras e Infraestrutura">
+          </div>
+          <aside class="gestao-demo__lado">
+            <article class="recurso"><span class="icone-caixa icone-caixa--pequeno"><svg class="icone" aria-hidden="true"><use href="#i-predio"></use></svg></span><div><h3>Fila por setor</h3><p>Cada equipe vê o que lhe foi encaminhado.</p></div></article>
+            <article class="recurso"><span class="icone-caixa icone-caixa--pequeno"><svg class="icone" aria-hidden="true"><use href="#i-transferir"></use></svg></span><div><h3>Transferência auditável</h3><p>Motivo obrigatório, SLA preservado por padrão.</p></div></article>
+            <article class="recurso"><span class="icone-caixa icone-caixa--pequeno"><svg class="icone" aria-hidden="true"><use href="#i-impressora"></use></svg></span><div><h3>Impressão de ordens</h3><p>Seleção de pedidos ou resultado dos filtros.</p></div></article>
+            <article class="recurso"><span class="icone-caixa icone-caixa--pequeno"><svg class="icone" aria-hidden="true"><use href="#i-pessoas"></use></svg></span><div><h3>Usuários e permissões</h3><p>Admin, triagem e setor, com escopo no servidor.</p></div></article>
+            <div class="gestao-demo__mini">
+              <img src="imagens/painel-transferencia.png" alt="Tela de transferência de solicitação com motivo e setor de destino">
+              <span>Transferência com motivo e histórico</span>
+            </div>
+          </aside>
+        </div>
+        <div class="faixa-rodape faixa-rodape--destaque">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-cadeado"></use></svg> O escopo é aplicado no servidor: um usuário de setor não abre pedido de outro setor, nem por link direto.</span>
+        </div>
+        <footer class="rodape-slide"><span>Telas reais do piloto · Dados fictícios</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Este é o painel de gestão. A triagem vê tudo; cada secretaria vê apenas a própria fila. O gestor tem indicadores de abertas, atrasadas, concluídas e avaliação média.</p>
+          <p>A transferência é um ponto crítico: ela exige motivo, fica registrada e preserva o prazo original por padrão. Isso evita o “empurra-empurra” sem justificativa.</p>
+        </template>
+      </section>
+
+      <!-- 10 · ARQUITETURA -->
+      <section class="slide" data-secao="Como funciona" data-titulo="A regra fica no servidor. O cidadão vê o essencial." id="slide-10">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">COMO FUNCIONA</span>
+          <h2>A regra fica no servidor. O cidadão vê o essencial.</h2>
+          <p class="lead">O aplicativo é a porta de entrada. A API valida, autoriza, registra e calcula prazos. A gestão trabalha sobre a mesma base — sem ilhas de informação.</p>
+        </header>
+        <div class="arquitetura">
+          <div class="arquitetura__diagrama">
+            <div class="arquitetura__camada arquitetura__camada--canais">
+              <div class="arquitetura__no"><span class="icone-caixa icone-caixa--pequeno"><svg class="icone" aria-hidden="true"><use href="#i-celular"></use></svg></span><strong>Cidadão</strong><small>PWA instalável</small></div>
+              <div class="arquitetura__no"><span class="icone-caixa icone-caixa--pequeno"><svg class="icone" aria-hidden="true"><use href="#i-predio"></use></svg></span><strong>Gestão</strong><small>painel por setor</small></div>
+              <div class="arquitetura__no arquitetura__no--futuro"><span class="icone-caixa icone-caixa--pequeno"><svg class="icone" aria-hidden="true"><use href="#i-globo"></use></svg></span><strong>Integrações</strong><small>gov.br · OS · BI</small></div>
+            </div>
+            <div class="arquitetura__setas" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="arquitetura__camada arquitetura__camada--api">
+              <span class="arquitetura__titulo"><svg class="icone" aria-hidden="true"><use href="#i-escudo"></use></svg> API · regras de negócio · segurança</span>
+              <div class="arquitetura__tags"><span>validação</span><span>autorização</span><span>prazos</span><span>rate limit</span><span>sanitização</span></div>
+            </div>
+            <div class="arquitetura__setas" aria-hidden="true"><span></span><span></span><span></span></div>
+            <div class="arquitetura__camada arquitetura__camada--dados">
+              <div class="arquitetura__no"><span class="icone-caixa icone-caixa--pequeno"><svg class="icone" aria-hidden="true"><use href="#i-documento"></use></svg></span><strong>Dados</strong><small>fonte única</small></div>
+              <div class="arquitetura__no"><span class="icone-caixa icone-caixa--pequeno"><svg class="icone" aria-hidden="true"><use href="#i-historico"></use></svg></span><strong>Auditoria</strong><small>histórico e eventos</small></div>
+              <div class="arquitetura__no"><span class="icone-caixa icone-caixa--pequeno"><svg class="icone" aria-hidden="true"><use href="#i-grafico"></use></svg></span><strong>Relatórios</strong><small>indicadores e impressão</small></div>
+            </div>
+          </div>
+          <aside class="arquitetura__lista">
+            <h3>Por que isso importa</h3>
+            <ul class="lista-check">
+              <li>Validação no servidor, não só na tela.</li>
+              <li>Autorização por papel e por setor.</li>
+              <li>Histórico e transferências auditáveis.</li>
+              <li>Contrato aberto para integrar sistemas.</li>
+            </ul>
+            <div class="nota-lateral"><svg class="icone" aria-hidden="true"><use href="#i-escudo"></use></svg><p>O frontend não é fonte da verdade. Ele é a interface de um contrato validado no backend.</p></div>
+          </aside>
+        </div>
+        <footer class="rodape-slide"><span>Arquitetura em camadas · Piloto funcional</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Esta é a arquitetura em uma imagem. O cidadão e a gestão são canais. A API concentra validação, autorização, prazos e segurança. Os dados, a auditoria e os relatórios ficam na base.</p>
+          <p>A frase importante é: o frontend não é a fonte da verdade. Ele é a interface. Quem decide se um pedido pode ser visto, alterado ou transferido é o servidor.</p>
+        </template>
+      </section>
+
+      <!-- 11 · USABILIDADE -->
+      <section class="slide" data-secao="Usabilidade" data-titulo="Usabilidade não é luxo. É inclusão." id="slide-11">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">USABILIDADE</span>
+          <h2>Usabilidade não é luxo. É inclusão.</h2>
+          <p class="lead">A plataforma foi desenhada para quem tem pressa, para quem tem pouca familiaridade digital e para quem está em um bairro com conexão instável.</p>
+        </header>
+        <div class="usabilidade">
+          <div class="usabilidade__cards">
+            <article class="cartao cartao--usabilidade"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-celular"></use></svg></span><h3>Mobile-first</h3><p>De 320 px a 1440 px, sem overflow e com áreas de toque confortáveis.</p></article>
+            <article class="cartao cartao--usabilidade"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-wifi-off"></use></svg></span><h3>Offline de verdade</h3><p>Rascunho e fila local; nada se perde quando a rede cai.</p></article>
+            <article class="cartao cartao--usabilidade"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-acessibilidade"></use></svg></span><h3>Acessibilidade</h3><p>Fonte ampliada, alto contraste, teclado e foco visível.</p></article>
+            <article class="cartao cartao--usabilidade"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-mensagem"></use></svg></span><h3>Linguagem simples</h3><p>Status e prazos em português claro, sem jargão técnico.</p></article>
+            <article class="cartao cartao--usabilidade"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-cadeado"></use></svg></span><h3>Sem login</h3><p>Protocolo + código de acesso. Menos atrito para o cidadão.</p></article>
+            <article class="cartao cartao--usabilidade"><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg></span><h3>Tolerância a falhas</h3><p>Validação junto ao campo e mensagens que dizem o que fazer.</p></article>
+          </div>
+          <aside class="usabilidade__destaque">
+            <span class="usabilidade__numero">3<span>min</span></span>
+            <strong>Tempo médio para abrir e receber o protocolo</strong>
+            <p>Meta de experiência do piloto, medida no teste moderado com usuários.</p>
+            <div class="usabilidade__selos">
+              <span class="selo"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg> WCAG 2.1 A</span>
+              <span class="selo"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg> 44 px de toque</span>
+              <span class="selo"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg> Teclado</span>
+            </div>
+          </aside>
+        </div>
+        <footer class="rodape-slide"><span>Auditoria com leitor de tela prevista para a fase de produção</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Usabilidade não é enfeite. É a diferença entre um serviço que existe e um serviço que a pessoa consegue usar. O piloto foi desenhado para telas pequenas, conexão ruim e pouca familiaridade digital.</p>
+          <p>Os três minutos são uma meta de experiência. O número será medido com usuários reais na fase de validação, não apenas no ambiente de demonstração.</p>
+        </template>
+      </section>
+
+      <!-- 12 · SEGURANÇA -->
+      <section class="slide" data-secao="Segurança e auditoria" data-titulo="Confiança não se promete. Se projeta." id="slide-12">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">SEGURANÇA</span>
+          <h2>Confiança não se promete. Se projeta.</h2>
+          <p class="lead">A segurança está distribuída em camadas: no canal, na identidade, na autorização, no dado e na operação. Nenhuma delas depende de o usuário “fazer a coisa certa”.</p>
+        </header>
+        <div class="camadas">
+          <article class="camada"><span class="camada__num">01</span><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-globo"></use></svg></span><div><h3>Canal</h3><p>HTTPS em produção, CORS restrito com credenciais e cabeçalhos que não expõem a stack.</p></div></article>
+          <article class="camada"><span class="camada__num">02</span><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-cadeado"></use></svg></span><div><h3>Identidade</h3><p>Sessão em cookie HttpOnly; código de acesso gerado no aparelho e nunca enviado na URL.</p></div></article>
+          <article class="camada"><span class="camada__num">03</span><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-pessoas"></use></svg></span><div><h3>Autorização</h3><p>Papéis admin, triagem e setor. O escopo é aplicado no servidor, inclusive em acesso direto.</p></div></article>
+          <article class="camada"><span class="camada__num">04</span><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-documento"></use></svg></span><div><h3>Dados</h3><p>Hash SHA-256 do código; senhas com scrypt e sal; respostas públicas sanitizadas e minimizadas.</p></div></article>
+          <article class="camada"><span class="camada__num">05</span><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-velocimetro"></use></svg></span><div><h3>Operação</h3><p>Rate limit por IP, limite de corpo, validação de entrada e erros padronizados sem vazamento.</p></div></article>
+          <article class="camada"><span class="camada__num">06</span><span class="icone-caixa"><svg class="icone" aria-hidden="true"><use href="#i-historico"></use></svg></span><div><h3>Auditoria</h3><p>Histórico de eventos, transferências com motivo e rastreabilidade para controle interno e externo.</p></div></article>
+        </div>
+        <div class="faixa-rodape faixa-rodape--destaque">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg> No piloto, os controles já estão implementados.</span>
+          <span><svg class="icone" aria-hidden="true"><use href="#i-relogio"></use></svg> Para produção: HTTPS obrigatório, cookie Secure, banco transacional e auditoria centralizada.</span>
+        </div>
+        <footer class="rodape-slide"><span>Segurança em profundidade · Outubro de 2026</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Segurança não é um botão que se liga no final. São camadas. O canal é HTTPS; a identidade é o cookie HttpOnly e o código de acesso; a autorização é por papel e setor; o dado é minimizado e hasheado; a operação tem limites; e a auditoria registra o que aconteceu.</p>
+          <p>É importante ser transparente: o piloto já implementa esses controles, mas produção exige endurecimento adicional — HTTPS obrigatório, cookie Secure, banco transacional e auditoria centralizada.</p>
+        </template>
+      </section>
+
+      <!-- 13 · PRIVACIDADE E LGPD -->
+      <section class="slide" data-secao="Segurança e auditoria" data-titulo="Coletar o mínimo. Proteger o máximo." id="slide-13">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">PRIVACIDADE E LGPD</span>
+          <h2>Coletar o mínimo. Proteger o máximo.</h2>
+          <p class="lead">O cidadão informa apenas o necessário para o atendimento. O contato é opcional. O código de acesso não é armazenado em texto claro. O que é interno permanece interno.</p>
+        </header>
+        <div class="privacidade">
+          <article class="privacidade__bloco privacidade__bloco--publico">
+            <span class="rotulo rotulo--azul">O QUE O CIDADÃO VÊ</span>
+            <ul class="lista-icone">
+              <li><svg class="icone" aria-hidden="true"><use href="#i-documento-check"></use></svg><span>Protocolo, status e prazo.</span></li>
+              <li><svg class="icone" aria-hidden="true"><use href="#i-predio"></use></svg><span>Setor responsável e histórico público.</span></li>
+              <li><svg class="icone" aria-hidden="true"><use href="#i-estrela"></use></svg><span>Avaliação do atendimento.</span></li>
+              <li><svg class="icone" aria-hidden="true"><use href="#i-mapa"></use></svg><span>Foto e localização do próprio pedido.</span></li>
+            </ul>
+          </article>
+          <div class="privacidade__escudo" aria-hidden="true">
+            <span class="privacidade__anel"></span>
+            <svg class="icone"><use href="#i-escudo"></use></svg>
+            <strong>LGPD</strong>
+            <small>desde o desenho</small>
+          </div>
+          <article class="privacidade__bloco privacidade__bloco--interno">
+            <span class="rotulo rotulo--azul">O QUE O SERVIDOR PROTEGE</span>
+            <ul class="lista-icone">
+              <li><svg class="icone" aria-hidden="true"><use href="#i-cadeado"></use></svg><span>Contato, clientId e metadados de triagem.</span></li>
+              <li><svg class="icone" aria-hidden="true"><use href="#i-cadeado"></use></svg><span>Hash do código de acesso; nunca o código em texto.</span></li>
+              <li><svg class="icone" aria-hidden="true"><use href="#i-historico"></use></svg><span>Motivo interno de transferência.</span></li>
+              <li><svg class="icone" aria-hidden="true"><use href="#i-escudo"></use></svg><span>Rotas de gestão fora do cache do aplicativo.</span></li>
+            </ul>
+          </article>
+        </div>
+        <div class="principios">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg> Finalidade</span>
+          <span><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg> Minimização</span>
+          <span><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg> Segurança</span>
+          <span><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg> Transparência</span>
+          <span><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg> Retenção definida</span>
+        </div>
+        <div class="futuro">
+          <strong>Para produção:</strong>
+          <span>base legal, DPIA, encarregado (DPO), prazo de retenção, direitos do titular e contrato de operação.</span>
+        </div>
+        <footer class="rodape-slide"><span>Piloto com dados fictícios · Nenhum dado pessoal real antes da etapa de LGPD</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>A LGPD não é um obstáculo; é um critério de projeto. O app coleta o mínimo: tipo, descrição, endereço e, se o cidadão quiser, contato, foto e localização. O contato é opcional.</p>
+          <p>O código de acesso é armazenado como hash. O que é interno — contato, clientId, motivo de transferência, metadados de triagem — não aparece na consulta pública. Para produção, ainda precisamos de DPIA, DPO, base legal e prazo de retenção.</p>
+        </template>
+      </section>
+
+      <!-- 14 · AUDITORIA -->
+      <section class="slide" data-secao="Segurança e auditoria" data-titulo="Se não está registrado, não aconteceu." id="slide-14">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">AUDITORIA</span>
+          <h2>Se não está registrado, não aconteceu.</h2>
+          <p class="lead">Cada mudança de status, transferência ou avaliação gera um evento com data, hora, responsável e observação. O histórico é a memória da gestão — e a prova para o controle externo.</p>
+        </header>
+        <div class="auditoria">
+          <ol class="linha-tempo">
+            <li class="linha-tempo__item">
+              <span class="linha-tempo__ponto"><svg class="icone" aria-hidden="true"><use href="#i-documento-check"></use></svg></span>
+              <div><div class="linha-tempo__topo"><strong>Recebida</strong><time>12/10 · 09:12</time></div><p>Protocolo PREF-2026-000123 · “Solicitação registrada pelo aplicativo.”</p><span class="linha-tempo__autor">Cidadão · canal digital</span></div>
+            </li>
+            <li class="linha-tempo__item">
+              <span class="linha-tempo__ponto"><svg class="icone" aria-hidden="true"><use href="#i-busca"></use></svg></span>
+              <div><div class="linha-tempo__topo"><strong>Em análise</strong><time>12/10 · 14:30</time></div><p>Encaminhado para Obras e Infraestrutura.</p><span class="linha-tempo__autor">Equipe de Triagem</span></div>
+            </li>
+            <li class="linha-tempo__item linha-tempo__item--transferencia">
+              <span class="linha-tempo__ponto"><svg class="icone" aria-hidden="true"><use href="#i-transferir"></use></svg></span>
+              <div><div class="linha-tempo__topo"><strong>Transferência</strong><time>13/10 · 08:05</time></div><p>Obras → Zeladoria. Motivo registrado; SLA original preservado.</p><span class="linha-tempo__autor">Gestor de Obras</span></div>
+            </li>
+            <li class="linha-tempo__item">
+              <span class="linha-tempo__ponto"><svg class="icone" aria-hidden="true"><use href="#i-ferramenta"></use></svg></span>
+              <div><div class="linha-tempo__topo"><strong>Em execução</strong><time>13/10 · 10:20</time></div><p>Equipe designada para vistoria no local.</p><span class="linha-tempo__autor">Equipe de Zeladoria</span></div>
+            </li>
+            <li class="linha-tempo__item linha-tempo__item--concluida">
+              <span class="linha-tempo__ponto"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg></span>
+              <div><div class="linha-tempo__topo"><strong>Concluída</strong><time>14/10 · 16:40</time></div><p>Serviço concluído; cidadão avaliou com 5 estrelas.</p><span class="linha-tempo__autor">Equipe de Zeladoria</span></div>
+            </li>
+          </ol>
+          <aside class="auditoria__lado">
+            <h3>O que a trilha garante</h3>
+            <article class="auditoria__beneficio"><svg class="icone" aria-hidden="true"><use href="#i-olho"></use></svg><div><strong>Rastreabilidade</strong><p>Quem fez, quando e por quê.</p></div></article>
+            <article class="auditoria__beneficio"><svg class="icone" aria-hidden="true"><use href="#i-documento"></use></svg><div><strong>Transparência</strong><p>Histórico visível ao cidadão.</p></div></article>
+            <article class="auditoria__beneficio"><svg class="icone" aria-hidden="true"><use href="#i-velocimetro"></use></svg><div><strong>Controle de prazos</strong><p>Transferências e SLA documentados.</p></div></article>
+            <article class="auditoria__beneficio"><svg class="icone" aria-hidden="true"><use href="#i-impressora"></use></svg><div><strong>Prestação de contas</strong><p>Relatórios e impressão para o controle.</p></div></article>
+            <div class="nota-lateral nota-lateral--escura"><svg class="icone" aria-hidden="true"><use href="#i-escudo"></use></svg><p>Auditoria protege o servidor e o gestor.</p></div>
+          </aside>
+        </div>
+        <footer class="rodape-slide"><span>Exemplo ilustrativo de trilha de auditoria</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Esta é a linha do tempo de um pedido. Cada evento tem data, hora, autor e observação. A transferência tem motivo e setor de origem e destino. O prazo original é preservado por padrão.</p>
+          <p>Isso não serve apenas para o cidadão. Serve para o gestor, para o controle interno e para o Tribunal de Contas. Se houver questionamento, a resposta está registrada.</p>
+        </template>
+      </section>
+
+      <!-- 15 · DESAFOGAMENTO -->
+      <section class="slide" data-secao="Impacto" data-titulo="Desafogar não é trabalhar menos. É trabalhar no que importa." id="slide-15">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">IMPACTO NA GESTÃO</span>
+          <h2>Desafogar não é trabalhar menos. É trabalhar no que importa.</h2>
+          <p class="lead">A plataforma reduz o tempo gasto com registro, retorno e retrabalho. A equipe ganha fôlego para vistoria, fiscalização, atendimento prioritário e decisão.</p>
+        </header>
+        <div class="antes-depois">
+          <article class="antes-depois__coluna antes-depois__coluna--antes">
+            <span class="rotulo">HOJE</span>
+            <h3>O dia que se perde</h3>
+            <ul>
+              <li>Pedidos espalhados em telefone, e-mail e WhatsApp.</li>
+              <li>Informação incompleta; a equipe volta a campo.</li>
+              <li>Fila sem prioridade e sem prazo visível.</li>
+              <li>Relatórios montados à mão.</li>
+            </ul>
+          </article>
+          <div class="antes-depois__seta" aria-hidden="true"><svg class="icone"><use href="#i-seta"></use></svg></div>
+          <article class="antes-depois__coluna antes-depois__coluna--depois">
+            <span class="rotulo">COM A PLATAFORMA</span>
+            <h3>O dia que rende</h3>
+            <ul>
+              <li>Canal único com protocolo e histórico.</li>
+              <li>Formulário guiado, foto e localização.</li>
+              <li>Fila por setor, prioridade e SLA.</li>
+              <li>Indicadores em tempo real e impressão.</li>
+            </ul>
+          </article>
+        </div>
+        <div class="faixa-kpi">
+          <div class="kpi"><span class="kpi__valor">15<small>min</small></span><span class="kpi__rotulo">economizados por solicitação migrada</span></div>
+          <div class="kpi"><span class="kpi__valor">2.844<small>h</small></span><span class="kpi__rotulo">liberadas no primeiro ano</span></div>
+          <div class="kpi"><span class="kpi__valor">2,1</span><span class="kpi__rotulo">servidores equivalentes em regime</span></div>
+          <div class="kpi"><span class="kpi__valor">R$ 159<small>mil</small></span><span class="kpi__rotulo">em capacidade operacional por ano</span></div>
+        </div>
+        <div class="faixa-rodape faixa-rodape--destaque">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-coracao"></use></svg> Nenhum posto de trabalho precisa ser eliminado. O ganho é de capacidade e qualidade.</span>
+          <span><svg class="icone" aria-hidden="true"><use href="#i-documento"></use></svg> Premissas na página 17. Estimativas de planejamento.</span>
+        </div>
+        <footer class="rodape-slide"><span>Cenário base · Município de referência com 100 mil habitantes</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>A pergunta que sempre aparece: “isso vai substituir servidores?”. A resposta é não. O que a plataforma faz é reduzir o tempo gasto com registro, retorno e retrabalho. Esse tempo volta para vistoria, fiscalização e atendimento prioritário.</p>
+          <p>No cenário base, são 15 minutos economizados por solicitação migrada. No primeiro ano, isso representa 2.844 horas — cerca de 2,1 servidores equivalentes em regime. É capacidade, não demissão.</p>
+        </template>
+      </section>
+
+      <!-- 16 · BENEFÍCIOS AO CIDADÃO -->
+      <section class="slide" data-secao="Impacto" data-titulo="O benefício que a população sente" id="slide-16">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">IMPACTO NA POPULAÇÃO</span>
+          <h2>O benefício que a população sente.</h2>
+          <p class="lead">A resposta deixa de depender de sorte ou de insistência. O cidadão sabe que o pedido existe, quem é o responsável e quando será atendido.</p>
+        </header>
+        <div class="cidadao-beneficios">
+          <div class="cidadao-beneficios__cards">
+            <article class="mini-beneficio"><svg class="icone" aria-hidden="true"><use href="#i-documento-check"></use></svg><div><strong>Protocolo na hora</strong><span>O pedido existe e pode ser consultado.</span></div></article>
+            <article class="mini-beneficio"><svg class="icone" aria-hidden="true"><use href="#i-relogio"></use></svg><div><strong>Acompanhamento 24/7</strong><span>Sem depender de telefone ou balcão.</span></div></article>
+            <article class="mini-beneficio"><svg class="icone" aria-hidden="true"><use href="#i-calendario"></use></svg><div><strong>Prazo claro</strong><span>O cidadão sabe quando deve ser atendido.</span></div></article>
+            <article class="mini-beneficio"><svg class="icone" aria-hidden="true"><use href="#i-mapa"></use></svg><div><strong>Menos deslocamento</strong><span>Resolve de onde estiver, com foto e localização.</span></div></article>
+            <article class="mini-beneficio"><svg class="icone" aria-hidden="true"><use href="#i-acessibilidade"></use></svg><div><strong>Acessibilidade</strong><span>Fonte ampliada, contraste e navegação por teclado.</span></div></article>
+            <article class="mini-beneficio"><svg class="icone" aria-hidden="true"><use href="#i-estrela"></use></svg><div><strong>Voz ativa</strong><span>Avaliação de 1 a 5 estrelas após a conclusão.</span></div></article>
+          </div>
+          <aside class="persona">
+            <span class="rotulo rotulo--azul">CENÁRIO ILUSTRATIVO</span>
+            <div class="persona__cabecalho">
+              <span class="persona__avatar"><svg class="icone" aria-hidden="true"><use href="#i-usuario"></use></svg></span>
+              <div><strong>Maria, 58 anos</strong><span>Bairro Esperança</span></div>
+            </div>
+            <p>“Vi o poste apagado na calçada, abri o app, anexei uma foto e recebi o protocolo antes de chegar em casa. Três dias depois, acompanhei a conclusão.”</p>
+            <div class="persona__numeros">
+              <div><strong>100%</strong><span>dos pedidos com protocolo e histórico</span></div>
+              <div><strong>3,4 mil</strong><span>idas ao prédio evitadas por ano</span></div>
+              <div><strong>6,8 mil h</strong><span>devolvidas ao cidadão por ano</span></div>
+            </div>
+          </aside>
+        </div>
+        <footer class="rodape-slide"><span>Cenário base · Premissas na página 17</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>O benefício para o cidadão é concreto: protocolo na hora, acompanhamento 24 horas, prazo claro e menos deslocamento. A avaliação fecha o ciclo: o cidadão diz se o serviço resolveu.</p>
+          <p>Maria é um cenário ilustrativo, não um depoimento real. Mas representa o que o piloto já permite: abrir um pedido com foto e localização e acompanhar sem ligar para a prefeitura.</p>
+        </template>
+      </section>
+
+      <!-- 17 · PREMISSAS -->
+      <section class="slide" data-secao="Impacto" data-titulo="Projeções com premissas abertas" id="slide-17">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">NÚMEROS · PREMISSAS</span>
+          <h2>Projeções com premissas abertas.</h2>
+          <p class="lead">Não vendemos certeza. Apresentamos um cenário de referência, com variáveis explícitas, para que a decisão seja tomada com transparência e possa ser recalibrada com os dados reais do município.</p>
+        </header>
+        <div class="premissas">
+          <div class="premissas__tabela">
+            <table>
+              <caption class="sr-only">Premissas do cenário base</caption>
+              <tbody>
+                <tr><th>População de referência</th><td>100.000 habitantes</td></tr>
+                <tr><th>Demanda atual</th><td>1.800 solicitações/mês</td></tr>
+                <tr><th>Adoção do canal digital</th><td>25% no mês 1 → 70% no mês 12</td></tr>
+                <tr><th>Tempo economizado</th><td>15 min por solicitação migrada</td></tr>
+                <tr><th>Custo-hora da equipe</th><td>R$ 42 (carregado)</td></tr>
+                <tr><th>Pedidos que geram deslocamento</th><td>30%</td></tr>
+                <tr><th>Deslocamentos evitáveis</th><td>75% pelo canal digital</td></tr>
+                <tr><th>Prazo atual</th><td>62% dos pedidos no prazo</td></tr>
+                <tr><th>Meta com a plataforma</th><td>85% dos pedidos no prazo</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <aside class="premissas__cenarios">
+            <div class="cenario"><span class="cenario__nome">Conservador</span><strong>1.584 h/ano</strong><span>R$ 67 mil/ano</span><small>1.200 pedidos/mês · 55% de adoção · 12 min</small></div>
+            <div class="cenario cenario--base"><span class="cenario__nome">Base</span><strong>3.780 h/ano</strong><span>R$ 159 mil/ano</span><small>1.800 pedidos/mês · 70% de adoção · 15 min</small></div>
+            <div class="cenario"><span class="cenario__nome">Otimista</span><strong>6.912 h/ano</strong><span>R$ 332 mil/ano</span><small>2.400 pedidos/mês · 80% de adoção · 18 min</small></div>
+            <p class="premissas__nota">Capacidade operacional liberada em regime, com custo-hora de R$ 42 a R$ 48.</p>
+          </aside>
+        </div>
+        <div class="faixa-rodape faixa-rodape--destaque">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-alerta"></use></svg> Os números são estimativas de planejamento e devem ser validados com a Secretaria de Administração, o protocolo e a TI.</span>
+        </div>
+        <footer class="rodape-slide"><span>Não representam promessa de resultado · Memória de cálculo no anexo</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Antes de mostrar qualquer número, quero deixar as premissas abertas. O cenário de referência é um município de 100 mil habitantes, com 1.800 solicitações por mês. A adoção começa em 25% e chega a 70% no mês 12.</p>
+          <p>A faixa vai de R$ 67 mil a R$ 332 mil por ano em capacidade operacional liberada. O cenário base é R$ 159 mil. São estimativas para planejar, não promessas. O simulador no slide 21 permite ajustar ao tamanho da nossa cidade.</p>
+        </template>
+      </section>
+
+      <!-- 18 · GRÁFICO ADOÇÃO -->
+      <section class="slide" data-secao="Impacto" data-titulo="A demanda existe. O canal digital cresce com confiança." id="slide-18">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">NÚMEROS · ADOÇÃO</span>
+          <h2>A demanda existe. O canal digital cresce com confiança.</h2>
+          <p class="lead">A projeção parte de 25% de adoção no primeiro mês e chega a 70% no mês 12 — uma rampa conservadora, sem considerar campanhas massivas de comunicação.</p>
+        </header>
+        <div class="numeros">
+          <div class="painel-grafico">
+            <div class="painel-grafico__topo">
+              <div><span class="rotulo">EVOLUÇÃO MENSAL</span><h3>Solicitações totais e atendidas pelo app</h3></div>
+              <div class="legenda" data-legenda="adocao"></div>
+            </div>
+            <div class="grafico" data-grafico="adocao" role="img" aria-label="Gráfico de linhas: demanda total constante de 1.800 solicitações por mês e atendimento pelo app crescendo de 450 para 1.260 solicitações por mês ao longo de 12 meses."></div>
+            <p class="grafico-fonte">Cenário base · 1.800 solicitações/mês · adoção de 25% a 70% · dados mensais projetados.</p>
+          </div>
+          <aside class="painel-kpis">
+            <div class="kpi kpi--cartao"><span class="kpi__valor">11.376</span><span class="kpi__rotulo">pedidos digitais no 1º ano</span></div>
+            <div class="kpi kpi--cartao"><span class="kpi__valor">70<small>%</small></span><span class="kpi__rotulo">de adoção no mês 12</span></div>
+            <div class="kpi kpi--cartao"><span class="kpi__valor">21.600</span><span class="kpi__rotulo">solicitações/ano na base</span></div>
+            <div class="insight"><svg class="icone" aria-hidden="true"><use href="#i-grafico"></use></svg><p>Cada ponto de adoção é atendimento manual que deixa de ser necessário.</p></div>
+          </aside>
+        </div>
+        <footer class="rodape-slide"><span>Premissas na página 17 · Projeção ilustrativa</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>O gráfico mostra a demanda total em cinza, constante em 1.800 por mês, e a parcela atendida pelo app em azul, subindo de 450 para 1.260. A área azul é o que sai do atendimento manual.</p>
+          <p>A rampa é conservadora: 25% no primeiro mês e 70% no mês 12. Se a comunicação for bem feita, a adoção pode ser mais rápida. Se for mais lenta, o simulador mostra o impacto.</p>
+        </template>
+      </section>
+
+      <!-- 19 · GRÁFICO EFICIÊNCIA -->
+      <section class="slide" data-secao="Impacto" data-titulo="Mais capacidade, sem aumentar a estrutura" id="slide-19">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">NÚMEROS · EFICIÊNCIA</span>
+          <h2>Mais capacidade, sem aumentar a estrutura.</h2>
+          <p class="lead">Com 15 minutos economizados por solicitação migrada, a operação libera horas que hoje são consumidas por registro, retorno e retrabalho.</p>
+        </header>
+        <div class="numeros">
+          <div class="painel-grafico">
+            <div class="painel-grafico__topo">
+              <div><span class="rotulo">EVOLUÇÃO MENSAL</span><h3>Horas de atendimento liberadas por mês</h3></div>
+              <div class="legenda" data-legenda="eficiencia"></div>
+            </div>
+            <div class="grafico" data-grafico="eficiencia" role="img" aria-label="Gráfico de linhas: horas de atendimento liberadas por mês crescendo de 112,5 para 315 horas ao longo de 12 meses."></div>
+            <p class="grafico-fonte">Cenário base · 15 min por solicitação migrada · custo-hora de R$ 42 · 1.760 h/ano por servidor.</p>
+          </div>
+          <aside class="painel-kpis">
+            <div class="kpi kpi--cartao"><span class="kpi__valor">2.844<small>h</small></span><span class="kpi__rotulo">liberadas no 1º ano</span></div>
+            <div class="kpi kpi--cartao"><span class="kpi__valor">315<small>h</small></span><span class="kpi__rotulo">por mês no mês 12</span></div>
+            <div class="kpi kpi--cartao"><span class="kpi__valor">3.780<small>h</small></span><span class="kpi__rotulo">por ano em regime</span></div>
+            <div class="kpi kpi--cartao kpi--destaque"><span class="kpi__valor">2,1</span><span class="kpi__rotulo">servidores equivalentes</span></div>
+            <div class="insight"><svg class="icone" aria-hidden="true"><use href="#i-pessoas"></use></svg><p>Capacidade para realocar a equipe em vistoria, fiscalização e atendimento prioritário.</p></div>
+          </aside>
+        </div>
+        <footer class="rodape-slide"><span>Equivalência de 1.760 horas/ano por servidor · Estimativa de planejamento</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>A curva de horas liberadas acompanha a adoção. No mês 12, são 315 horas por mês. No primeiro ano, 2.844 horas. Em regime, 3.780 horas por ano, o equivalente a 2,1 servidores.</p>
+          <p>Repito: não é demissão. É capacidade. A equipe pode ser realocada para o que exige presença humana: vistoria, fiscalização, atendimento prioritário e decisão.</p>
+        </template>
+      </section>
+
+      <!-- 20 · GRÁFICO POPULAÇÃO -->
+      <section class="slide" data-secao="Impacto" data-titulo="O que volta para a vida das pessoas" id="slide-20">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">NÚMEROS · POPULAÇÃO</span>
+          <h2>O que volta para a vida das pessoas.</h2>
+          <p class="lead">O impacto não fica no painel. Ele aparece na rua: menos idas ao prédio público, mais pedidos concluídos no prazo e mais tempo para a família.</p>
+        </header>
+        <div class="numeros">
+          <div class="painel-grafico">
+            <div class="painel-grafico__topo">
+              <div><span class="rotulo">BENEFÍCIO ACUMULADO</span><h3>Atendimentos no prazo e deslocamentos evitados</h3></div>
+              <div class="legenda" data-legenda="populacao"></div>
+            </div>
+            <div class="grafico" data-grafico="populacao" role="img" aria-label="Gráfico de linhas acumuladas: atendimentos adicionais no prazo chegam a 2.754 e deslocamentos presenciais evitados chegam a 2.560 ao final de 12 meses."></div>
+            <p class="grafico-fonte">Cenário base · 30% dos pedidos geram deslocamento · 75% evitáveis pelo canal digital · 2 h e R$ 16 por deslocamento.</p>
+          </div>
+          <aside class="painel-kpis">
+            <div class="kpi kpi--cartao"><span class="kpi__valor">+2.754</span><span class="kpi__rotulo">atendimentos no prazo no 1º ano</span></div>
+            <div class="kpi kpi--cartao"><span class="kpi__valor">2.560</span><span class="kpi__rotulo">deslocamentos evitados no 1º ano</span></div>
+            <div class="kpi kpi--cartao"><span class="kpi__valor">5.119<small>h</small></span><span class="kpi__rotulo">devolvidas ao cidadão</span></div>
+            <div class="kpi kpi--cartao kpi--destaque"><span class="kpi__valor">R$ 40,9<small>mil</small></span><span class="kpi__rotulo">economizados pelos cidadãos</span></div>
+            <div class="insight"><svg class="icone" aria-hidden="true"><use href="#i-coracao"></use></svg><p>Em regime: +4.968 atendimentos no prazo, 3.402 idas evitadas e 6.804 horas devolvidas por ano.</p></div>
+          </aside>
+        </div>
+        <footer class="rodape-slide"><span>Premissas na página 17 · Projeção ilustrativa</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Aqui estão os dois benefícios que a população sente. A linha azul mostra os atendimentos adicionais concluídos no prazo: 2.754 no primeiro ano. A linha verde mostra os deslocamentos presenciais evitados: 2.560 no primeiro ano.</p>
+          <p>Em regime, o benefício anual sobe para quase 5 mil atendimentos adicionais no prazo e 3.402 idas evitadas. São 6.804 horas devolvidas ao cidadão — tempo que ele não precisa gastar no balcão.</p>
+        </template>
+      </section>
+
+      <!-- 21 · SIMULADOR -->
+      <section class="slide" data-secao="Impacto" data-titulo="Ajuste o cenário ao tamanho da nossa cidade" id="slide-21">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">SIMULADOR</span>
+          <h2>Ajuste o cenário ao tamanho da nossa cidade.</h2>
+          <p class="lead">Mova as premissas e veja o impacto estimado. Os valores são de planejamento e servem para calibrar a conversa com cada secretaria.</p>
+        </header>
+        <div class="simulador">
+          <aside class="simulador__controles">
+            <div class="controle">
+              <label for="sim-populacao">População <output id="out-populacao">100 mil</output></label>
+              <input type="range" id="sim-populacao" min="50000" max="500000" step="10000" value="100000">
+              <span class="controle__minmax"><span>50 mil</span><span>500 mil</span></span>
+            </div>
+            <div class="controle">
+              <label for="sim-demanda">Solicitações por mês <output id="out-demanda">1.800</output></label>
+              <input type="range" id="sim-demanda" min="600" max="9000" step="100" value="1800">
+              <span class="controle__minmax"><span>600</span><span>6.000</span></span>
+            </div>
+            <div class="controle">
+              <label for="sim-adocao">Adoção no mês 12 <output id="out-adocao">70%</output></label>
+              <input type="range" id="sim-adocao" min="40" max="85" step="1" value="70">
+              <span class="controle__minmax"><span>40%</span><span>85%</span></span>
+            </div>
+            <div class="controle">
+              <label for="sim-minutos">Minutos economizados por pedido <output id="out-minutos">15 min</output></label>
+              <input type="range" id="sim-minutos" min="8" max="25" step="1" value="15">
+              <span class="controle__minmax"><span>8 min</span><span>25 min</span></span>
+            </div>
+            <div class="simulador__nota">
+              <svg class="icone" aria-hidden="true"><use href="#i-alerta"></use></svg>
+              <p>A demanda é estimada em 1,8% da população por mês. Se a cidade tiver o dado real, ajuste a segunda variável.</p>
+            </div>
+            <button class="botao-secundario" type="button" id="sim-reset"><svg class="icone" aria-hidden="true"><use href="#i-historico"></use></svg> Restaurar cenário base</button>
+          </aside>
+          <div class="simulador__resultado">
+            <div class="simulador__kpis">
+              <div class="kpi kpi--cartao"><span class="kpi__valor" id="sim-horas">3.780<small>h</small></span><span class="kpi__rotulo">horas liberadas/ano</span></div>
+              <div class="kpi kpi--cartao"><span class="kpi__valor" id="sim-servidores">2,1</span><span class="kpi__rotulo">servidores equivalentes</span></div>
+              <div class="kpi kpi--cartao"><span class="kpi__valor" id="sim-valor">R$ 159<small>mil</small></span><span class="kpi__rotulo">capacidade liberada/ano</span></div>
+              <div class="kpi kpi--cartao"><span class="kpi__valor" id="sim-deslocamentos">3.402</span><span class="kpi__rotulo">deslocamentos evitados/ano</span></div>
+              <div class="kpi kpi--cartao"><span class="kpi__valor" id="sim-prazo">4.968</span><span class="kpi__rotulo">atendimentos extras no prazo/ano</span></div>
+            </div>
+            <div class="painel-grafico painel-grafico--simulador">
+              <div class="painel-grafico__topo">
+                <div><span class="rotulo">PROJEÇÃO MENSAL</span><h3>Horas liberadas por mês</h3></div>
+                <div class="legenda" data-legenda="simulador"></div>
+              </div>
+              <div class="grafico" data-grafico="simulador" role="img" aria-label="Gráfico de linhas do simulador: horas liberadas por mês ao longo de 12 meses, conforme as premissas ajustadas."></div>
+            </div>
+          </div>
+        </div>
+        <footer class="rodape-slide"><span>Custo-hora de R$ 42 · 1.760 h/ano por servidor · 30% dos pedidos geram deslocamento · 75% evitáveis</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Este é o slide mais interativo. Se a cidade tiver 200 mil habitantes, mova a população e a demanda. Se a adoção esperada for menor, mova a adoção. Os números se ajustam na hora.</p>
+          <p>O objetivo não é fixar uma promessa. É permitir que cada secretaria veja o impacto no seu contexto e que a decisão seja calibrada com dados reais.</p>
+        </template>
+      </section>
+
+      <!-- 22 · ROADMAP -->
+      <section class="slide" data-secao="Caminho" data-titulo="Do piloto à operação real, em três etapas" id="slide-22">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">CAMINHO</span>
+          <h2>Do piloto à operação real, em três etapas.</h2>
+          <p class="lead">O piloto já prova o fluxo. A produção exige endurecimento de infraestrutura e governança — não um recomeço.</p>
+        </header>
+        <div class="roadmap">
+          <article class="fase fase--concluida">
+            <span class="fase__marcador"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg></span>
+            <span class="fase__status">CONCLUÍDO</span>
+            <h3>Piloto funcional</h3>
+            <p class="fase__periodo">Ambiente local · dados fictícios</p>
+            <ul>
+              <li>9 serviços e catálogo com busca.</li>
+              <li>App cidadão + painel de gestão.</li>
+              <li>Offline, acessibilidade e segurança.</li>
+              <li>Testes automatizados e CI.</li>
+            </ul>
+            <div class="fase__criterio"><span>Critério de saída</span><strong>Fluxo demonstrável com testes verdes e trilha de auditoria.</strong></div>
+            <span class="fase__entrega">Entrega: fluxo completo demonstrável</span>
+          </article>
+          <article class="fase fase--producao">
+            <span class="fase__marcador"><svg class="icone" aria-hidden="true"><use href="#i-escudo"></use></svg></span>
+            <span class="fase__status">0 A 90 DIAS</span>
+            <h3>Produção assistida</h3>
+            <p class="fase__periodo">2 secretarias · dados reais controlados</p>
+            <ul>
+              <li>HTTPS, banco transacional e backup.</li>
+              <li>LGPD: DPIA, DPO, retenção e base legal.</li>
+              <li>Integração com gov.br e sistemas de OS.</li>
+              <li>Treinamento e operação assistida.</li>
+            </ul>
+            <div class="fase__criterio"><span>Critério de saída</span><strong>90 dias com metas medidas, auditoria aprovada e go/no-go formal.</strong></div>
+            <span class="fase__entrega">Entrega: piloto medido e auditado</span>
+          </article>
+          <article class="fase fase--expansao">
+            <span class="fase__marcador"><svg class="icone" aria-hidden="true"><use href="#i-grafico"></use></svg></span>
+            <span class="fase__status">90 A 365 DIAS</span>
+            <h3>Expansão</h3>
+            <p class="fase__periodo">Toda a administração</p>
+            <ul>
+              <li>Push e notificações em segundo plano.</li>
+              <li>BI, relatórios e integração com 156.</li>
+              <li>WhatsApp como canal de entrada.</li>
+              <li>IA de triagem supervisionada.</li>
+            </ul>
+            <div class="fase__criterio"><span>Critério de saída</span><strong>Ganho comprovado, operação estável e escala aprovada pela governança.</strong></div>
+            <span class="fase__entrega">Entrega: operação em escala</span>
+          </article>
+        </div>
+        <div class="faixa-rodape faixa-rodape--destaque">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-alerta"></use></svg> Nenhuma etapa avança sem critérios de aceite, auditoria e aprovação da governança.</span>
+        </div>
+        <footer class="rodape-slide"><span>Roadmap indicativo · prazos a confirmar com as áreas</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>A primeira etapa já está feita: o piloto funcional. A segunda é a produção assistida, com duas secretarias, dados reais controlados e todas as exigências de LGPD. A terceira é a expansão.</p>
+          <p>Cada etapa tem critérios de aceite. Não é um cronograma de promessas; é uma sequência de decisões com evidências.</p>
+        </template>
+      </section>
+
+      <!-- 23 · RISCOS -->
+      <section class="slide" data-secao="Caminho" data-titulo="O que precisa ser decidido antes de escalar" id="slide-23">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">RISCOS E GOVERNANÇA</span>
+          <h2>O que precisa ser decidido antes de escalar.</h2>
+          <p class="lead">Um projeto público não falha apenas por tecnologia. Falha por falta de dono, de integração, de treinamento ou de clareza sobre dados. Estes são os pontos que precisam de decisão.</p>
+        </header>
+        <div class="riscos">
+          <div class="tabela-riscos">
+            <table>
+              <thead><tr><th>Risco</th><th>Decisão necessária</th><th>Dono</th></tr></thead>
+              <tbody>
+                <tr><td><strong>Dados reais e LGPD</strong></td><td>Definir base legal, DPIA, DPO, prazo de retenção e direitos do titular.<small class="risco__criterio">Critério: DPIA aprovada e base legal definida.</small></td><td>Gabinete · Jurídico · TI</td></tr>
+                <tr><td><strong>Exclusão digital</strong></td><td>Manter canais presenciais e telefônicos; treinar a rede de atendimento.<small class="risco__criterio">Critério: canais alternativos mapeados e equipe treinada.</small></td><td>Secretarias · Comunicação</td></tr>
+                <tr><td><strong>Integração com legados</strong></td><td>Mapear OS, protocolo e cadastro; começar por duas integrações críticas.<small class="risco__criterio">Critério: duas integrações críticas em produção assistida.</small></td><td>TI</td></tr>
+                <tr><td><strong>Adoção interna</strong></td><td>Nomear gestores de fila por setor e acordar metas por secretaria.<small class="risco__criterio">Critério: gestores nomeados e metas por secretaria.</small></td><td>Secretarias</td></tr>
+                <tr><td><strong>Sustentação e propriedade</strong></td><td>Definir hospedagem, suporte, código e dados; evitar dependência de fornecedor.<small class="risco__criterio">Critério: hospedagem, suporte e código documentados.</small></td><td>TI · Compras</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <aside class="riscos__governanca">
+            <span class="rotulo rotulo--claro">COMO A GOVERNANÇA OPERA</span>
+            <h3>Decisão com dono, prazo e evidência.</h3>
+            <ul>
+              <li><span class="riscos__num">01</span><div><strong>Reuniões quinzenais</strong><span>Gabinete, TI, Jurídico/LGPD, Comunicação e secretarias.</span></div></li>
+              <li><span class="riscos__num">02</span><div><strong>Relatório mensal</strong><span>Adoção, SLA, satisfação, retrabalho e desvios do plano.</span></div></li>
+              <li><span class="riscos__num">03</span><div><strong>Escalonamento em 48 h</strong><span>Impedimento crítico sobe ao Gabinete com plano de ação.</span></div></li>
+              <li><span class="riscos__num">04</span><div><strong>Go/no-go em 90 dias</strong><span>Decisão baseada em evidências, não em percepção.</span></div></li>
+            </ul>
+            <p class="riscos__compromisso">A governança não é uma reunião a mais: é o mecanismo que mantém o projeto com dono, ritmo e prestação de contas.</p>
+          </aside>
+        </div>
+        <div class="faixa-rodape faixa-rodape--destaque">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg> Nenhum risco é motivo para não começar. Todos exigem um plano.</span>
+        </div>
+        <footer class="rodape-slide"><span>Matriz de riscos do piloto · Revisão na etapa de produção</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Os riscos não são técnicos apenas. O maior deles é a falta de dono. Se ninguém for responsável pela fila de cada secretaria, o sistema vira mais uma caixa de entrada abandonada.</p>
+          <p>Por isso a proposta inclui governança, treinamento e metas por secretaria. A tecnologia é a parte mais fácil; a operação é o que sustenta o resultado.</p>
+        </template>
+      </section>
+
+      <!-- 24 · DECISÕES -->
+      <section class="slide" data-secao="Decisão" data-titulo="O que propomos hoje" id="slide-24">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">DECISÃO</span>
+          <h2>O que propomos hoje.</h2>
+          <p class="lead">Não pedimos um contrato. Pedimos autorização para provar, medir e decidir com dados.</p>
+        </header>
+        <div class="decisao">
+          <div class="decisao__pedidos">
+            <article class="pedido"><span class="pedido__num">1</span><div><h3>Autorizar um piloto assistido de 90 dias</h3><p>Duas secretarias, dados reais controlados e metas acordadas com a governança.</p></div></article>
+            <article class="pedido"><span class="pedido__num">2</span><div><h3>Criar um grupo de governança</h3><p>Gabinete, TI, Jurídico/LGPD, Comunicação e secretarias, com reuniões quinzenais.</p></div></article>
+            <article class="pedido"><span class="pedido__num">3</span><div><h3>Autorizar o plano de produção</h3><p>Infraestrutura, integrações, treinamento e sustentação, com orçamento a ser detalhado.</p></div></article>
+          </div>
+          <aside class="decisao__cronograma">
+            <span class="rotulo rotulo--azul">PRÓXIMOS 90 DIAS</span>
+            <ol class="cronograma">
+              <li><span>SEMANAS 1–2</span><strong>Governança, DPIA e infraestrutura</strong></li>
+              <li><span>SEMANAS 3–4</span><strong>Integração, treinamento e comunicação</strong></li>
+              <li><span>SEMANAS 5–8</span><strong>Operação assistida com 2 secretarias</strong></li>
+              <li><span>SEMANAS 9–12</span><strong>Medição, auditoria e relatório go/no-go</strong></li>
+            </ol>
+            <div class="decisao__metas">
+              <span><strong>70%</strong> adoção</span>
+              <span><strong>85%</strong> no prazo</span>
+              <span><strong>90%</strong> satisfação</span>
+              <span><strong>0</strong> incidente crítico</span>
+            </div>
+          </aside>
+        </div>
+        <div class="faixa-rodape faixa-rodape--destaque">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-calendario"></use></svg> A decisão de hoje é sobre o próximo passo, não sobre o tamanho final do projeto.</span>
+        </div>
+        <footer class="rodape-slide"><span>Proposta para deliberação · Outubro de 2026</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>O pedido é objetivo: autorizar um piloto assistido de 90 dias, criar um grupo de governança e autorizar o detalhamento do plano de produção. Não é um cheque em branco nem um contrato de longo prazo.</p>
+          <p>As metas do piloto são claras: 70% de adoção, 85% no prazo, 90% de satisfação e zero incidente crítico. Ao final, a governança decide com dados se avança, ajusta ou encerra.</p>
+        </template>
+      </section>
+
+      <!-- 25 · ENCERRAMENTO -->
+      <section class="slide slide--final" data-secao="Encerramento" data-titulo="A tecnologia só faz sentido quando aproxima o governo das pessoas" id="slide-25">
+        <div class="final__brilho" aria-hidden="true"></div>
+        <div class="final">
+          <img src="imagens/logo-branca.png" alt="Prefeitura Digital" class="final__logo">
+          <span class="rotulo rotulo--claro">OBRIGADO</span>
+          <h2>A tecnologia só faz sentido quando <em>aproxima</em> o governo das pessoas.</h2>
+          <p>Prefeitura Digital: menos fila, mais resposta. Menos retrabalho, mais cuidado.</p>
+          <div class="final__chips">
+            <span class="chip chip--escuro"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg> Piloto funcional</span>
+            <span class="chip chip--escuro"><svg class="icone" aria-hidden="true"><use href="#i-grafico"></use></svg> Impacto mensurável</span>
+            <span class="chip chip--escuro"><svg class="icone" aria-hidden="true"><use href="#i-escudo"></use></svg> Governança desde o início</span>
+          </div>
+          <p class="final__convite">Vamos começar pelo piloto?</p>
+        </div>
+        <footer class="rodape-slide rodape-slide--claro">
+          <span>Prefeitura Digital · Apresentação institucional · Outubro de 2026</span>
+          <span class="num-slide"></span>
+        </footer>
+        <template class="nota">
+          <p>Fecho com uma frase que resume o projeto: a tecnologia só faz sentido quando aproxima o governo das pessoas. O piloto está pronto. O próximo passo é medir com dados reais, com segurança e com governança.</p>
+          <p>Obrigado. Fico à disposição para as perguntas e para detalhar o plano dos próximos 90 dias.</p>
+        </template>
+      </section>
+
+      <!-- 26 · ANEXO · O QUE JÁ ESTÁ PRONTO -->
+      <section class="slide" data-secao="Anexos" data-titulo="O que já está pronto no piloto" id="slide-26">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">ANEXO · FICHA DO PILOTO</span>
+          <h2>O que já está pronto no piloto.</h2>
+          <p class="lead">Não é uma maquete. É um fluxo completo, com dados fictícios, pronto para ser endurecido para produção.</p>
+        </header>
+        <div class="ficha">
+          <article class="ficha__item"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg><div><strong>9 serviços</strong><span>Catálogo com prazos, categorias e busca.</span></div></article>
+          <article class="ficha__item"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg><div><strong>App do cidadão</strong><span>Home, solicitação, acompanhamento e perfil.</span></div></article>
+          <article class="ficha__item"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg><div><strong>Painel de gestão</strong><span>Login, fila, detalhe, status e impressão.</span></div></article>
+          <article class="ficha__item"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg><div><strong>Protocolo + código</strong><span>Protocolo imutável e código com hash.</span></div></article>
+          <article class="ficha__item"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg><div><strong>Offline e fila</strong><span>Rascunho, reenvio e idempotência.</span></div></article>
+          <article class="ficha__item"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg><div><strong>Foto, CEP e mapa</strong><span>Contexto visual e localização opcional.</span></div></article>
+          <article class="ficha__item"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg><div><strong>Fila por setor</strong><span>Escopo aplicado no servidor.</span></div></article>
+          <article class="ficha__item"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg><div><strong>Transferência</strong><span>Motivo, histórico e SLA preservado.</span></div></article>
+          <article class="ficha__item"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg><div><strong>Histórico e SLA</strong><span>Linha do tempo, prazo e avaliação.</span></div></article>
+          <article class="ficha__item"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg><div><strong>Acessibilidade</strong><span>Fonte, contraste, teclado e foco.</span></div></article>
+          <article class="ficha__item"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg><div><strong>Segurança</strong><span>Hash, sessão HttpOnly, rate limit e CORS.</span></div></article>
+          <article class="ficha__item"><svg class="icone" aria-hidden="true"><use href="#i-check"></use></svg><div><strong>Testes e CI</strong><span>Contratos, E2E e build automatizado.</span></div></article>
+        </div>
+        <div class="faixa-rodape faixa-rodape--destaque">
+          <span><svg class="icone" aria-hidden="true"><use href="#i-alerta"></use></svg> Ambiente de demonstração com dados fictícios. Não é ambiente de produção.</span>
+        </div>
+        <footer class="rodape-slide"><span>Ficha técnica do piloto · Outubro de 2026</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Este anexo serve para responder à pergunta “mas isso já existe ou é só ideia?”. Já existe: são 9 serviços, app, painel, offline, protocolo com hash, fila por setor, transferência, histórico, acessibilidade, segurança e testes.</p>
+          <p>O que não existe é o ambiente de produção com dados reais. Isso é a próxima etapa, com LGPD, infraestrutura e integrações.</p>
+        </template>
+      </section>
+
+      <!-- 27 · ANEXO · FAQ -->
+      <section class="slide" data-secao="Anexos" data-titulo="Perguntas frequentes" id="slide-27">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">ANEXO · PERGUNTAS FREQUENTES</span>
+          <h2>Perguntas frequentes.</h2>
+          <p class="lead">Respostas curtas para as objeções mais comuns. O roteiro completo traz o aprofundamento de cada ponto.</p>
+        </header>
+        <div class="faq">
+          <article class="faq__item"><h3>Isso substitui o atendimento presencial?</h3><p>Não. Complementa. Quem não tem celular ou prefere o balcão continua sendo atendido; a plataforma pode ser operada por um atendente.</p></article>
+          <article class="faq__item"><h3>E quem não tem smartphone?</h3><p>Os canais atuais permanecem. O ganho é reduzir a pressão sobre eles e dar rastreabilidade também aos pedidos registrados por servidores.</p></article>
+          <article class="faq__item"><h3>Os dados estão seguros?</h3><p>O piloto já usa hash, sessão HttpOnly, escopo por setor e sanitização. Produção exige HTTPS, DPIA, DPO e banco transacional.</p></article>
+          <article class="faq__item"><h3>Quanto custa?</h3><p>O piloto usa stack aberta, sem dependência paga. O custo de produção será detalhado após a definição de infraestrutura, integrações e suporte.</p></article>
+          <article class="faq__item"><h3>Vai eliminar empregos?</h3><p>Não. Libera capacidade para vistoria, fiscalização, atendimento prioritário e decisão. O ganho é de qualidade, não de corte de pessoal.</p></article>
+          <article class="faq__item"><h3>Por que não usar só WhatsApp?</h3><p>WhatsApp é canal de entrada, não é protocolo auditável nem fila por setor. Pode ser integrado no futuro, sem substituir a base única.</p></article>
+          <article class="faq__item"><h3>Como medir o sucesso?</h3><p>Adoção, percentual no prazo, satisfação, tempo de resposta, retrabalho e redução de deslocamentos. As metas estão no slide 24.</p></article>
+          <article class="faq__item"><h3>Qual o próximo passo?</h3><p>Autorizar o piloto assistido de 90 dias, com duas secretarias, governança e dados reais controlados.</p></article>
+        </div>
+        <footer class="rodape-slide"><span>Roteiro completo disponível em roteiro-apresentacao.md</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Este anexo é para o debate. As respostas são curtas de propósito; o roteiro em Markdown aprofunda cada uma. Se uma pergunta fugir do escopo, a resposta honesta é: “esse ponto precisa ser detalhado na etapa de produção”.</p>
+        </template>
+      </section>
+
+      <!-- 28 · ANEXO · MEMÓRIA DE CÁLCULO -->
+      <section class="slide" data-secao="Anexos" data-titulo="Memória de cálculo e referências" id="slide-28">
+        <header class="slide-topo slide-topo--compacto">
+          <span class="rotulo">ANEXO · TRANSPARÊNCIA</span>
+          <h2>Memória de cálculo e referências.</h2>
+          <p class="lead">Toda projeção pode ser reproduzida. As fórmulas e os valores base estão abaixo; o simulador aplica as mesmas regras.</p>
+        </header>
+        <div class="memoria">
+          <div class="memoria__formulas">
+            <h3>Fórmulas</h3>
+            <ol>
+              <li><strong>Pedidos digitais</strong> = demanda mensal × adoção.</li>
+              <li><strong>Horas liberadas</strong> = pedidos digitais × minutos economizados ÷ 60.</li>
+              <li><strong>Equivalente em servidores</strong> = horas anuais ÷ 1.760.</li>
+              <li><strong>Atendimentos adicionais no prazo</strong> = demanda × (meta − linha de base).</li>
+              <li><strong>Deslocamentos evitados</strong> = pedidos digitais × 30% × 75%.</li>
+              <li><strong>Benefício ao cidadão</strong> = deslocamentos × 2 h × R$ 16.</li>
+            </ol>
+            <div class="memoria__resultados">
+              <div><span>Pedidos digitais/1º ano</span><strong>11.376</strong></div>
+              <div><span>Horas liberadas/1º ano</span><strong>2.844 h</strong></div>
+              <div><span>Horas em regime/ano</span><strong>3.780 h</strong></div>
+              <div><span>Servidores equivalentes</span><strong>2,1</strong></div>
+              <div><span>Atendimentos extras no prazo</span><strong>+2.754</strong></div>
+              <div><span>Deslocamentos evitados</span><strong>2.560</strong></div>
+            </div>
+          </div>
+          <aside class="memoria__fontes">
+            <h3>Fontes e referências</h3>
+            <ul>
+              <li>Documentos do projeto: <strong>01-projeto-inicial</strong>, <strong>02-requisitos</strong>, <strong>03-plano-execucao</strong> e <strong>04-validacao</strong>.</li>
+              <li>Lei nº 13.709/2018 — Lei Geral de Proteção de Dados (LGPD).</li>
+              <li>WCAG 2.1 — Web Content Accessibility Guidelines (W3C).</li>
+              <li>Boas práticas de governo digital e acessibilidade do gov.br.</li>
+              <li>Premissas operacionais: custo-hora de R$ 42; 1.760 h/ano por servidor; 30% dos pedidos geram deslocamento; 75% evitáveis.</li>
+            </ul>
+            <div class="nota-lateral"><svg class="icone" aria-hidden="true"><use href="#i-alerta"></use></svg><p>Os valores são estimativas de planejamento. Devem ser recalibrados com os dados reais do município antes de qualquer compromisso de meta.</p></div>
+          </aside>
+        </div>
+        <footer class="rodape-slide"><span>Memória de cálculo do cenário base · Outubro de 2026</span><span class="num-slide"></span></footer>
+        <template class="nota">
+          <p>Este anexo existe para dar transparência. Qualquer pessoa pode refazer as contas com as fórmulas e os valores base. Se a cidade tiver números diferentes, o simulador ajusta.</p>
+          <p>As fontes são os documentos do próprio projeto, a LGPD, a WCAG 2.1 e as boas práticas de governo digital. Não há número mágico.</p>
+        </template>
+      </section>
+
+    </div>
+  </main>
+
+  <footer class="barra-inferior" id="barra-inferior">
+    <div class="barra-inferior__dica">
+      <span><kbd>←</kbd><kbd>→</kbd> navegar</span>
+      <span><kbd>N</kbd> notas</span>
+      <span><kbd>O</kbd> índice</span>
+      <span><kbd>U</kbd> ocultar interface</span>
+    </div>
+    <div class="barra-inferior__navegacao">
+      <button class="botao-navegacao" type="button" data-acao="anterior" aria-label="Slide anterior">
+        <svg class="icone" aria-hidden="true"><use href="#i-seta-esq"></use></svg>
+      </button>
+      <span class="contador" id="contador">01 / 28</span>
+      <button class="botao-navegacao" type="button" data-acao="proximo" aria-label="Próximo slide">
+        <svg class="icone" aria-hidden="true"><use href="#i-seta"></use></svg>
+      </button>
+    </div>
+    <div class="barra-inferior__marca">
+      <span>Outubro de 2026</span>
+      <button class="botao-barra botao-barra--icone" type="button" data-acao="ocultar-ui" title="Ocultar interface (U)" aria-label="Ocultar interface">
+        <svg class="icone" aria-hidden="true"><use href="#i-olho"></use></svg>
+      </button>
+    </div>
+  </footer>
+
+  <button class="restaurar-ui" id="restaurar-ui" type="button" data-acao="mostrar-ui" aria-label="Mostrar interface" title="Mostrar interface (U)">
+    <svg class="icone" aria-hidden="true"><use href="#i-olho"></use></svg>
+  </button>
+
+  <aside class="painel-notas" id="painel-notas" aria-live="polite" aria-label="Notas do apresentador">
+    <div class="painel-notas__topo">
+      <strong>Notas do apresentador</strong>
+      <button class="botao-icone" type="button" data-acao="fechar-notas" aria-label="Fechar notas">
+        <svg class="icone" aria-hidden="true"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="painel-notas__conteudo" id="notas-conteudo"></div>
+  </aside>
+
+  <dialog class="dialogo" id="dialogo-indice" aria-labelledby="titulo-indice">
+    <div class="dialogo__topo">
+      <div>
+        <span class="rotulo">NAVEGAÇÃO</span>
+        <h2 id="titulo-indice">Índice da apresentação</h2>
+      </div>
+      <button class="botao-icone" type="button" data-acao="fechar-indice" aria-label="Fechar índice">
+        <svg class="icone" aria-hidden="true"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="indice" id="indice-lista"></div>
+  </dialog>
+
+  <dialog class="dialogo dialogo--ajuda" id="dialogo-ajuda" aria-labelledby="titulo-ajuda">
+    <div class="dialogo__topo">
+      <div>
+        <span class="rotulo">APRESENTAÇÃO</span>
+        <h2 id="titulo-ajuda">Atalhos e recursos</h2>
+      </div>
+      <button class="botao-icone" type="button" data-acao="fechar-ajuda" aria-label="Fechar ajuda">
+        <svg class="icone" aria-hidden="true"><use href="#i-x"></use></svg>
+      </button>
+    </div>
+    <div class="ajuda-grade">
+      <div><kbd>←</kbd><kbd>→</kbd><span>Avançar e voltar</span></div>
+      <div><kbd>Espaço</kbd><span>Próximo slide</span></div>
+      <div><kbd>Home</kbd><kbd>End</kbd><span>Primeiro e último</span></div>
+      <div><kbd>N</kbd><span>Notas do apresentador</span></div>
+      <div><kbd>O</kbd><span>Índice de slides</span></div>
+      <div><kbd>F</kbd><span>Tela cheia</span></div>
+      <div><kbd>P</kbd><span>Imprimir / salvar PDF</span></div>
+      <div><kbd>U</kbd><span>Ocultar interface</span></div>
+      <div><kbd>?</kbd><span>Esta ajuda</span></div>
+      <div><kbd>Esc</kbd><span>Fechar janelas</span></div>
+    </div>
+    <p class="ajuda-nota">Para gerar o PDF, use <strong>Imprimir → Salvar como PDF</strong> com o tamanho de página 16:9. O layout foi preparado para 13,333 × 7,5 polegadas (1280 × 720 px).</p>
+  </dialog>
+
+  <div class="anuncio-aria" id="anuncio-aria" aria-live="polite" aria-atomic="true"></div>
+</div>
+
+<script src="scripts/apresentacao.js" defer></script>
+</body>
+</html>
