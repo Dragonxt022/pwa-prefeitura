@@ -1,32 +1,21 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
+import { useRecurso } from '../hooks/useRecurso'
 import { obterConfiguracoesPublicas } from '../servicos/api'
 import {
   aplicarIdentidadeVisual,
   IDENTIDADE_PADRAO,
   montarRodape,
 } from '../utils/identidade'
-
-const ConfiguracoesContext = createContext(null)
+import { ConfiguracoesContext } from './contextoConfiguracoes.js'
 
 export function ConfiguracoesProvider({ children }) {
-  const [identidade, setIdentidade] = useState(IDENTIDADE_PADRAO)
-  const [carregada, setCarregada] = useState(false)
+  const { dados, carregando, recarregar } = useRecurso(obterConfiguracoesPublicas, [])
+  const identidade = dados?.identidade ?? IDENTIDADE_PADRAO
+  const carregada = !carregando
 
   const recarregarConfiguracoes = useCallback(async () => {
-    try {
-      const resposta = await obterConfiguracoesPublicas()
-      if (resposta?.identidade) setIdentidade(resposta.identidade)
-      return resposta?.identidade ?? null
-    } catch {
-      return null
-    } finally {
-      setCarregada(true)
-    }
-  }, [])
-
-  useEffect(() => {
-    void recarregarConfiguracoes()
-  }, [recarregarConfiguracoes])
+    recarregar()
+  }, [recarregar])
 
   useEffect(() => {
     aplicarIdentidadeVisual(identidade)
@@ -45,12 +34,4 @@ export function ConfiguracoesProvider({ children }) {
   return (
     <ConfiguracoesContext.Provider value={valor}>{children}</ConfiguracoesContext.Provider>
   )
-}
-
-export function useConfiguracoes() {
-  const contexto = useContext(ConfiguracoesContext)
-  if (!contexto) {
-    throw new Error('useConfiguracoes precisa estar dentro de ConfiguracoesProvider.')
-  }
-  return contexto
 }

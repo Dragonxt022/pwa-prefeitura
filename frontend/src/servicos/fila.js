@@ -82,7 +82,7 @@ export function processarFila() {
       try {
         const criada = await criarSolicitacao(item.payload)
         registrarConsulta(criada.protocolo)
-        registrarPedido(criada)
+        registrarPedido(criada, item.payload.codigoAcesso)
         adicionarNotificacao({
           id: `envio:${criada.protocolo}`,
           protocolo: criada.protocolo,

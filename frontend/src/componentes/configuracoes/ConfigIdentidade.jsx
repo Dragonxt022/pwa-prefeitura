@@ -1,7 +1,7 @@
 import { ImagePlus, LoaderCircle, Plus, Save, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import logoPadrao from '../../assets/logo-icone-colorido.png'
-import { useI18n } from '../../i18n/index.jsx'
+import { useI18n } from '../../i18n/useI18n.js'
 import { CODIGOS_ERRO } from '../../utils/erros'
 import { prepararMarca } from '../../utils/imagem'
 import { montarRodape, ROTULOS_REDES } from '../../utils/identidade'

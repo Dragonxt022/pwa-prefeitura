@@ -1,6 +1,10 @@
 # ADR 0006 — Persistência JSON, idempotência e cache público
 
-- **Status:** Aceito
+> **Substituída parcialmente pela [ADR 0007](0007-codigo-acesso-e-persistencia-atomica.md) em 24/10/2026.**
+> Nenhuma rota `/api/solicitacoes` entra no cache (`api-public-v3`); a idempotência exige o código de
+> acesso; a gravação JSON passou a ser atômica com backup.
+
+- **Status:** Substituída parcialmente (histórico)
 - **Data:** 22/10/2026
 - **Decisores:** Dev back, Dev front, PO
 - **Substitui:** [ADR 0003](0003-dados-em-memoria.md) e parte da [ADR 0004](0004-cache-offline.md)

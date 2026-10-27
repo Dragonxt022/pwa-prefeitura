@@ -2,8 +2,8 @@
 
 | Campo | Valor |
 |---|---|
-| Versão | 4.0 |
-| Data | 23/10/2026 |
+| Versão | 5.0 |
+| Data | 24/10/2026 |
 | Status | Implementado no piloto técnico |
 | Referências | [01-projeto-inicial.md](01-projeto-inicial.md) · [03-plano-execucao.md](03-plano-execucao.md) · [04-validacao.md](04-validacao.md) |
 
@@ -16,14 +16,16 @@ O piloto tem quatro perfis:
 
 | Perfil | Acesso | Observações |
 |---|---|---|
-| Cidadão demo | Rotas públicas, sem login | Vê os próprios protocolos salvos no aparelho e consulta qualquer protocolo informado. |
+| Cidadão demo | Rotas públicas, sem login | Vê os próprios pedidos salvos no aparelho e consulta um protocolo mediante o código de acesso. |
 | Administrador | `/gestao` + login | Vê todos os pedidos, setores e usuários; cria/desativa contas. |
 | Triagem / Protocolo | `/gestao` + login | Vê a fila completa, altera status e encaminha/reclassifica pedidos. |
 | Setor | `/gestao` + login | Vê e atualiza somente os pedidos encaminhados ao próprio setor. |
 
-Não há autenticação de cidadão neste ciclo. O protocolo funciona como chave de acesso na consulta
-pública: quem possui o número vê os dados do pedido. Em produção, essa decisão deve ser substituída por
-autenticação/verificação de titularidade. A listagem completa de solicitações é exclusiva da gestão.
+Não há login de cidadão neste ciclo. A consulta pública exige **protocolo + código de acesso**; o
+código é gerado no navegador e o backend persiste apenas seu hash. Protocolo inexistente e código
+incorreto têm a mesma resposta genérica, para não confirmar a existência de um pedido. Em produção, essa
+decisão deve ser substituída por autenticação/verificação de titularidade. A listagem completa de
+solicitações é exclusiva da gestão.
 
 A sessão interna usa e-mail/senha, cookie `HttpOnly` com `SameSite=Lax` e “manter conectado” por 30
 dias. Senhas usam `scrypt` com sal; o token de sessão é persistido somente como hash. O token legado
@@ -39,7 +41,7 @@ dias. Senhas usam `scrypt` com sal; o token de sessão é persistido somente com
 | `/nova-solicitacao` | Nova solicitação | Registrar pedido com foto, localização, CEP, rascunho e fila |
 | `/nova-solicitacao?tipo=<id>` | Nova solicitação (pré-selecionada) | Atalho a partir do catálogo |
 | `/acompanhar` | Acompanhar | Consultar protocolo, Meus pedidos, SLA e avaliação |
-| `/acompanhar?protocolo=<PREF-…>` | Acompanhar (consulta automática) | Link direto da confirmação/notificação |
+| `/acompanhar?protocolo=<PREF-…>` | Acompanhar (consulta automática) | Link direto usa o código salvo no aparelho; sem código, pede o preenchimento. O código nunca entra na URL |
 | `/perfil` | Perfil | Dados fictícios, acessibilidade, notificações e limpeza |
 | `/gestao` | Gestão | Login por e-mail/senha, fila escopada, transferência, impressão e usuários |
 | `*` | 404 | Fallback |
@@ -99,43 +101,50 @@ protocolo.
 
 **Aceite:** recarregar o formulário restaura os campos e mantém o aviso “Rascunho restaurado”; offline,
 o botão vira “Salvar no aparelho” e mostra “1 pedido aguardando conexão”; ao reconectar, a fila é
-esvaziada, o protocolo é gerado e a confirmação muda para “Pronto!”. Reenviar o mesmo `clientId` devolve
-o mesmo protocolo, sem duplicar o pedido.
+esvaziada, o protocolo é gerado e a confirmação muda para “Pronto!”. Reenviar o mesmo `clientId` com o
+mesmo código devolve o mesmo protocolo, sem duplicar o pedido; código diferente recebe
+`404 codigo_acesso_invalido`.
 
 ### RF-06 — Detecção de pedidos parecidos
 
 Ao informar tipo e endereço, consultar pedidos abertos semelhantes por tokens de endereço, texto contido
-ou distância de até 300 m (quando há coordenadas) e exibir até 3 resultados com protocolo, status e
-distância. Não devolver o endereço do pedido existente.
+ou distância de até 300 m (quando há coordenadas) e exibir até 3 resultados com tipo, status e distância.
+Não devolver protocolo, endereço, descrição, contato ou qualquer dado do pedido existente.
 
-**Aceite:** endereço semelhante ao `PREF-2026-000001` exibe um aviso com link para o protocolo existente,
-sem revelar o endereço cadastrado no pedido original.
+**Aceite:** endereço semelhante ao `PREF-2026-000001` exibe um aviso informativo com tipo/status/distância,
+sem revelar protocolo ou endereço cadastrado no pedido original.
 
 ### RF-07 — Protocolo e confirmação
 
-Após o `POST` bem-sucedido, exibir o protocolo gerado, o serviço, o endereço, a data/hora, o prazo, botão
-de copiar e link “Acompanhar”. O protocolo também é salvo no dispositivo.
+Após o `POST` bem-sucedido, exibir o protocolo gerado e o **código de acesso**, além do serviço, endereço,
+data/hora, prazo, botões de copiar e link “Acompanhar”. Protocolo e código também são salvos no
+dispositivo, em `prefeitura:pedidos`.
 
-**Aceite:** protocolo no formato `PREF-AAAA-000000`; o botão copia via Clipboard API e confirma com
-“Copiado”; o link abre `/acompanhar?protocolo=…` com consulta automática.
+**Aceite:** protocolo no formato `PREF-AAAA-000000`; código no formato `ABCD-EFGH-JKLM` (sem `I`, `O`,
+`0` ou `1`), exibido com aviso de que não pode ser recuperado; os botões copiam via Clipboard API e
+confirmam com “Copiado”; o link abre `/acompanhar?protocolo=…` e usa o código salvo, sem colocá-lo na URL.
 
 ### RF-08 — Acompanhamento por protocolo
 
-Consultar `GET /api/solicitacoes/:protocolo` e exibir status, descrição do status, serviço, endereço,
-datas, SLA, linha do tempo do histórico, foto e localização quando existirem.
+Consultar `GET /api/solicitacoes/:protocolo` com o cabeçalho `x-codigo-acesso` e exibir status, descrição
+do status, serviço, endereço, datas, SLA, linha do tempo do histórico, foto e localização quando existirem.
 
-**Aceite:** protocolo existente mostra o evento mais recente destacado; protocolo inexistente mostra
-“Protocolo não encontrado”; falha de rede mostra “Sem conexão”; consulta vazia exibe aviso e devolve o
-foco ao campo. A consulta normaliza maiúsculas e espaços.
+**Aceite:** protocolo + código corretos mostram o evento mais recente destacado; código ausente/incorreto
+ou protocolo inexistente mostram “Protocolo ou código não confere” e não revelam se o protocolo existe;
+falha de rede mostra “Sem conexão”; consulta vazia exibe aviso e devolve o foco ao campo. A consulta
+normaliza maiúsculas e espaços; o código é enviado somente no cabeçalho.
 
 ### RF-09 — Meus pedidos e atualizações
 
-Manter até 20 pedidos salvos no `localStorage` (`prefeitura:pedidos`), mostrar status, serviço, endereço,
-data da última atualização e selo “Atualizado” quando o status mudar. Consultar até 5 protocolos
-recentes (`prefeitura:consultas`) e o último protocolo (`prefeitura:ultimo-protocolo`).
+Manter até 20 pedidos salvos no `localStorage` (`prefeitura:pedidos`) com protocolo, código de acesso,
+status, serviço, endereço, data da última atualização e selo “Atualizado” quando o status mudar.
+Consultar até 5 protocolos recentes (`prefeitura:consultas`) e o último protocolo
+(`prefeitura:ultimo-protocolo`).
 
-**Aceite:** o protocolo criado aparece em “Meus pedidos”; o selo “Atualizado” aparece após uma mudança
-de status; os dados sobrevivem a recarregar a página; a lista não duplica protocolos.
+**Aceite:** o protocolo criado aparece em “Meus pedidos” e abre sem pedir o código novamente; pedidos
+antigos sem código pedem o preenchimento; o selo “Atualizado” aparece após uma mudança de status; os
+dados sobrevivem a recarregar a página; a lista não duplica protocolos; o polling de status ignora
+pedidos sem código.
 
 ### RF-10 — Notificações locais
 
@@ -149,11 +158,13 @@ do navegador só é disparada quando permitida.
 
 ### RF-11 — Avaliação do atendimento
 
-Após a conclusão, permitir avaliação de 1 a 5 estrelas com comentário opcional de até 500 caracteres.
-Exibir a avaliação registrada na consulta e a média no painel de gestão.
+Após a conclusão, permitir avaliação de 1 a 5 estrelas com comentário opcional de até 500 caracteres,
+enviando o mesmo `x-codigo-acesso` da consulta. Exibir a avaliação registrada na consulta e a média no
+painel de gestão.
 
-**Aceite:** formulário só aparece para status `concluida`; envio retorna 201; segunda tentativa retorna
-409 (`ja_avaliada`); média e contagem aparecem nas estatísticas da gestão.
+**Aceite:** formulário só aparece para status `concluida`; envio sem código retorna
+`404 codigo_acesso_invalido`; envio válido retorna 201; segunda tentativa retorna 409 (`ja_avaliada`);
+média e contagem aparecem nas estatísticas da gestão.
 
 ### RF-12 — Gestão de solicitações com login e escopo por setor
 
@@ -194,8 +205,8 @@ build; app navegável offline após a primeira visita em `localhost`/HTTPS.
 ### RF-15 — Operação offline
 
 Servir o app e os GETs públicos não pessoais a partir do cache quando não houver rede. Escritas nunca
-são cacheadas; rascunhos e fila preservam o conteúdo. Detalhes de pedido, foto, localização e gestão
-ficam fora do cache do Service Worker.
+são cacheadas; rascunhos e fila preservam o conteúdo. **Nenhuma** rota `/api/solicitacoes` (detalhe,
+status, semelhantes) entra no cache do Service Worker, assim como foto, localização e gestão.
 
 **Aceite:** com “Offline” no DevTools, recarregar `/servicos` mostra os 9 serviços e a faixa “Sem conexão”;
 enviar formulário offline não perde campos e enfileira o pedido; nenhuma tela branca; as rotas de gestão
@@ -255,9 +266,9 @@ transferência manual continua disponível.
 | RN-09 | Datas trafegam em ISO 8601 com fuso; datas civis (AAAA-MM-DD) são formatadas sem deslocamento de fuso. |
 | RN-10 | Consulta por protocolo é case-insensitive e ignora espaços nas pontas. |
 | RN-11 | O SLA é calculado a partir do `prazoDias` do serviço e do `criadoEm`; fica vencido apenas enquanto o pedido está aberto. |
-| RN-12 | `clientId` é único por envio; repetir o mesmo `clientId` devolve o pedido existente com `criada: false`. |
+| RN-12 | `clientId` é único por envio; repetir o mesmo `clientId` com o mesmo código devolve o pedido existente com `criada: false`; código diferente recebe `404 codigo_acesso_invalido`. |
 | RN-13 | Pedidos parecidos consideram mesmo tipo, status aberto e semelhança de endereço/até 300 m; no máximo 3 resultados. |
-| RN-14 | Respostas públicas não incluem `contato`, `clientId` nem o endereço de pedidos semelhantes. |
+| RN-14 | Respostas públicas não incluem `contato`, `clientId` nem o endereço/protocolo de pedidos semelhantes; detalhe, status e avaliação exigem `x-codigo-acesso`. |
 | RN-15 | Avaliação só é aceita para pedido `concluida`; é única e não pode ser alterada. |
 | RN-16 | Rotas de gestão exigem sessão por cookie `HttpOnly`; o token legado `x-admin-token` só é aceito como administrador quando `ADMIN_TOKEN` está definido explicitamente. |
 | RN-17 | Escopo é aplicado no servidor: `setor` só lê/atualiza pedidos com `setorId` igual ao seu; admin e triagem acessam todos. |
@@ -267,6 +278,9 @@ transferência manual continua disponível.
 | RN-21 | Sessão “manter conectado” dura 30 dias (configurável em `SESSION_DAYS`); sem lembrar, expira em 12 h. |
 | RN-22 | A triagem automática fica desligada por padrão; com `TRIAGEM_IA_ATIVA=true`, o setor sugerido é aplicado apenas se a confiança for ≥ 0,5, com fallback para a triagem central. |
 | RN-23 | A impressão é gerada no cliente via `@media print`; a foto não é impressa e os dados internos de triagem não são exibidos ao cidadão. |
+| RN-24 | A criação exige `codigoAcesso` no corpo, com 12 caracteres do alfabeto sem `I`, `O`, `0` e `1`; o backend persiste apenas o hash SHA-256. |
+| RN-25 | Consulta de detalhe/status, avaliação e reenvio idempotente exigem `x-codigo-acesso`; código ausente/incorreto e protocolo inexistente retornam o mesmo `404 codigo_acesso_invalido`. |
+| RN-26 | O código de acesso nunca vai na URL, em payload público, em log ou no cache do Service Worker. |
 
 ### Serviços e prazos
 
@@ -373,7 +387,7 @@ Retorna os 9 serviços ordenados por `ordem`; itens novos também podem trazer `
 
 ### 6.5 `POST /api/solicitacoes`
 
-Corpo (foto, localização e clientId opcionais):
+Corpo (foto, localização e clientId opcionais; `codigoAcesso` obrigatório):
 
 ```json
 {
@@ -383,7 +397,8 @@ Corpo (foto, localização e clientId opcionais):
   "contato": "cidadao@example.com",
   "foto": "data:image/jpeg;base64,...",
   "localizacao": { "latitude": -23.55, "longitude": -46.63, "precisao": 25 },
-  "clientId": "uuid-do-envio"
+  "clientId": "uuid-do-envio",
+  "codigoAcesso": "A2B3-C4D5-E6F7"
 }
 ```
 
@@ -403,17 +418,23 @@ Resposta `201 Created` na primeira criação:
 }, "criada": true }
 ```
 
-Se o `clientId` já existir, responde `200` com o pedido original e `criada: false`. A resposta pública não
-inclui `contato`, `clientId` nem os metadados internos de triagem; inclui `setor`, `setorNome` e
-`transferida`.
+Se o `clientId` já existir **e o código conferir**, responde `200` com o pedido original e `criada: false`.
+Código diferente retorna `404 codigo_acesso_invalido`. A resposta pública não inclui `contato`, `clientId`,
+`codigoAcessoHash` nem os metadados internos de triagem; inclui `setor`, `setorNome`, `transferida` e
+`protegida`.
 
 ### 6.6 `GET /api/solicitacoes/:protocolo`
 
-Retorna o objeto público com histórico, foto, localização, SLA, setor responsável, selo `transferida`
-e avaliação. `404` quando não existe. Respostas são sanitizadas: `contato`, `clientId`, `triagem` e
-`transferencias` são removidos; o evento de transferência no histórico não revela o motivo interno.
+Exige o cabeçalho `x-codigo-acesso` com o código no formato `ABCD-EFGH-JKLM`. Retorna o objeto público com
+histórico, foto, localização, SLA, setor responsável, selo `transferida` e avaliação. Sem código, código
+incorreto ou protocolo inexistente, retorna `404 codigo_acesso_invalido` com a mesma mensagem genérica.
+Respostas são sanitizadas: `contato`, `clientId`, `triagem`, `codigoAcessoHash` e `transferencias` são
+removidos; o evento de transferência no histórico não revela o motivo interno.
 
 ### 6.7 `GET /api/solicitacoes/:protocolo/status`
+
+Exige `x-codigo-acesso`. Retorna apenas o resumo de status, setor, SLA e avaliação; não devolve descrição,
+endereço, foto, histórico nem dados internos.
 
 ```json
 { "dados": { "protocolo": "PREF-2026-000001", "status": "em_analise",
@@ -425,24 +446,25 @@ e avaliação. `404` quando não existe. Respostas são sanitizadas: `contato`, 
 ### 6.8 `GET /api/solicitacoes/semelhantes`
 
 Parâmetros: `tipo` (obrigatório), `endereco`, `latitude`, `longitude`. Retorna até 3 pedidos abertos
-semelhantes, sem endereço/contato:
+semelhantes, **sem protocolo, endereço, descrição ou contato**:
 
 ```json
 { "dados": [
-  { "protocolo": "PREF-2026-000001", "tipo": "iluminacao", "tipoTitulo": "Iluminação pública",
-    "status": "em_analise", "criadoEm": "2026-10-12T19:04:00-03:00",
-    "atualizadoEm": "2026-10-14T08:20:00-03:00", "distanciaMetros": null }
+  { "tipo": "iluminacao", "tipoTitulo": "Iluminação pública",
+    "status": "em_analise", "distanciaMetros": null }
 ] }
 ```
 
 ### 6.9 `POST /api/solicitacoes/:protocolo/avaliacao`
+
+Exige `x-codigo-acesso`.
 
 ```json
 { "nota": 5, "comentario": "Atendimento rápido e atencioso." }
 ```
 
 Resposta `201` com o pedido atualizado. Pedido não concluído retorna `422`; já avaliado retorna `409`
-(`ja_avaliada`).
+(`ja_avaliada`); código ausente/incorreto retorna `404 codigo_acesso_invalido`.
 
 ### 6.10 `POST /api/gestao/login`
 
@@ -530,11 +552,12 @@ Somente `admin`. `POST` recebe `nome`, `email`, `senha` (mínimo 8), `papel` (`a
 | 401 | `nao_autorizado` | Sessão ausente/expirada em rota protegida |
 | 401 | `credenciais_invalidas` | E-mail ou senha inválidos, ou usuário desativado |
 | 403 | `sem_permissao` | Papel insuficiente ou pedido de outro setor |
-| 404 | `nao_encontrado` | Protocolo/rota/usuário inexistente |
+| 404 | `nao_encontrado` | Rota/usuário inexistente na gestão |
+| 404 | `codigo_acesso_invalido` | Protocolo inexistente, código ausente/incorreto ou reenvio com outro código |
 | 409 | `ja_avaliada` | Pedido já possui avaliação |
 | 413 | `corpo_muito_grande` | Corpo acima de 2 MB |
 | 422 | `validacao` | Campos inválidos; `campos` traz mensagem por campo |
-| 429 | `limite_excedido` | Mais de 10 POSTs públicos por minuto por IP (login tem limite próprio) |
+| 429 | `limite_excedido` | Limites por IP: 10 POSTs/min, 30 GETs de detalhe/semelhantes por min, 60 status/min (login tem limite próprio) |
 | 500 | `erro_interno` | Falha inesperada |
 
 Exemplo 422:
@@ -549,18 +572,18 @@ Exemplo 422:
 | ID | Requisito | Meta / critério |
 |---|---|---|
 | RNF-01 | Offline das telas visitadas | 100% após primeira visita; SW precacheia os assets do build |
-| RNF-02 | Cache de API | `NetworkFirst` para GETs públicos, timeout 3 s, 50 entradas, 24 h |
-| RNF-03 | Privacidade no cache | Detalhe do pedido, foto, localização e gestão fora do cache; `api-get-v1` removido no boot |
+| RNF-02 | Cache de API | `NetworkFirst` para GETs públicos não pessoais, timeout 3 s, 50 entradas, 24 h, cache `api-public-v3` |
+| RNF-03 | Privacidade no cache | Nenhuma rota `/api/solicitacoes`, foto, localização ou gestão no cache; `api-get-v1` e `api-public-v2` removidos no boot |
 | RNF-04 | Atualização do app | `autoUpdate` (novo SW assume no próximo carregamento) |
-| RNF-05 | Performance | JS atual ≈ 457 KB bruto / 133,4 KB gzip; CSS 75,8 KB / 13,9 KB gzip; revisar antes de produção |
+| RNF-05 | Performance | Build atual: JS ≈ 466 KB bruto / 135,9 KB gzip; CSS 76,4 KB / 14,1 KB gzip; revisar antes de produção |
 | RNF-06 | Acessibilidade | WCAG 2.1 A com revisão manual de AA: foco visível, contraste, atalho, labels, alvos ≥ 44 px, diálogo com foco |
 | RNF-07 | Responsividade | 320 px a 1440 px, safe-area do iOS; sem overflow com fonte ampliada |
 | RNF-08 | Compatibilidade | Chrome/Edge últimas 2 versões; Safari iOS 16.4+; Chrome Android |
 | RNF-09 | Idioma | `pt-BR`, com acentuação correta em toda a UI e nas mensagens de erro |
 | RNF-10 | Privacidade de dados | Sem dados reais; contato/clientId/triagem fora das respostas públicas; listagem apenas na gestão e escopada por setor |
-| RNF-11 | Segurança básica | `x-powered-by` desabilitado, corpo limitado a 2 MB, CORS com credenciais restrito, senha `scrypt`, sessão `HttpOnly` e `SameSite=Lax` |
-| RNF-12 | Persistência | JSON em `backend/data/estado.json` (ignorado pelo Git), configurável por `DATA_FILE` |
-| RNF-13 | Qualidade de código | `oxlint` com 0 erros (9 warnings conhecidos de `set-state-in-effect` e `only-export-components`) e build sem erros |
+| RNF-11 | Segurança básica | `x-powered-by` desabilitado, corpo limitado a 2 MB, CORS com credenciais restrito, senha `scrypt`, sessão `HttpOnly`/`SameSite=Lax`, código de acesso persistido só como hash SHA-256 |
+| RNF-12 | Persistência | JSON em `backend/data/estado.json` (ignorado pelo Git), configurável por `DATA_FILE`, escrita atômica + `fsync` + backup `.bak` e recuperação/falha explícita em corrupção |
+| RNF-13 | Qualidade de código | `oxlint` com **0 erros e 0 warnings**, build sem erros, 21 testes `node:test` e 1 smoke E2E Playwright; CI no GitHub Actions |
 | RNF-14 | Sessão | Cookie `HttpOnly`; “manter conectado” 30 dias, sessão curta 12 h; token persistido apenas como hash |
 | RNF-15 | Triagem automática | Classificador local sem envio de dados a terceiros; flag desligada por padrão; fallback para triagem central |
 
@@ -570,23 +593,24 @@ Exemplo 422:
 |---|---|---|
 | RF-01, RF-02, RF-03 | `paginas/Home.jsx`, `paginas/Servicos.jsx` | Manual + Playwright |
 | RF-04, RF-05, RF-06, RF-07 | `paginas/NovaSolicitacao.jsx`, `servicos/cep.js`, `servicos/rascunho.js`, `servicos/fila.js` | Manual + Playwright offline |
-| RF-08, RF-09, RF-10, RF-11 | `paginas/Acompanhar.jsx`, `componentes/Avaliacao.jsx`, `hooks/useAtualizacoes.js` | Manual + Playwright |
+| RF-08, RF-09, RF-10, RF-11 | `paginas/Acompanhar.jsx`, `componentes/Avaliacao.jsx`, `hooks/useAtualizacoes.js` | Playwright E2E + testes de contrato |
+| RN-24, RN-25, RN-26 | `shared/codigo-acesso.js`, validadores/controladores/serviços e `servicos/api.js` | `backend/test/api.test.js` e E2E |
 | RF-12 | `paginas/Gestao.jsx`, `componentes/gestao/`, `hooks/useGestao*.js`, `controladores/gestao/`, `rotas/gestao.js` | Manual + API HTTP + Playwright |
 | RF-13 | `paginas/Perfil.jsx`, `utils/acessibilidade.js` | Manual + Playwright |
 | RF-14, RF-15 | `vite.config.js`, `componentes/Layout.jsx`, Service Worker | DevTools + Playwright offline |
 | RF-16, RF-18 | `paginas/Gestao.jsx`, `componentes/gestao/`, `hooks/useGestao*.js`, `controladores/gestao/`, `servicos/`, `repositorios/` | Playwright + API HTTP |
 | RF-17 | `paginas/Gestao.jsx`, `componentes/gestao/GestaoImpressao.jsx`, `estilos/global.css` | Playwright com mídia de impressão |
 | RF-19 | `dominio/triagem.js`, `servicos/solicitacoes.js`, `rotas/solicitacoes.js` | Teste de integração com a flag ligada/desligada |
-| RN-01..RN-23 | `backend/src/**` | Contratos conferidos por HTTP |
+| RN-01..RN-26 | `backend/src/**`, `shared/**` | Testes de contrato (`node:test`), E2E e HTTP |
 
 ## 9. Pendências conhecidas (fora deste ciclo)
 
 - Push em segundo plano e notificações com o app fechado.
-- Autenticação/verificação de titularidade para consulta por protocolo (hoje o protocolo é a chave).
+- Autenticação/verificação de titularidade além do código de acesso (hoje protocolo + código são a chave).
 - Lista oficial de secretarias/setores e serviços atendidos; o mapa atual é demonstrativo.
 - Integração de um modelo local/LLM real na mini IA; o contrato e o fallback por regras já existem.
 - Banco de dados transacional, concorrência e migrações; o JSON atende apenas ao piloto.
 - Validação de formato de contato (telefone/e-mail) no servidor.
 - Paginação real, auditoria e exclusão/anonimização de dados.
-- Testes automatizados unitários/E2E em CI.
+- Cobertura automatizada dos fluxos de gestão, offline e acessibilidade no CI.
 - Auditoria de acessibilidade com leitor de tela (VoiceOver/TalkBack) e Lighthouse/axe.

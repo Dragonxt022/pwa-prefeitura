@@ -15,13 +15,31 @@ import {
   avaliarSolicitacao as avaliarSolicitacaoServico,
   buscarSolicitacao,
   buscarSolicitacaoPorClientId,
+  codigoAcessoConfere,
   criarSolicitacao as criarSolicitacaoServico,
   listarSemelhantes as listarSemelhantesServico,
 } from '../servicos/solicitacoes.js'
 import { sugerirClassificacao } from '../servicos/triagem.js'
-import { jaAvaliada, naoEncontrado, validacao } from '../utils/erros.js'
+import {
+  codigoAcessoInvalido,
+  jaAvaliada,
+  validacao,
+} from '../utils/erros.js'
 import { texto } from '../utils/texto.js'
 import { validarAvaliacao, validarSolicitacao } from '../validadores/solicitacoes.js'
+
+/**
+ * Busca protegida: protocolo inexistente e código incorreto têm a mesma
+ * resposta, para não confirmar a existência de um pedido a terceiros.
+ */
+function buscarComCodigo(req) {
+  const codigo = req.get('x-codigo-acesso')
+  const solicitacao = buscarSolicitacao(req.params.protocolo)
+  if (!solicitacao || !codigoAcessoConfere(solicitacao, codigo)) {
+    throw codigoAcessoInvalido()
+  }
+  return solicitacao
+}
 
 export function listarSemelhantes(req, res) {
   const dados = listarSemelhantesServico({
@@ -37,11 +55,16 @@ export async function criar(req, res) {
   const dados = validarSolicitacao(req.body)
   const existente = buscarSolicitacaoPorClientId(dados.clientId)
   if (existente) {
+    if (!codigoAcessoConfere(existente, dados.codigoAcesso)) throw codigoAcessoInvalido()
     return res.status(200).json({ dados: apresentarSolicitacaoPublica(existente), criada: false })
   }
 
   const sugestao = await sugerirClassificacao(dados)
-  const { solicitacao, criada } = criarSolicitacaoServico({ ...dados, sugestao })
+  const { solicitacao, criada, acessoNegado } = criarSolicitacaoServico({
+    ...dados,
+    sugestao,
+  })
+  if (acessoNegado) throw codigoAcessoInvalido()
   if (criada) {
     void notificarEvento('nova_solicitacao', {
       protocolo: solicitacao.protocolo,
@@ -62,10 +85,7 @@ export async function criar(req, res) {
 }
 
 export function avaliar(req, res) {
-  const solicitacao = buscarSolicitacao(req.params.protocolo)
-  if (!solicitacao) {
-    throw naoEncontrado('Não encontramos nenhuma solicitação com esse protocolo.')
-  }
+  const solicitacao = buscarComCodigo(req)
   if (solicitacao.status !== 'concluida') {
     throw validacao({
       avaliacao: 'A avaliação fica disponível após a conclusão do atendimento.',
@@ -90,17 +110,11 @@ export function avaliar(req, res) {
 }
 
 export function detalhar(req, res) {
-  const solicitacao = buscarSolicitacao(req.params.protocolo)
-  if (!solicitacao) {
-    throw naoEncontrado('Não encontramos nenhuma solicitação com esse protocolo.')
-  }
+  const solicitacao = buscarComCodigo(req)
   res.json({ dados: apresentarSolicitacaoPublica(solicitacao) })
 }
 
 export function obterStatus(req, res) {
-  const solicitacao = buscarSolicitacao(req.params.protocolo)
-  if (!solicitacao) {
-    throw naoEncontrado('Não encontramos nenhuma solicitação com esse protocolo.')
-  }
+  const solicitacao = buscarComCodigo(req)
   res.json({ dados: apresentarStatusPublico(solicitacao) })
 }

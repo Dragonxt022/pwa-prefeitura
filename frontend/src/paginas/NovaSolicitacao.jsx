@@ -16,7 +16,9 @@ export default function NovaSolicitacao() {
       <ConfirmacaoProtocolo
         protocolo={solicitacao.protocolo}
         copiado={solicitacao.copiado}
+        codigoCopiado={solicitacao.codigoCopiado}
         aoCopiar={solicitacao.copiarProtocolo}
+        aoCopiarCodigo={solicitacao.copiarCodigo}
         aoNovaSolicitacao={solicitacao.novaSolicitacao}
       />
     )

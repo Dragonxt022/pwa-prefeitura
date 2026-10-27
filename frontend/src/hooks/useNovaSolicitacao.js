@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { gerarCodigoAcesso } from '../../../shared/codigo-acesso.js'
 import { criarSolicitacao, listarServicos } from '../servicos/api'
 import { listarPedidos, registrarConsulta, registrarPedido } from '../servicos/consultas'
 import { enfileirar, listarFila, ultimoEnvio } from '../servicos/fila'
@@ -40,6 +41,7 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
   const [pendente, setPendente] = useState(null)
   const [pendenteEm, setPendenteEm] = useState(null)
   const [copiado, setCopiado] = useState(false)
+  const [codigoCopiado, setCodigoCopiado] = useState(false)
   const [rascunhoStatus, setRascunhoStatus] = useState(
     rascunhoInicial?.formulario && temConteudo(rascunhoInicial.formulario)
       ? 'Rascunho restaurado. Continue de onde parou.'
@@ -160,12 +162,12 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
     return true
   }
 
-  function concluir(criada) {
+  function concluir(criada, codigoAcesso) {
     registrarConsulta(criada.protocolo)
-    registrarPedido(criada)
+    registrarPedido(criada, codigoAcesso)
     limparRascunho()
     setRascunhoStatus('')
-    setProtocolo(criada)
+    setProtocolo({ ...criada, codigoAcesso })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -187,6 +189,8 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
       foto: formulario.foto,
       localizacao: formulario.localizacao,
       clientId: novoClientId(),
+      // Gerado uma única vez por tentativa e preservado na fila offline.
+      codigoAcesso: gerarCodigoAcesso(),
     }
 
     setEnviando(true)
@@ -198,7 +202,7 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
 
     try {
       const criada = await criarSolicitacao(payload)
-      concluir(criada)
+      concluir(criada, payload.codigoAcesso)
     } catch (erro) {
       if (erro.offline) {
         salvarNaFila(payload)
@@ -225,6 +229,17 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
     }
   }
 
+  async function copiarCodigo() {
+    if (!protocolo?.codigoAcesso) return
+    try {
+      await navigator.clipboard.writeText(protocolo.codigoAcesso)
+      setCodigoCopiado(true)
+      window.setTimeout(() => setCodigoCopiado(false), 2500)
+    } catch {
+      setCodigoCopiado(false)
+    }
+  }
+
   function novaSolicitacao() {
     limparRascunho()
     setFormulario({ ...FORMULARIO_VAZIO })
@@ -238,6 +253,7 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
     localizacao.limpar()
     semelhanca.limpar()
     setCopiado(false)
+    setCodigoCopiado(false)
     setRascunhoStatus('')
     setBuscaServico('')
   }
@@ -263,6 +279,7 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
     protocolo,
     pendente,
     copiado,
+    codigoCopiado,
     rascunhoStatus,
     resumoErroRef,
     alterar,
@@ -270,6 +287,7 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
     selecionarServico,
     enviar,
     copiarProtocolo,
+    copiarCodigo,
     novaSolicitacao,
     definirBuscaServico: setBuscaServico,
   }

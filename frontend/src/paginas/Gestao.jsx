@@ -12,13 +12,13 @@ import GestaoResumo from '../componentes/gestao/GestaoResumo'
 import GestaoTopo from '../componentes/gestao/GestaoTopo'
 import GestaoTransferencia from '../componentes/gestao/GestaoTransferencia'
 import GestaoUsuarios from '../componentes/gestao/GestaoUsuarios'
-import { useConfiguracoes } from '../contexto/Configuracoes.jsx'
+import { useConfiguracoes } from '../contexto/useConfiguracoes.js'
 import { useGestaoFila } from '../hooks/useGestaoFila'
 import { useGestaoImpressao } from '../hooks/useGestaoImpressao'
 import { useGestaoSessao } from '../hooks/useGestaoSessao'
 import { useGestaoTransferencia } from '../hooks/useGestaoTransferencia'
 import { useGestaoUsuarios } from '../hooks/useGestaoUsuarios'
-import { useI18n } from '../i18n/index.jsx'
+import { useI18n } from '../i18n/useI18n.js'
 
 export default function Gestao() {
   const { identidade } = useConfiguracoes()

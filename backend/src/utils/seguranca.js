@@ -31,3 +31,11 @@ export function gerarTokenSessao() {
 export function hashToken(token) {
   return createHash('sha256').update(String(token)).digest('hex')
 }
+
+/** Confere um token opaco contra o hash SHA-256 salvo, em tempo constante. */
+export function verificarHashToken(token, hashArmazenado) {
+  const esperado = String(hashArmazenado ?? '')
+  if (!/^[a-f0-9]{64}$/i.test(esperado)) return false
+  const calculado = Buffer.from(hashToken(token), 'hex')
+  return timingSafeEqual(calculado, Buffer.from(esperado, 'hex'))
+}

@@ -14,7 +14,12 @@ import {
 } from '../dominio/catalogo.js'
 import { normalizarSolicitacao } from '../dominio/normalizacao.js'
 import { classificarSolicitacao, MODELO_TRIAGEM } from '../dominio/triagem.js'
+import {
+  codigoAcessoValido,
+  normalizarCodigoAcesso,
+} from '../../../shared/codigo-acesso.js'
 import { adicionarDias } from '../utils/data.js'
+import { hashToken, verificarHashToken } from '../utils/seguranca.js'
 import { normalizarTexto } from '../utils/texto.js'
 import { triagemAutomaticaAtiva } from './configuracoes.js'
 
@@ -25,6 +30,14 @@ export function buscarSolicitacao(protocolo) {
 export function buscarSolicitacaoPorClientId(clientId) {
   if (!clientId) return null
   return repositorioSolicitacoes.buscarPorClientId(clientId)
+}
+
+/** Confere o código informado contra o hash interno, sem expor o hash. */
+export function codigoAcessoConfere(solicitacao, codigoAcesso) {
+  if (!solicitacao?.codigoAcessoHash) return false
+  const normalizado = normalizarCodigoAcesso(codigoAcesso)
+  if (!codigoAcessoValido(normalizado)) return false
+  return verificarHashToken(normalizado, solicitacao.codigoAcessoHash)
 }
 
 export function listarSolicitacoes({ status, tipo, busca, setorId, ids, limite = 100 } = {}) {
@@ -62,10 +75,21 @@ export function criarSolicitacao({
   foto = null,
   localizacao = null,
   clientId = null,
+  codigoAcesso,
   sugestao: sugestaoExterna = null,
 }) {
+  if (!codigoAcessoValido(codigoAcesso)) {
+    throw new Error('Solicitação sem código de acesso válido.')
+  }
+
   const existente = buscarSolicitacaoPorClientId(clientId)
-  if (existente) return { solicitacao: existente, criada: false }
+  if (existente) {
+    return {
+      solicitacao: existente,
+      criada: false,
+      acessoNegado: !codigoAcessoConfere(existente, codigoAcesso),
+    }
+  }
 
   const agora = new Date().toISOString()
   const servico = buscarServico(tipo)
@@ -94,6 +118,7 @@ export function criarSolicitacao({
     foto,
     localizacao,
     clientId,
+    codigoAcessoHash: hashToken(normalizarCodigoAcesso(codigoAcesso)),
     setorId: setorInicialId,
     transferencias: [],
     triagem: {
@@ -248,12 +273,11 @@ export function listarSemelhantes({ tipo, endereco, latitude, longitude }) {
     .filter(({ corresponde }) => corresponde)
     .slice(0, 3)
     .map(({ item, distanciaMetros }) => ({
-      protocolo: item.protocolo,
+      // A rota é pública: não devolve protocolo, endereço nem qualquer dado
+      // que permita abrir o pedido de outra pessoa.
       tipo: item.tipo,
       tipoTitulo: item.tipoTitulo,
       status: item.status,
-      criadoEm: item.criadoEm,
-      atualizadoEm: item.atualizadoEm,
       distanciaMetros,
     }))
 }

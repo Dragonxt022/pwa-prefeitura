@@ -21,8 +21,10 @@ export function apresentarSolicitacaoGestao(solicitacao) {
     deSetor: setorPublico(transferencia.deSetorId),
     paraSetor: setorPublico(transferencia.paraSetorId),
   }))
+  const { codigoAcessoHash: _codigoAcessoHash, ...interna } = solicitacao
   return {
-    ...solicitacao,
+    ...interna,
+    protegida: Boolean(solicitacao.codigoAcessoHash),
     setor: setorPublico(solicitacao.setorId),
     setorNome: setorPublico(solicitacao.setorId)?.nome ?? 'Triagem',
     transferencias,
@@ -42,10 +44,12 @@ export function apresentarSolicitacaoPublica(solicitacao) {
     contato: _contato,
     triagem: _triagem,
     transferencias: _transferencias,
+    codigoAcessoHash: _codigoAcessoHash,
     ...publica
   } = solicitacao
   return {
     ...publica,
+    protegida: Boolean(solicitacao.codigoAcessoHash),
     historico: (publica.historico ?? []).map(({ por: _por, ...evento }) => {
       if (evento.tipo !== 'transferencia') return evento
       const transferencia = transferencias.find((item) => item.em === evento.em)

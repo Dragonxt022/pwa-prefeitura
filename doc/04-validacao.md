@@ -3,17 +3,19 @@
 | Campo | Valor |
 |---|---|
 | Data da execução | 24/10/2026 |
-| Ambiente | Windows, Node **24.12.0**, npm **11.6.2**, Chrome (Playwright) |
+| Ambiente | Windows, Node **24.12.0**, npm **11.6.2**, Chrome for Testing **156** (Playwright **1.64.1**) |
 | Versões | Vite **8.3.5**, vite-plugin-pwa **2.0.0**, React **19.3.1**, react-router-dom **7.18.4**, Express **5.3.0** |
-| Escopo | API com persistência, catálogo, formulário, fila offline, acompanhamento, avaliação, gestão com login/setores/transferência/impressão, triagem automática, PWA e refatoração em camadas das duas aplicações |
-| Resultado | **Aprovado nos critérios locais**; instalação em aparelho físico, push em segundo plano e auditoria formal de acessibilidade ficam pendentes |
+| Escopo | API com persistência atômica, código de acesso, catálogo, formulário, fila offline, acompanhamento, avaliação, gestão com login/setores/transferência/impressão, triagem automática, PWA, testes automatizados e CI |
+| Resultado | **Aprovado nos critérios locais**: lint 0/0, build, 21 testes de backend e 1 smoke E2E; instalação em aparelho físico, push em segundo plano e auditoria formal de acessibilidade ficam pendentes |
 
 ## 1. Qualidade de código
 
 | Verificação | Comando | Resultado |
 |---|---|---|
-| Lint | `npm run lint` | **0 erros, 9 warnings** (`react(set-state-in-effect)` e `react(only-export-components)`) |
-| Build | `npm run build` | Sucesso em 0,51 s |
+| Lint | `npm run lint` | **0 erros, 0 warnings** |
+| Testes do backend | `npm run test:backend` | **21/21 aprovados** |
+| Build | `npm run build` | **Sucesso** |
+| E2E | `npm run test:e2e` | **1/1 aprovado** |
 
 Saída do build:
 
@@ -23,35 +25,36 @@ dist/manifest.webmanifest                       0.67 kB
 dist/index.html                                 1.25 kB │ gzip:   0.58 kB
 dist/assets/logo-icone-branco-*.png             9.09 kB
 dist/assets/logo-icone-colorido-*.png          41.88 kB
-dist/assets/index-*.css                        75.78 kB │ gzip:  13.93 kB
-dist/assets/index-*.js                        461.09 kB │ gzip: 134.50 kB
+dist/assets/index-*.css                        76.43 kB │ gzip:  14.09 kB
+dist/assets/index-*.js                        465.99 kB │ gzip: 135.94 kB
 
 PWA v2.0.0  mode generateSW
-precache  17 entries (643.30 KiB)
+precache  17 entries (648.72 KiB)
 files generated: dist/sw.js, dist/workbox-*.js
 ```
 
-Os 9 warnings são informativos e ficam em `frontend/src/hooks/useAtualizacoes.js:85`,
-`frontend/src/contexto/Configuracoes.jsx:28` e `:50`, `frontend/src/i18n/index.jsx:8` e `:50`,
-`frontend/src/componentes/Layout.jsx:72`, `frontend/src/paginas/GestaoConfiguracoes.jsx:94` e `:139`
-e `frontend/src/hooks/useSolicitacaoSemelhante.js:12`. Eles apontam chamadas de `setState` dentro de efeitos
-de sincronização com APIs externas e exportações mistas em arquivos de contexto/i18n; não impedem o
-build nem geram erro em execução. O bundle JS cresceu em relação ao ciclo anterior por causa das novas
-telas (catálogo, gestão, avaliação, acessibilidade e fila offline).
+Os 9 warnings da linha de base foram eliminados com refatorações reais: `useRecurso` passou a alimentar
+as configurações públicas, os contextos/hooks de i18n e configurações foram separados para não misturar
+exportações, o cálculo de semelhantes virou valor derivado, a verificação periódica de status deixou de
+chamar `setState` diretamente e a faixa de envio recente usa animação CSS. Os efeitos restantes que
+sincronizam URL/sessão foram agendados fora do ciclo síncrono do efeito.
 
-Correções feitas durante esta rodada:
+Correções e mudanças desta rodada:
 
-- leitura da `sequencia` persistida no JSON, evitando depender apenas do maior protocolo existente;
-- a mensagem “Rascunho restaurado” permanece visível até o usuário editar o formulário;
-- removido `autoFocus` do login da gestão para o atalho “Pular para o conteúdo” ser o primeiro foco;
-- cache antigo `api-get-v1` é apagado no boot e o cache novo é `api-public-v2`;
-- listagem pública de solicitações removida; respostas públicas não devolvem `contato` nem `clientId`;
-- busca sem acentos normalizada na Home, catálogo e gestão;
-- datas civis (`AAAA-MM-DD`) formatadas sem deslocamento de fuso.
-- mensagens de erro do backend passaram a incluir `mensagem` (antes o campo era omitido e o frontend
-  mostrava apenas “operação (401)”);
-- histórico público de transferência mostra o setor de destino sem expor o motivo interno;
-- a área de impressão permanece no DOM após `window.print()`, permitindo revisar a prévia e reimprimir.
+- **código de acesso** de 12 caracteres gerado no navegador, enviado em `x-codigo-acesso` e persistido
+  apenas como SHA-256 no backend; nunca entra na URL, em payload público, em log ou no cache do SW;
+- detalhe, status, avaliação e reenvio idempotente exigem o código; erros de protocolo/código usam o
+  mesmo `404 codigo_acesso_invalido`, sem oráculo de existência;
+- `/semelhantes` deixou de devolver protocolo, endereço, descrição e datas, exibindo tipo/status/distância;
+- fila offline e “Meus pedidos” guardam o código uma única vez para permitir o reenvio e a reabertura;
+- PWA não cacheia **nenhuma** rota `/api/solicitacoes`; cache público renomeado para `api-public-v3` e
+  caches antigos (`api-get-v1`, `api-public-v2`) removidos no boot;
+- persistência JSON com arquivo temporário, `fsync`, renomeação atômica, `.bak`, recuperação de backup
+  também para JSON válido com schema incompleto e falha explícita quando principal e backup estão inválidos;
+- protocolos fictícios de demonstração recebem o código documentado `DEMA-ACES-S226`; os demais
+  registros antigos sem hash permanecem inacessíveis e não são substituídos silenciosamente por sementes;
+- rate limit adicional em detalhe/status/semelhantes para reduzir tentativas de adivinhação;
+- `node:test`, Playwright e workflow de CI adicionados.
 
 ## 2. PWA e Service Worker
 
@@ -62,15 +65,15 @@ Verificado em `http://localhost:4173` com o build de produção:
 | `dist/sw.js` e `dist/workbox-*.js` | Gerados |
 | Registro do Service Worker | Ativo, escopo `/` |
 | Cache de assets | `workbox-precache-v2-http://localhost:4173/` |
-| Cache de API pública | `api-public-v2` |
-| Cache antigo `api-get-v1` | Ausente após o boot e a limpeza automática |
+| Cache de API pública | `api-public-v3` |
+| Caches antigos `api-get-v1` e `api-public-v2` | Ausentes após o boot e a limpeza automática |
 | Manifest e ícones | 192, 512, maskable 512, apple-touch 180 e favicon 32 acessíveis |
-| Rotas de gestão no cache | Nenhuma; URLs observadas: `/api/avisos`, `/api/servicos` e `/status` |
+| Rotas de gestão no cache | Nenhuma; URLs observadas: `/api/avisos` e `/api/servicos` |
 
-O teste abriu a Home, depois `/gestao`, autenticou e abriu um detalhe. As chaves do `api-public-v2`
-continuaram apenas com avisos, serviços e endpoints `/status`; não apareceram `/api/gestao`,
-`/api/solicitacoes/<protocolo>` (detalhe) nem imagens/fotos do pedido. Escritas (`POST`) nunca são
-cacheadas.
+O teste abriu a Home, depois `/gestao`, autenticou e abriu um detalhe. As chaves do `api-public-v3`
+continuaram apenas com avisos e serviços; **nenhuma** URL `/api/solicitacoes` (detalhe, status ou
+semelhantes) nem `/api/gestao` apareceu. O E2E também percorre os caches do contexto do navegador e
+confirma zero URLs de solicitações. Escritas (`POST`) nunca são cacheadas.
 
 ### 2.1 Catálogo offline
 
@@ -125,7 +128,7 @@ configuração temporária foi removida ao final. Resultado:
 | Service Worker controlando a página | `navigator.serviceWorker.controller === true` |
 | Registro do Service Worker | OK |
 | Cache de precache | `workbox-precache-v2-http://127.0.0.1:4173/` |
-| Cache de API pública | `api-public-v2` presente |
+| Cache de API pública | `api-public-v3` presente; sem `/api/solicitacoes` |
 | Manifest | `/manifest.webmanifest` acessível |
 | Home offline | Abriu com o título “Como podemos ajudar?” |
 | Catálogo offline | Abriu com o título “Todos os serviços” |
@@ -153,7 +156,8 @@ Validação em `http://localhost:5173/nova-solicitacao` (servidor de desenvolvim
 | Arquivo inválido | Erro de imagem exibido no resumo de validação e input limpo |
 | Rascunho | Salvo após 700 ms e restaurado com a mensagem de retomada após reload |
 | Envio online | Protocolo `PREF-2026-000010` criado e confirmação exibida |
-| Copiar protocolo | Área de transferência preenchida; status e `aria-label` atualizados |
+| Copiar protocolo e código | Área de transferência preenchida; status e `aria-label` atualizados |
+| Código de acesso na confirmação | Formato `ABCD-EFGH-JKLM`, aviso de irrecuperabilidade e cópia funcional |
 | Envio offline | Tela “Pedido salvo”, item na fila e reenvio automático ao reconectar |
 | Reconexão | Protocolo `PREF-2026-000011` exibido e fila esvaziada |
 | Erro de API simulado | Mensagem, erro de foto, foco no resumo e valores digitados preservados |
@@ -174,22 +178,31 @@ Executado contra `http://localhost:3000` com dados fictícios persistidos em
 | GET | `/api/avisos` | 200 | 200 |
 | GET | `/api/perfil` | 200 | 200 |
 | GET | `/api/solicitacoes` | 404 (listagem pública removida) | 404 |
-| GET | `/api/solicitacoes/PREF-2026-000001` | 200 | 200 |
-| GET | `/api/solicitacoes/PREF-2026-999999` | 404 | 404 |
-| GET | `/api/solicitacoes/semelhantes?tipo=iluminacao&endereco=…` | 200, até 3, sem endereço | 200, 2 |
-| POST | `/api/solicitacoes` válido | 201 + protocolo | 201 + protocolo |
-| POST | `/api/solicitacoes` com descrição curta | 422 com `campos` | 422 |
-| POST | mesma requisição com `clientId` repetido | 200 `criada: false` | 200, mesmo protocolo |
+| GET | `/api/solicitacoes/PREF-2026-000001` sem código | 404 `codigo_acesso_invalido` | 404 genérico |
+| GET | `/api/solicitacoes/PREF-2026-000001` com código demo | 200 | 200 |
+| GET | `/api/solicitacoes/PREF-2026-999999` com qualquer código | 404 `codigo_acesso_invalido` | 404 genérico |
+| GET | `/api/solicitacoes/semelhantes?tipo=iluminacao&endereco=…` | 200, até 3, só tipo/status/distância | 200, sem protocolo |
+| POST | `/api/solicitacoes` sem código ou com código inválido | 422 com `campos.codigoAcesso` | 422 |
+| POST | `/api/solicitacoes` válido | 201 + protocolo, sem hash | 201 + protocolo |
+| POST | mesma requisição com `clientId` e código repetidos | 200 `criada: false` | 200, mesmo protocolo |
+| POST | mesmo `clientId` com outro código | 404 `codigo_acesso_invalido` | 404 |
+| GET | detalhe/status com código correto | 200 sem `codigoAcessoHash` | 200 |
+| POST | avaliação com código e pedido não concluído | 422 | 422 |
 | GET | `/api/gestao/solicitacoes` sem sessão | 401 | 401 |
 | GET | `/api/gestao/solicitacoes` com sessão | 200 + total + estatísticas | 200, total 8 |
 | PATCH | `/api/gestao/solicitacoes/:protocolo/status` | 200 + histórico | 200 (validado via painel) |
 | POST | `/api/solicitacoes/:protocolo/avaliacao` | 201; segunda tentativa 409 | 201; avaliação única |
 | POST | 10 POSTs no mesmo minuto por IP | 429 no excedente | Validado em ciclo anterior; não repetido para preservar o estado |
 
-Detalhe público de `PREF-2026-000001` retornou os campos públicos esperados, incluindo `setor`,
-`setorNome` e `transferida`, sem `contato`, `clientId`, `triagem` ou `transferencias`. Semelhantes
-retornaram apenas
-`protocolo, tipo, tipoTitulo, status, criadoEm, atualizadoEm, distanciaMetros`.
+Detalhe público de `PREF-2026-000001` (código demo `DEMA-ACES-S226`) retornou os campos públicos
+esperados, incluindo `setor`, `setorNome`, `transferida` e `protegida`, sem `contato`, `clientId`,
+`triagem`, `transferencias` ou `codigoAcessoHash`. Semelhantes retornaram apenas
+`tipo, tipoTitulo, status, distanciaMetros`.
+
+A suíte `backend/test/api.test.js` cobre esses contratos em um `DATA_FILE` temporário, sem tocar no
+estado de demonstração. Ela confirma que código ausente/incorreto, protocolo inexistente e tentativa de
+reabrir o mesmo `clientId` com outro código produzem a mesma resposta genérica, e que a resposta pública
+não contém o código em claro.
 
 Estatísticas da gestão no fechamento: **total 8, abertas 7, atrasadas 1, concluídas 1,
 avaliações 1, média 5,0**. A avaliação da `PREF-2026-000002` (nota 5 e comentário) está persistida.
@@ -209,7 +222,11 @@ Executados com Playwright no build de produção:
 | Rascunho restaurado após reload | OK |
 | Pedido offline enfileirado e reenviado | OK |
 | `PREF-2026-000008` aparece em “Meus pedidos” após a confirmação | OK |
+| Código de acesso é exibido/copiado e não aparece na URL | OK |
 | Acompanhamento de `PREF-2026-000002` mostra histórico, SLA e avaliação | OK |
+| Consulta em contexto limpo sem código pede o preenchimento e não busca o pedido | OK |
+| Código errado mostra “Protocolo ou código não confere” sem revelar existência | OK |
+| Código correto reabre o pedido em outro contexto | OK |
 | Gestão autenticada lista 8 pedidos, filtros e estatísticas | OK |
 | Detalhe da gestão abre `PREF-2026-000008` sem erro | OK |
 | Mudança de status/prioridade atualiza histórico e estatísticas | OK em ciclo anterior; estado atual reflete a alteração |
@@ -281,10 +298,10 @@ Capturas do build de produção em 22/10/2026, em `doc/evidencias/v3/`:
 | axe / leitor de tela (VoiceOver, TalkBack) | Auditoria manual pendente | 6 |
 | Teste com usuários | Depende de recrutamento | 6 |
 | Carga, concorrência e banco real | Persistência JSON atende apenas ao piloto | Pós-piloto |
-| Autenticação de titularidade | No piloto o protocolo é a chave de acesso | Pós-piloto |
+| Autenticação de titularidade | No piloto o protocolo + código de acesso são a chave | Pós-piloto |
 | Lista oficial de secretarias/setores | Mapa demonstrativo em `dominio/catalogo.js`; aguarda confirmação do município | Próximo ciclo |
 | Modelo local/LLM para a mini IA | Contrato e fallback por regras prontos; modelo real não integrado | Pós-piloto |
-| Testes automatizados em CI | A validação atual é manual + Playwright | 6 |
+| Cobertura E2E dos fluxos de gestão/offline | O smoke E2E cobre criação e acesso; os demais fluxos seguem com validação manual | 6 |
 
 ## 9. Evolução v4 — setores, sessão, transferência e impressão
 
@@ -408,15 +425,64 @@ Validação após a divisão, com backend isolado em `:3001` e `DATA_FILE` tempo
 
 O build de produção e o Service Worker foram revalidados conforme a seção 2.4. O arquivo temporário
 `frontend/vite.ui-test.config.js`, o `DATA_FILE` de teste e os servidores nas portas `3001`, `4173` e
-`5174` foram removidos/encerrados. O lint ficou em **0 erros e 9 warnings**, igual à linha de base
-após a correção das dependências do efeito de limpeza da sessão.
+`5174` foram removidos/encerrados.
+
+### 9.7 Evolução v5 — código de acesso, persistência e testes
+
+#### Código de acesso
+
+| Verificação | Resultado |
+|---|---|
+| Formato `ABCD-EFGH-JKLM`, 12 caracteres, alfabeto sem `I/O/0/1` | OK nos testes compartilhados |
+| Geração com `crypto.getRandomValues` no navegador | OK; 20 códigos consecutivos distintos |
+| Hash persistido; código em claro ausente no JSON | OK |
+| Código na URL, resposta pública ou cache do SW | Ausente; E2E coleta requisições e caches |
+| Detalhe/status/avaliação/reenvio sem código | `404 codigo_acesso_invalido` |
+| Protocolo inexistente e código errado | Mesma resposta genérica |
+| Semelhantes sem protocolo/endereço/descrição | OK |
+| Seed demo `PREF-2026-000001..000003` com `DEMA-ACES-S226` | OK; demais registros antigos sem hash inacessíveis |
+
+#### Persistência
+
+| Verificação | Resultado |
+|---|---|
+| Arquivo temporário + `fsync` + `rename` atômico | OK; `.tmp` removido |
+| Backup `.bak` com a versão anterior | OK |
+| Recuperação do `.bak` com principal corrompido | OK, tanto para JSON inválido quanto para schema incompleto |
+| Principal e backup inválidos | Inicialização falha, sem usar sementes silenciosamente |
+| Campo `solicitacoes` ausente ou com tipo inválido | Inicialização falha quando não há backup válido; o backup é tentado antes |
+| Backup preservado ao regravar um principal com schema inválido | OK; `.bak` anterior não é sobrescrito |
+| Migração de código demo em arquivo antigo | OK; hash gravado, código em claro não |
+
+#### Automação
+
+```text
+npm --prefix backend test
+ℹ tests 21
+ℹ pass 21
+ℹ fail 0
+
+npm run test:e2e
+Running 1 test using 1 worker
+✓ 1 e2e\acesso-protocolo.spec.js
+1 passed
+```
+
+O E2E usa backend em `:3100` e o **build de produção** do frontend em `:5273`, com `DATA_FILE`
+temporário e `MOCK_LATENCY_MS=0`. O fluxo percorre: criação pela UI, confirmação com protocolo +
+código, abertura por “Acompanhar”, nova sessão de navegador sem código, erro com código errado,
+reabertura com código correto, requisições com `x-codigo-acesso`, ativação do Service Worker e cache
+`api-public-v3` sem `/api/solicitacoes`. O workflow `.github/workflows/ci.yml` executa lint, testes do
+backend, build, instalação do Chromium e E2E.
 
 ## 10. Conclusão
 
-O piloto atende aos critérios locais das fases implementadas: build e lint sem erros, API com contratos e
-erros consistentes, persistência em JSON, nove serviços, fila offline com idempotência, painel de gestão
-com login e escopo por setor, transferência/reclassificação, impressão, triagem automática ativável, SLA,
-avaliação, notificações locais, atalhos de acessibilidade e PWA com cache público controlado. O frontend
-também foi reorganizado em componentes, páginas, serviços, hooks e utilitários, com a API centralizada e
-a gestão decomposta em responsabilidades menores. A recomendação é usar esta versão para demonstração e
-avançar para a validação em dispositivos reais e para as pendências de produção listadas acima.
+O piloto atende aos critérios locais das fases implementadas: **lint 0/0**, build sem erros, 21 testes
+de backend e 1 smoke E2E, API com contratos e erros consistentes, código de acesso sem exposição na URL
+ou em cache, persistência JSON atômica com backup, nove serviços, fila offline com idempotência, painel
+de gestão com login e escopo por setor, transferência/reclassificação, impressão, triagem automática
+ativável, SLA, avaliação, notificações locais, atalhos de acessibilidade e PWA com cache público
+controlado. O frontend também está organizado em componentes, páginas, serviços, hooks e utilitários,
+com a API centralizada e a gestão decomposta em responsabilidades menores. A recomendação é usar esta
+versão para demonstração e avançar para a validação em dispositivos reais e para as pendências de
+produção listadas acima.

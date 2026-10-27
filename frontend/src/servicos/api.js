@@ -97,11 +97,20 @@ export const obterConfiguracoesPublicas = () => requisicao('/configuracoes', { t
 
 export const obterPerfil = () => requisicao('/perfil')
 
-export const consultarSolicitacao = (protocolo) =>
-  requisicao(`/solicitacoes/${encodeURIComponent(protocolo)}`)
+function cabecalhosAcesso(codigoAcesso) {
+  return codigoAcesso ? { 'x-codigo-acesso': codigoAcesso } : undefined
+}
 
-export const consultarStatus = (protocolo) =>
-  requisicao(`/solicitacoes/${encodeURIComponent(protocolo)}/status`, { timeout: 6000 })
+export const consultarSolicitacao = (protocolo, codigoAcesso) =>
+  requisicao(`/solicitacoes/${encodeURIComponent(protocolo)}`, {
+    cabecalhos: cabecalhosAcesso(codigoAcesso),
+  })
+
+export const consultarStatus = (protocolo, codigoAcesso) =>
+  requisicao(`/solicitacoes/${encodeURIComponent(protocolo)}/status`, {
+    timeout: 6000,
+    cabecalhos: cabecalhosAcesso(codigoAcesso),
+  })
 
 export const criarSolicitacao = (dados) =>
   requisicao('/solicitacoes', { metodo: 'POST', corpo: dados, timeout: 20000 })
@@ -115,11 +124,12 @@ export const consultarSemelhantes = ({ tipo, endereco, latitude, longitude }) =>
   return requisicao(`/solicitacoes/semelhantes?${query.toString()}`, { timeout: 6000 })
 }
 
-export const avaliarSolicitacao = (protocolo, dados) =>
+export const avaliarSolicitacao = (protocolo, dados, codigoAcesso) =>
   requisicao(`/solicitacoes/${encodeURIComponent(protocolo)}/avaliacao`, {
     metodo: 'POST',
     corpo: dados,
     timeout: 12000,
+    cabecalhos: cabecalhosAcesso(codigoAcesso),
   })
 
 // ---------- gestão: sessão, setores, usuários e fila ----------

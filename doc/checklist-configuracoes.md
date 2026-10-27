@@ -13,7 +13,7 @@ Legenda:
 
 ## 1. Base e decisões
 
-- [x] Configurações administrativas persistidas no JSON local (versão 3).
+- [x] Configurações administrativas persistidas no JSON local (estado versão 4).
 - [x] Seções `identidade`, `email`, `ia` e histórico de notificações.
 - [x] Senha SMTP e chave de IA write-only na API; retornam somente `temSenha`/`temApiKey`.
 - [x] `TRIAGEM_IA_ATIVA` usada apenas como semente da configuração; a decisão efetiva fica no JSON.
@@ -25,7 +25,7 @@ Legenda:
 ## 2. Backend
 
 - [x] Modelo, defaults, validação, sanitização e opções das configurações.
-- [x] Persistência e migração para a versão 3 do estado.
+- [x] Persistência e migração do estado para a versão 4, preservando as configurações da versão 3.
 - [x] Rota pública `GET /api/configuracoes` somente com identidade sanitizada.
 - [x] Rotas administrativas `GET /api/gestao/configuracoes` e `PUT /api/gestao/configuracoes/:secao`.
 - [x] Validação de identidade: nome, imagens, cores, contatos, redes e rodapé.

@@ -2,7 +2,13 @@ import { useEffect, useState } from 'react'
 import { listarFila, processarFila, ultimoEnvio } from '../servicos/fila'
 
 function estadoAtual() {
-  return { pendentes: listarFila().length, ultimo: ultimoEnvio() }
+  const ultimo = ultimoEnvio()
+  const idade = ultimo?.em ? Date.now() - new Date(ultimo.em).getTime() : Infinity
+  return {
+    pendentes: listarFila().length,
+    ultimo,
+    envioRecente: Number.isFinite(idade) && idade <= 15_000 ? ultimo : null,
+  }
 }
 
 /**

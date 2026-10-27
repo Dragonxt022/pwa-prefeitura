@@ -1,3 +1,7 @@
+import {
+  codigoAcessoValido,
+  normalizarCodigoAcesso,
+} from '../../../shared/codigo-acesso.js'
 import { STATUS, buscarServico, listarSetores } from '../dominio/catalogo.js'
 import { validacao } from '../utils/erros.js'
 import { booleano, texto } from '../utils/texto.js'
@@ -77,6 +81,11 @@ export function validarSolicitacao(body = {}) {
     campos.clientId = 'Identificador de envio inválido.'
   }
 
+  const codigoAcesso = normalizarCodigoAcesso(body.codigoAcesso)
+  if (!codigoAcessoValido(codigoAcesso)) {
+    campos.codigoAcesso = 'Informe o código de acesso no formato ABCD-EFGH-JKLM.'
+  }
+
   let foto = null
   let localizacao = null
   try {
@@ -94,7 +103,16 @@ export function validarSolicitacao(body = {}) {
     throw validacao(campos, 'Revise os campos destacados.')
   }
 
-  return { tipo, descricao, endereco, contato, foto, localizacao, clientId: clientId || null }
+  return {
+    tipo,
+    descricao,
+    endereco,
+    contato,
+    foto,
+    localizacao,
+    clientId: clientId || null,
+    codigoAcesso,
+  }
 }
 
 export function validarAvaliacao(body = {}) {

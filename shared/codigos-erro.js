@@ -6,6 +6,7 @@
  */
 export const CODIGOS_ERRO = Object.freeze({
   NAO_ENCONTRADO: 'nao_encontrado',
+  CODIGO_ACESSO_INVALIDO: 'codigo_acesso_invalido',
   NAO_IMPLEMENTADO: 'nao_implementado',
   VALIDACAO: 'validacao',
   NAO_AUTORIZADO: 'nao_autorizado',
@@ -41,6 +42,11 @@ export const CATALOGO_ERROS = Object.freeze({
     status: 404,
     titulo: 'Não encontrado',
     mensagem: 'O recurso solicitado não foi encontrado.',
+  },
+  [CODIGOS_ERRO.CODIGO_ACESSO_INVALIDO]: {
+    status: 404,
+    titulo: 'Acesso não encontrado',
+    mensagem: 'Protocolo ou código de acesso não confere.',
   },
   [CODIGOS_ERRO.NAO_IMPLEMENTADO]: {
     status: 501,

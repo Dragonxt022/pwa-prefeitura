@@ -9,9 +9,10 @@ import './estilos/global.css'
 
 aplicarPreferenciasAcessibilidade()
 
-// Versões anteriores do Service Worker guardavam respostas com foto e contato.
+// Versões anteriores do Service Worker guardavam respostas com foto, contato
+// e status de protocolos. Remove os caches antigos ao atualizar o app.
 if (typeof caches !== 'undefined') {
-  caches.delete('api-get-v1').catch(() => {})
+  for (const nome of ['api-get-v1', 'api-public-v2']) caches.delete(nome).catch(() => {})
 }
 
 createRoot(document.getElementById('root')).render(

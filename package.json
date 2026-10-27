@@ -19,9 +19,13 @@
     "preview": "npm --prefix frontend run preview",
     "start:api": "npm --prefix backend start",
     "lint": "npm --prefix frontend run lint",
+    "test": "npm run test:backend && npm run test:e2e",
+    "test:backend": "npm --prefix backend test",
+    "test:e2e": "playwright test",
     "install:all": "npm install && npm --prefix frontend install && npm --prefix backend install"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "concurrently": "^10.0.6"
   }
 }

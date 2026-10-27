@@ -3,15 +3,16 @@ import { consultarSemelhantes } from '../servicos/api'
 import { LIMITES } from '../utils/solicitacao'
 
 export function useSolicitacaoSemelhante({ tipo, endereco, localizacao }) {
-  const [semelhantes, setSemelhantes] = useState([])
+  const [resultado, setResultado] = useState({ chave: '', dados: [] })
   const [consultando, setConsultando] = useState(false)
+  const enderecoLimpo = endereco.trim()
+  const latitude = localizacao?.latitude
+  const longitude = localizacao?.longitude
+  const valido = Boolean(tipo && enderecoLimpo.length >= LIMITES.enderecoMin)
+  const chave = `${tipo}|${enderecoLimpo}|${latitude ?? ''}|${longitude ?? ''}`
 
   useEffect(() => {
-    const enderecoLimpo = endereco.trim()
-    if (!tipo || enderecoLimpo.length < LIMITES.enderecoMin) {
-      setSemelhantes([])
-      return undefined
-    }
+    if (!valido) return undefined
 
     let ativo = true
     const timer = window.setTimeout(async () => {
@@ -20,12 +21,12 @@ export function useSolicitacaoSemelhante({ tipo, endereco, localizacao }) {
         const dados = await consultarSemelhantes({
           tipo,
           endereco: enderecoLimpo,
-          latitude: localizacao?.latitude,
-          longitude: localizacao?.longitude,
+          latitude,
+          longitude,
         })
-        if (ativo) setSemelhantes(dados)
+        if (ativo) setResultado({ chave, dados })
       } catch {
-        if (ativo) setSemelhantes([])
+        if (ativo) setResultado({ chave, dados: [] })
       } finally {
         if (ativo) setConsultando(false)
       }
@@ -35,11 +36,16 @@ export function useSolicitacaoSemelhante({ tipo, endereco, localizacao }) {
       ativo = false
       window.clearTimeout(timer)
     }
-  }, [tipo, endereco, localizacao])
+  }, [chave, enderecoLimpo, latitude, longitude, tipo, valido])
 
   function limpar() {
-    setSemelhantes([])
+    setResultado({ chave: '', dados: [] })
+    setConsultando(false)
   }
 
-  return { semelhantes, consultando, limpar }
+  return {
+    semelhantes: valido && resultado.chave === chave ? resultado.dados : [],
+    consultando: valido && consultando,
+    limpar,
+  }
 }

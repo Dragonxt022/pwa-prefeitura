@@ -76,12 +76,15 @@ function resumoPedido(dados) {
   }
 }
 
-export function registrarPedido(dados) {
+export function registrarPedido(dados, codigoAcesso) {
   if (!dados?.protocolo) return listarPedidos()
   const atual = listarPedidos()
   const anterior = atual.find((item) => item.protocolo === dados.protocolo)
   const resumo = {
     ...resumoPedido(dados),
+    // O código é guardado junto ao pedido para permitir reabrir e atualizar o
+    // status sem pedir o segredo novamente. Pedidos antigos podem não ter.
+    codigoAcesso: codigoAcesso || anterior?.codigoAcesso || dados.codigoAcesso || null,
     // Mantém a data em que o cidadão viu a atualização pela última vez.
     // Um pedido recém-criado já nasce "visto" para não gerar um falso aviso.
     vistoEm: anterior?.vistoEm ?? dados.atualizadoEm ?? null,

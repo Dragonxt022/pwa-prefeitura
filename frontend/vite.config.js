@@ -5,7 +5,7 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const apiTarget = env.API_TARGET || 'http://localhost:3000'
+  const apiTarget = process.env.API_TARGET || env.API_TARGET || 'http://localhost:3000'
 
   return {
     plugins: [
@@ -58,19 +58,18 @@ export default defineConfig(({ mode }) => {
           runtimeCaching: [
             {
               // Apenas dados públicos e não pessoais entram no cache offline.
-              // Gestão, detalhe do pedido, foto e localização ficam fora do SW.
+              // Solicitações (detalhe, status e semelhantes) dependem de segredo
+              // ou revelam existência de pedidos e ficam totalmente fora do SW.
               urlPattern: ({ url, sameOrigin }) => {
                 if (!sameOrigin || !url.pathname.startsWith('/api/')) return false
                 if (url.pathname.startsWith('/api/gestao')) return false
-                if (url.pathname.startsWith('/api/solicitacoes')) {
-                  return /^\/api\/solicitacoes\/[^/]+\/status$/.test(url.pathname)
-                }
+                if (url.pathname.startsWith('/api/solicitacoes')) return false
                 return true
               },
               handler: 'NetworkFirst',
               method: 'GET',
               options: {
-                cacheName: 'api-public-v2',
+                cacheName: 'api-public-v3',
                 networkTimeoutSeconds: 3,
                 expiration: { maxEntries: 50, maxAgeSeconds: 60 * 60 * 24 },
                 cacheableResponse: { statuses: [200] },
@@ -100,7 +99,9 @@ export default defineConfig(({ mode }) => {
     preview: {
       port: 4173,
       strictPort: true,
-      // preview herda server.proxy: /api continua funcionando no build.
+      proxy: {
+        '/api': { target: apiTarget, changeOrigin: true },
+      },
     },
   }
 })

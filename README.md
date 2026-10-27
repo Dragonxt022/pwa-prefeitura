@@ -16,10 +16,13 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
   **localização geográfica**, **foto** e busca de serviço.
 - **Rascunho automático** e **fila offline** com reenvio automático ao voltar a conexão. O `clientId`
   evita criar o mesmo pedido duas vezes em caso de retry.
-- Detecção de pedidos parecidos por serviço, endereço e proximidade, sem expor o endereço existente.
-- Acompanhamento por protocolo com status, prazo/SLA, histórico, foto, mapa e **Meus pedidos** salvos
-  no aparelho.
-- Avaliação de 1 a 5 estrelas após a conclusão, com comentário opcional.
+- Detecção de pedidos parecidos por serviço, endereço e proximidade, sem expor protocolo, endereço ou
+  qualquer dado do pedido existente.
+- **Código de acesso** individual, gerado no aparelho e exibido apenas na confirmação. O protocolo só
+  pode ser consultado com o código; o backend guarda apenas o hash.
+- Acompanhamento por protocolo + código de acesso, com status, prazo/SLA, histórico, foto, mapa e
+  **Meus pedidos** salvos no aparelho.
+- Avaliação de 1 a 5 estrelas após a conclusão, com comentário opcional e o mesmo código de acesso.
 - Notificações locais no app quando um status muda (sem push em segundo plano neste ciclo).
 - **Painel de gestão com login:** sessão por cookie `HttpOnly`, “manter conectado” por 30 dias e
   restauração automática ao recarregar. Perfis `admin`, `triagem` e `setor`.
@@ -43,7 +46,7 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
 | Backend | Express 5 (ESM) + cors + persistência JSON + sessões com `scrypt` |
 | Estilo | CSS próprio, mobile-first, dark mode automático |
 | Triagem | Regras locais com contrato para mini IA/LLM local no futuro |
-| Qualidade | oxlint (frontend) |
+| Qualidade | oxlint (frontend), `node:test` (backend), Playwright E2E e GitHub Actions |
 
 ## Pré-requisitos
 
@@ -127,10 +130,25 @@ npm run preview     # http://localhost:4173
 ```
 
 Abra DevTools → **Application** → *Manifest* e *Service Workers*. O status deve ser "activated and is
-running" e os caches `workbox-precache-v2-*` e `api-public-v2` devem existir.
+running" e os caches `workbox-precache-v2-*` e `api-public-v3` devem existir. Respostas de
+`/api/solicitacoes` **não** entram em nenhum cache do Service Worker.
 
 Para depurar SW em desenvolvimento, altere `devOptions.enabled` para `true` em
 `frontend/vite.config.js` (não use para validar comportamento final).
+
+## Testes automatizados
+
+```powershell
+npm run test:backend   # node:test: contratos da API, código de acesso e persistência
+npm run test:e2e       # Playwright: cria pedido, confere o código e protege a consulta
+npm test               # executa backend e E2E em sequência
+```
+
+O E2E compila o frontend e sobe o **build de produção** em `5273`, com API isolada em `3100` e
+`DATA_FILE` temporário. É preciso instalar o navegador uma vez com `npx playwright install chromium`.
+O teste também confirma que o Service Worker não guarda nenhuma rota `/api/solicitacoes`. O workflow
+`.github/workflows/ci.yml` executa instalação, lint, testes do backend, build, instalação do Chromium
+e os testes E2E em cada push/PR.
 
 ## Scripts
 
@@ -150,6 +168,9 @@ Para depurar SW em desenvolvimento, altere `devOptions.enabled` para `true` em
 | `npm run preview` | Serve o build em `:4173` com proxy `/api` |
 | `npm run start:api` | API sem watch |
 | `npm run lint` | oxlint no frontend |
+| `npm run test:backend` | Testes de contrato e persistência com `node:test` |
+| `npm run test:e2e` | Teste E2E com Playwright em portas isoladas |
+| `npm test` | Backend + E2E |
 | `npm --prefix frontend run icons` | Regenera os ícones PNG do PWA |
 
 ## Estrutura
@@ -216,11 +237,19 @@ Rotas públicas:
 | GET | `/servicos` | Catálogo com os 9 serviços |
 | GET | `/avisos` | Avisos da cidade |
 | GET | `/perfil` | Perfil fictício |
-| GET | `/solicitacoes/semelhantes?tipo=&endereco=&latitude=&longitude=` | Pedidos parecidos (sem endereço/contato) |
-| POST | `/solicitacoes` | Cria solicitação e devolve protocolo (com `setorNome` e `transferida` públicos) |
-| GET | `/solicitacoes/:protocolo` | Consulta com histórico, setor responsável e selo `transferida`, sem contato/clientId |
-| GET | `/solicitacoes/:protocolo/status` | Status atual, setor e SLA |
-| POST | `/solicitacoes/:protocolo/avaliacao` | Avaliação após conclusão |
+| GET | `/solicitacoes/semelhantes?tipo=&endereco=&latitude=&longitude=` | Pedidos parecidos: apenas tipo, status e distância; sem protocolo, endereço ou contato |
+| POST | `/solicitacoes` | Cria solicitação; exige `codigoAcesso` no corpo e devolve protocolo sem o hash |
+| GET | `/solicitacoes/:protocolo` | Consulta com histórico; exige o cabeçalho `x-codigo-acesso` |
+| GET | `/solicitacoes/:protocolo/status` | Status atual, setor e SLA; exige `x-codigo-acesso` |
+| POST | `/solicitacoes/:protocolo/avaliacao` | Avaliação após conclusão; exige `x-codigo-acesso` |
+
+O código de acesso tem o formato `ABCD-EFGH-JKLM` (12 caracteres, sem `I`, `O`, `0` ou `1`) e é
+gerado com `crypto.getRandomValues` no navegador. Ele **nunca** vai na URL, em payload público ou em
+log; o backend persiste somente `codigoAcessoHash` (SHA-256). Protocolo inexistente e código incorreto
+respondem com o mesmo `404 codigo_acesso_invalido`, evitando confirmar a existência de um pedido.
+Os protocolos fictícios `PREF-2026-000001` a `PREF-2026-000003` usam, apenas para demonstração, o
+código `DEMA-ACES-S226`. Qualquer outro pedido criado antes deste contrato e sem hash permanece
+inacessível.
 
 Rotas de gestão (sessão por cookie `HttpOnly`; `x-admin-token` aceito como emergência somente com
 `ADMIN_TOKEN` definido):
@@ -250,31 +279,41 @@ Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/gestao/login `
 Invoke-RestMethod -Uri http://localhost:3000/api/gestao/solicitacoes -WebSession $sessao
 ```
 
-Exemplo de criação (o `clientId` é opcional; a UI o gera para idempotência):
+Exemplo de criação (o `clientId` é opcional; a UI o gera para idempotência; `codigoAcesso` é
+obrigatório e deve ser gerado com segurança):
 
 ```powershell
+$codigo = 'A2B3-C4D5-E6F7'
 $body = @{
   tipo = 'iluminacao'
   descricao = 'Poste apagado em frente ao numero 120 desde terca-feira'
   endereco = 'Rua das Palmeiras, 120 - Centro'
   clientId = [guid]::NewGuid().ToString()
+  codigoAcesso = $codigo
 } | ConvertTo-Json
 
-Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/solicitacoes `
+$criada = Invoke-RestMethod -Method Post -Uri http://localhost:3000/api/solicitacoes `
   -ContentType 'application/json' -Body $body
+
+Invoke-RestMethod -Uri "http://localhost:3000/api/solicitacoes/$($criada.dados.protocolo)" `
+  -Headers @{ 'x-codigo-acesso' = $codigo }
 ```
 
 Os dados de exemplo são carregados no primeiro start. A sequência é persistida junto com os pedidos;
-reiniciar a API não apaga os protocolos. Para começar do zero, pare a API e remova
-`backend/data/estado.json` (ou o arquivo definido em `DATA_FILE`).
+reiniciar a API não apaga os protocolos. A gravação usa arquivo temporário + `fsync` + renomeação
+atômica e mantém `estado.json.bak`. Se o principal estiver corrompido, o backup é usado; se ambos
+estiverem inválidos, a API falha na inicialização em vez de substituir os dados por sementes. Para
+começar do zero, pare a API e remova `backend/data/estado.json` (ou o arquivo definido em `DATA_FILE`).
 
 Contrato completo, limites, códigos de erro e regras: [doc/02-requisitos.md](doc/02-requisitos.md).
 
 ## Comportamento offline
 
 - Assets do build entram no **precache** (Service Worker).
-- Apenas **GETs públicos e não pessoais** entram no cache `api-public-v2` (serviços, avisos, perfil
-  e status). Detalhe do pedido, foto, localização e rotas de gestão ficam **fora** do cache do SW.
+- Apenas **GETs públicos e não pessoais** entram no cache `api-public-v3` (serviços, avisos e
+  configurações públicas). **Nenhuma** rota `/api/solicitacoes` entra no cache do SW; detalhe, status,
+  semelhantes, foto, localização e rotas de gestão ficam fora. Caches antigos (`api-get-v1` e
+  `api-public-v2`) são removidos no boot.
 - Rascunhos são salvos no aparelho e restaurados ao reabrir o formulário.
 - Se o envio falhar sem conexão, o pedido entra na fila local e é reenviado automaticamente quando a
   conexão volta. A tela de confirmação troca de “Pedido salvo” para “Pronto!” com o protocolo.
@@ -286,10 +325,12 @@ Contrato completo, limites, códigos de erro e regras: [doc/02-requisitos.md](do
 - A listagem completa é exclusiva da gestão e cada usuário de setor recebe apenas a própria fila.
 - Respostas públicas de um pedido omitem `contato`, `clientId`, metadados da triagem e o motivo
   detalhado de transferências internas.
-- A detecção de duplicidade informa protocolo, serviço, status e, quando disponível, distância — sem
-  devolver o endereço do pedido existente.
-- No piloto, o protocolo funciona como chave de acesso do cidadão. Não use dados reais.
-- O Service Worker não guarda respostas de gestão nem detalhes com foto/contato.
+- A detecção de duplicidade informa apenas serviço, status e, quando disponível, distância — sem
+  devolver protocolo, endereço, descrição ou qualquer dado do pedido existente.
+- No piloto, o acesso do cidadão exige **protocolo + código de acesso**. O código é exibido uma única
+  vez na confirmação e fica salvo em “Meus pedidos” neste aparelho; se os dados do aparelho forem
+  apagados, ele não pode ser recuperado. Não use dados reais.
+- O Service Worker não guarda respostas de gestão, detalhes, status ou semelhantes de solicitações.
 - Senhas são persistidas com `scrypt` + sal; tokens de sessão são persistidos apenas como hash SHA-256.
 - O cookie de sessão é `HttpOnly`, `SameSite=Lax` e, em produção, deve usar `Secure` (`COOKIE_SECURE=true`).
 - O token legado `ADMIN_TOKEN` é apenas compatibilidade/emergência quando definido; o login normal não

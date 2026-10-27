@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      - name: Instalar dependências
+        run: |
+          npm ci
+          npm --prefix frontend ci
+          npm --prefix backend ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Testes do backend
+        run: npm run test:backend
+
+      - name: Build do frontend
+        run: npm run build
+
+      - name: Instalar navegador do Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Testes E2E
+        run: npm run test:e2e
+        env:
+          CI: true
+
+      - name: Guardar artefatos de falha
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artefatos
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7

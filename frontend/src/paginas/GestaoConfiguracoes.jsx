@@ -16,8 +16,8 @@ import logoColorido from '../assets/logo-icone-colorido.png'
 import ConfigEmail from '../componentes/configuracoes/ConfigEmail'
 import ConfigIA from '../componentes/configuracoes/ConfigIA'
 import ConfigIdentidade from '../componentes/configuracoes/ConfigIdentidade'
-import { useConfiguracoes } from '../contexto/Configuracoes.jsx'
-import { useI18n } from '../i18n/index.jsx'
+import { useConfiguracoes } from '../contexto/useConfiguracoes.js'
+import { useI18n } from '../i18n/useI18n.js'
 import {
   logoutGestao,
   obterConfiguracoesGestao,
@@ -91,7 +91,6 @@ export default function GestaoConfiguracoes() {
 
   useEffect(() => {
     let ativo = true
-    setVerificandoSessao(true)
     obterSessaoGestao()
       .then((resposta) => {
         if (!ativo) return
@@ -135,9 +134,13 @@ export default function GestaoConfiguracoes() {
   }, [navigate])
 
   useEffect(() => {
-    if (sessao?.usuario?.papel === 'admin' && !acessoNegado) {
+    if (sessao?.usuario?.papel !== 'admin' || acessoNegado) return undefined
+    // Agenda fora do efeito para não iniciar uma cascata de renders na
+    // sincronização com a sessão; o timer é limpo se a sessão mudar.
+    const timer = window.setTimeout(() => {
       void carregar()
-    }
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [sessao, acessoNegado, carregar])
 
   const salvarSecao = useCallback(

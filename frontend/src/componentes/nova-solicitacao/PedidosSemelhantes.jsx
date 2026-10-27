@@ -1,5 +1,4 @@
 import { Info } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import { StatusBadge } from '../StatusBadge'
 
 export default function PedidosSemelhantes({ semelhantes, consultando }) {
@@ -10,16 +9,16 @@ export default function PedidosSemelhantes({ semelhantes, consultando }) {
           <Info aria-hidden="true" />
           <div>
             <strong>Já existe um pedido parecido</strong>
-            <p>Se for o mesmo problema, acompanhe o protocolo existente.</p>
+            <p>Se for o mesmo problema, use o protocolo que você já recebeu.</p>
             <ul>
-              {semelhantes.map((item) => (
-                <li key={item.protocolo}>
-                  <Link to={`/acompanhar?protocolo=${item.protocolo}`}>{item.protocolo}</Link>
+              {semelhantes.map((item, indice) => (
+                <li key={`${item.tipo}-${indice}`}>
+                  <strong>{item.tipoTitulo ?? 'Pedido existente'}</strong>
                   <StatusBadge status={item.status} />
                   <span>
                     {Number.isFinite(item.distanciaMetros)
                       ? `A cerca de ${item.distanciaMetros} m`
-                      : 'Pedido existente'}
+                      : 'Pedido existente na região'}
                   </span>
                 </li>
               ))}

@@ -31,6 +31,13 @@ export const erro = (codigo, opcoes) => new AppError(codigo, opcoes)
 export const naoEncontrado = (mensagem) =>
   new AppError(CODIGOS_ERRO.NAO_ENCONTRADO, { mensagem })
 
+/**
+ * Resposta genérica para protocolo inexistente ou código incorreto. O mesmo
+ * código/status evita confirmar a existência de um protocolo a terceiros.
+ */
+export const codigoAcessoInvalido = () =>
+  new AppError(CODIGOS_ERRO.CODIGO_ACESSO_INVALIDO)
+
 export const naoImplementado = (mensagem) =>
   new AppError(CODIGOS_ERRO.NAO_IMPLEMENTADO, { mensagem })
 

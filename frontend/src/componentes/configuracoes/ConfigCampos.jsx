@@ -1,6 +1,6 @@
 import { cloneElement, isValidElement } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
-import { useI18n } from '../../i18n/index.jsx'
+import { useI18n } from '../../i18n/useI18n.js'
 import { codigoDoErro, mensagemAmigavel } from '../../utils/erros'
 
 export function CampoConfig({ id, rotulo, ajuda, erro, children, className = '' }) {

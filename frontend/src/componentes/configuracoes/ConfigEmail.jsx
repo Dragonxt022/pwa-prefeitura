@@ -8,7 +8,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { useState } from 'react'
-import { useI18n } from '../../i18n/index.jsx'
+import { useI18n } from '../../i18n/useI18n.js'
 import { formatarDataHora } from '../../utils/format'
 import { CampoConfig, ErroOperacao, ListaTextos, SwitchConfig } from './ConfigCampos'
 

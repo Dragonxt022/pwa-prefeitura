@@ -42,12 +42,12 @@ export function useAtualizacoes() {
 
   const verificar = useCallback(async () => {
     if (!online) return
-    const salvos = listarPedidos()
+    const salvos = listarPedidos().filter((pedido) => pedido.codigoAcesso)
     if (salvos.length === 0) return
 
     const respostas = await Promise.allSettled(
       salvos.map(async (pedido) => {
-        const status = await consultarStatus(pedido.protocolo)
+        const status = await consultarStatus(pedido.protocolo, pedido.codigoAcesso)
         return { pedido, status }
       }),
     )
@@ -75,11 +75,11 @@ export function useAtualizacoes() {
     }
 
     if (mudou) {
-      setPedidos(listarPedidos())
-      sincronizarContagem()
+      // O listener de `prefeitura:notificacoes` sincroniza o estado local; assim
+      // a verificação periódica não chama setState dentro do efeito.
       window.dispatchEvent(new CustomEvent('prefeitura:notificacoes'))
     }
-  }, [online, sincronizarContagem])
+  }, [online])
 
   useEffect(() => {
     verificar()

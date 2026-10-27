@@ -1379,6 +1379,40 @@ fieldset.campo {
   font-size: 0.68rem;
 }
 
+.protocolo-caixa--codigo {
+  border-style: solid;
+  border-color: var(--borda);
+  background: var(--superficie-2);
+}
+
+.protocolo-caixa--codigo code {
+  font-size: clamp(0.95rem, 4vw, 1.15rem);
+  letter-spacing: 0.1em;
+}
+
+.protocolo-caixa__texto {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  text-align: left;
+}
+
+.protocolo-caixa__rotulo {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--texto-suave);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.protocolo-caixa__rotulo svg {
+  width: 13px;
+  height: 13px;
+}
+
 .acoes {
   display: flex;
   flex-wrap: wrap;
@@ -1461,6 +1495,12 @@ fieldset.campo {
 
 .consulta .campo {
   margin-bottom: 0;
+}
+
+.consulta__campos {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
 }
 
 .consulta .botao {
@@ -2185,6 +2225,28 @@ fieldset.campo {
   font-weight: 750;
 }
 
+.faixa-envio--temporaria {
+  animation: ocultar-faixa-envio 250ms ease 8s forwards;
+}
+
+@keyframes ocultar-faixa-envio {
+  to {
+    visibility: hidden;
+    opacity: 0;
+    height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom-width: 0;
+    overflow: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .faixa-envio--temporaria {
+    animation-duration: 0ms;
+  }
+}
+
 .rodape {
   flex-wrap: wrap;
   flex-direction: column;
@@ -2595,12 +2657,6 @@ fieldset.campo {
   flex-wrap: wrap;
   gap: 6px;
   font-size: 0.73rem;
-}
-
-.duplicidade li a {
-  font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
-  font-size: 0.72rem;
-  font-weight: 700;
 }
 
 .duplicidade li > span:last-child {

@@ -3,6 +3,7 @@ import {
   Building2,
   CalendarDays,
   Clock3,
+  KeyRound,
   LoaderCircle,
   MapPin,
   Plus,
@@ -12,6 +13,10 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import {
+  codigoAcessoValido,
+  normalizarCodigoAcesso,
+} from '../../../shared/codigo-acesso.js'
 import Avaliacao from '../componentes/Avaliacao'
 import ErrorState from '../componentes/ErrorState'
 import { IlustracaoBusca } from '../componentes/Ilustracoes'
@@ -40,19 +45,26 @@ export default function Acompanhar() {
   const protocoloParam = normalizarProtocolo(params.get('protocolo'))
 
   const [valor, setValor] = useState(protocoloParam)
+  const [codigo, setCodigo] = useState('')
+  const [codigoConsultado, setCodigoConsultado] = useState('')
   const [resultado, setResultado] = useState(null)
   const [erro, setErro] = useState(null)
   const [carregando, setCarregando] = useState(false)
   const [aviso, setAviso] = useState('')
+  const [avisoCodigo, setAvisoCodigo] = useState('')
   const [recentes, setRecentes] = useState(listarConsultas)
   const [pedidos, setPedidos] = useState(listarPedidos)
 
-  const consultadoRef = useRef('')
+  const consultadoRef = useRef({ protocolo: '', codigo: '' })
+  const codigoRef = useRef('')
   const campoRef = useRef(null)
+  const campoCodigoRef = useRef(null)
 
-  const consultar = useCallback(async (protocolo) => {
+  const consultar = useCallback(async (protocolo, codigoAcesso = codigoRef.current) => {
     const limpo = normalizarProtocolo(protocolo)
+    const codigoLimpo = normalizarCodigoAcesso(codigoAcesso)
     setAviso('')
+    setAvisoCodigo('')
     setErro(null)
     setResultado(null)
 
@@ -61,30 +73,58 @@ export default function Acompanhar() {
       campoRef.current?.focus()
       return
     }
+    if (!codigoAcessoValido(codigoLimpo)) {
+      setAvisoCodigo('Informe o código de acesso com 12 caracteres.')
+      campoCodigoRef.current?.focus()
+      return
+    }
 
-    consultadoRef.current = limpo
+    consultadoRef.current = { protocolo: limpo, codigo: codigoLimpo }
+    codigoRef.current = codigoLimpo
+    setCodigo(codigoLimpo)
     setCarregando(true)
     try {
-      const dados = await consultarSolicitacao(limpo)
+      const dados = await consultarSolicitacao(limpo, codigoLimpo)
+      setCodigoConsultado(codigoLimpo)
       setResultado(dados)
       setRecentes(registrarConsulta(dados.protocolo))
-      registrarPedido(dados)
+      registrarPedido(dados, codigoLimpo)
       marcarPedidoVisto(dados.protocolo)
       setPedidos(listarPedidos())
       marcarNotificacoesLidas()
       window.dispatchEvent(new CustomEvent('prefeitura:notificacoes'))
     } catch (falha) {
       setErro(falha)
+      if (falha?.codigo === CODIGOS_ERRO.CODIGO_ACESSO_INVALIDO) {
+        setAvisoCodigo('Protocolo ou código de acesso não confere.')
+        requestAnimationFrame(() => campoCodigoRef.current?.focus())
+      }
     } finally {
       setCarregando(false)
     }
   }, [])
 
   useEffect(() => {
-    if (protocoloParam && protocoloParam !== consultadoRef.current) {
-      setValor(protocoloParam)
-      consultar(protocoloParam)
+    if (!protocoloParam || consultadoRef.current.protocolo === protocoloParam) return
+    const salvo = listarPedidos().find((item) => item.protocolo === protocoloParam)
+    const codigoSalvo = salvo?.codigoAcesso ?? ''
+    setValor(protocoloParam)
+    setCodigo(codigoSalvo)
+    codigoRef.current = codigoSalvo
+    setAviso('')
+    setAvisoCodigo(codigoSalvo ? '' : 'Informe o código de acesso deste pedido.')
+    setErro(null)
+    setResultado(null)
+    if (codigoSalvo) {
+      // A busca é agendada fora do efeito para não iniciar uma cascata de
+      // renders ao sincronizar a URL com um pedido salvo.
+      const timer = window.setTimeout(() => {
+        void consultar(protocoloParam, codigoSalvo)
+      }, 0)
+      return () => window.clearTimeout(timer)
     }
+    requestAnimationFrame(() => campoCodigoRef.current?.focus())
+    return undefined
   }, [protocoloParam, consultar])
 
   useEffect(() => {
@@ -99,25 +139,58 @@ export default function Acompanhar() {
     }
   }, [])
 
-  function abrirPedido(protocolo) {
+  function abrirPedido(protocolo, codigoAcesso) {
+    const salvo = listarPedidos().find((item) => item.protocolo === protocolo)
+    const codigoFinal = codigoAcesso || salvo?.codigoAcesso || ''
     setValor(protocolo)
+    setCodigo(codigoFinal)
+    codigoRef.current = codigoFinal
+    setAvisoCodigo(codigoFinal ? '' : 'Informe o código de acesso deste pedido.')
     setParams({ protocolo }, { replace: true })
-    consultar(protocolo)
+    if (codigoFinal) {
+      consultar(protocolo, codigoFinal)
+    } else {
+      setResultado(null)
+      setErro(null)
+      requestAnimationFrame(() => campoCodigoRef.current?.focus())
+    }
   }
 
   function aoEnviar(evento) {
     evento.preventDefault()
     const limpo = normalizarProtocolo(valor)
-    setParams(limpo ? { protocolo: limpo } : {}, { replace: true })
-    if (limpo === consultadoRef.current) consultar(limpo)
-    else if (!limpo) consultar(limpo)
+    const codigoLimpo = normalizarCodigoAcesso(codigo)
+    setAviso('')
+    setAvisoCodigo('')
+
+    if (!limpo) {
+      setAviso('Informe o protocolo.')
+      setParams({}, { replace: true })
+      campoRef.current?.focus()
+      return
+    }
+    if (!codigoAcessoValido(codigoLimpo)) {
+      setAvisoCodigo('Informe o código de acesso com 12 caracteres.')
+      campoCodigoRef.current?.focus()
+      return
+    }
+
+    setValor(limpo)
+    setCodigo(codigoLimpo)
+    setParams({ protocolo: limpo }, { replace: true })
+    consultar(limpo, codigoLimpo)
   }
 
   function voltarParaPedidos() {
     setResultado(null)
+    setCodigoConsultado('')
     setErro(null)
     setValor('')
-    consultadoRef.current = ''
+    setCodigo('')
+    setAviso('')
+    setAvisoCodigo('')
+    codigoRef.current = ''
+    consultadoRef.current = { protocolo: '', codigo: '' }
     setParams({}, { replace: true })
     setPedidos(listarPedidos())
   }
@@ -126,41 +199,80 @@ export default function Acompanhar() {
   const visual = resultado ? visualStatus(resultado.status) : null
   const prazo = resultado ? infoPrazo(resultado) : null
   const naoEncontrado = erro?.codigo === CODIGOS_ERRO.NAO_ENCONTRADO
+  const acessoInvalido = erro?.codigo === CODIGOS_ERRO.CODIGO_ACESSO_INVALIDO
 
   return (
     <div className="pagina pagina--estreita">
       <header className="cabecalho-pagina">
         <p className="cabecalho-pagina__sobre">Acompanhar</p>
         <h1>Seu protocolo</h1>
-        <p className="texto-suave">Digite o número ou abra um dos seus pedidos.</p>
+        <p className="texto-suave">
+          Informe o protocolo e o código de acesso, ou abra um dos seus pedidos.
+        </p>
       </header>
 
       <form className="cartao consulta" onSubmit={aoEnviar} noValidate>
-        <div className={`campo${aviso ? ' campo--erro' : ''}`}>
-          <label htmlFor="protocolo" className="sr-only">
-            Número do protocolo
-          </label>
-          <div className="campo__controle campo__controle--busca">
-            <Search aria-hidden="true" />
-            <input
-              ref={campoRef}
-              id="protocolo"
-              type="text"
-              inputMode="text"
-              autoComplete="off"
-              spellCheck={false}
-              placeholder="PREF-2026-000001"
-              value={valor}
-              onChange={(evento) => setValor(evento.target.value.toUpperCase())}
-              aria-invalid={Boolean(aviso)}
-              aria-describedby={aviso ? 'erro-protocolo' : undefined}
-            />
+        <div className="consulta__campos">
+          <div className={`campo${aviso ? ' campo--erro' : ''}`}>
+            <label htmlFor="protocolo" className="sr-only">
+              Número do protocolo
+            </label>
+            <div className="campo__controle campo__controle--busca">
+              <Search aria-hidden="true" />
+              <input
+                ref={campoRef}
+                id="protocolo"
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="PREF-2026-000001"
+                value={valor}
+                onChange={(evento) => {
+                  setValor(evento.target.value.toUpperCase())
+                  setAviso('')
+                }}
+                aria-invalid={Boolean(aviso)}
+                aria-describedby={aviso ? 'erro-protocolo' : undefined}
+              />
+            </div>
+            {aviso && (
+              <p className="campo__erro" id="erro-protocolo">
+                {aviso}
+              </p>
+            )}
           </div>
-          {aviso && (
-            <p className="campo__erro" id="erro-protocolo">
-              {aviso}
+
+          <div className={`campo${avisoCodigo ? ' campo--erro' : ''}`}>
+            <label htmlFor="codigo-acesso">Código de acesso</label>
+            <div className="campo__controle campo__controle--busca">
+              <KeyRound aria-hidden="true" />
+              <input
+                ref={campoCodigoRef}
+                id="codigo-acesso"
+                type="text"
+                inputMode="text"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="ABCD-EFGH-JKLM"
+                value={codigo}
+                onChange={(evento) => {
+                  setCodigo(normalizarCodigoAcesso(evento.target.value))
+                  setAvisoCodigo('')
+                }}
+                aria-invalid={Boolean(avisoCodigo)}
+                aria-describedby={`ajuda-codigo${avisoCodigo ? ' erro-codigo' : ''}`}
+              />
+            </div>
+            <p className="campo__ajuda" id="ajuda-codigo">
+              Está na confirmação do pedido. Também fica salvo em “Meus pedidos” neste aparelho.
             </p>
-          )}
+            {avisoCodigo && (
+              <p className="campo__erro" id="erro-codigo">
+                {avisoCodigo}
+              </p>
+            )}
+          </div>
         </div>
 
         <button type="submit" className="botao botao--primario" disabled={carregando}>
@@ -195,7 +307,7 @@ export default function Acompanhar() {
                   <button
                     type="button"
                     className={`pedido-card${atualizado ? ' is-atualizado' : ''}`}
-                    onClick={() => abrirPedido(pedido.protocolo)}
+                    onClick={() => abrirPedido(pedido.protocolo, pedido.codigoAcesso)}
                     aria-label={`Abrir ${pedido.protocolo}, ${pedido.tipoTitulo ?? 'serviço'}`}
                   >
                     <span className="pedido-card__topo">
@@ -239,16 +351,22 @@ export default function Acompanhar() {
 
       {carregando && <SkeletonBloco linhas={4} />}
 
-      {naoEncontrado && (
+      {(naoEncontrado || acessoInvalido) && (
         <div className="cartao estado-vazio" role="status">
           <IlustracaoBusca className="estado-vazio__arte" />
-          <h2>Protocolo não encontrado</h2>
-          <p>Confira o número e tente novamente.</p>
-          <code className="exemplo-protocolo">PREF-2026-000001</code>
+          <h2>{acessoInvalido ? 'Protocolo ou código não confere' : 'Protocolo não encontrado'}</h2>
+          <p>
+            {acessoInvalido
+              ? 'Confira o número do protocolo e o código de acesso e tente novamente.'
+              : 'Confira o número e tente novamente.'}
+          </p>
+          {!acessoInvalido && <code className="exemplo-protocolo">PREF-2026-000001</code>}
         </div>
       )}
 
-      {erro && !naoEncontrado && <ErrorState erro={erro} aoTentarNovamente={() => consultar(valor)} />}
+      {erro && !naoEncontrado && !acessoInvalido && (
+        <ErrorState erro={erro} aoTentarNovamente={() => consultar(valor, codigo)} />
+      )}
 
       {resultado && (
         <article className="cartao resultado" aria-labelledby="titulo-resultado">
@@ -384,10 +502,11 @@ export default function Acompanhar() {
           {resultado.status === 'concluida' && (
             <Avaliacao
               protocolo={resultado.protocolo}
+              codigoAcesso={codigoConsultado}
               avaliacao={resultado.avaliacao}
               aoAvaliar={(atualizada) => {
                 setResultado(atualizada)
-                registrarPedido(atualizada)
+                registrarPedido(atualizada, codigoConsultado)
                 setPedidos(listarPedidos())
               }}
             />

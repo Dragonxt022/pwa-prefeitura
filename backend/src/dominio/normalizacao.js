@@ -1,4 +1,5 @@
-import { gerarHashSenha } from '../utils/seguranca.js'
+import { gerarHashSenha, hashToken } from '../utils/seguranca.js'
+import { normalizarCodigoAcesso } from '../../../shared/codigo-acesso.js'
 import { adicionarDias } from '../utils/data.js'
 import { normalizarEmail } from '../utils/texto.js'
 import { PAPEIS, STATUS, servicos, setorDoServico } from './catalogo.js'
@@ -9,18 +10,21 @@ import { SENHA_DEMO, USUARIOS_SEMENTE } from './sementes.js'
  * mantém compatibilidade com versões anteriores do arquivo de dados.
  */
 export function normalizarSolicitacao(item) {
-  const servico = servicos.find((servicoAtual) => servicoAtual.id === item.tipo)
-  const criadoEm = item.criadoEm || new Date().toISOString()
-  const prazoDias = Number(item.prazoDias) || servico?.prazoDias || 10
-  const status = STATUS[item.status] ? item.status : 'recebida'
-  const historico = Array.isArray(item.historico) && item.historico.length > 0
-    ? item.historico
+  const { codigoAcesso: codigoAcessoLegado, ...dados } = item
+  const servico = servicos.find((servicoAtual) => servicoAtual.id === dados.tipo)
+  const criadoEm = dados.criadoEm || new Date().toISOString()
+  const prazoDias = Number(dados.prazoDias) || servico?.prazoDias || 10
+  const status = STATUS[dados.status] ? dados.status : 'recebida'
+  const historico = Array.isArray(dados.historico) && dados.historico.length > 0
+    ? dados.historico
     : [{ status, em: criadoEm, observacao: 'Solicitação registrada pelo aplicativo.' }]
-  const setorId = item.setorId || setorDoServico(item.tipo)?.id || 'triagem'
+  const setorId = dados.setorId || setorDoServico(dados.tipo)?.id || 'triagem'
+  const codigoAcessoHash = dados.codigoAcessoHash ||
+    (codigoAcessoLegado ? hashToken(normalizarCodigoAcesso(codigoAcessoLegado)) : null)
 
   return {
-    ...item,
-    tipoTitulo: item.tipoTitulo || servico?.titulo || 'Serviço',
+    ...dados,
+    tipoTitulo: dados.tipoTitulo || servico?.titulo || 'Serviço',
     status,
     criadoEm,
     atualizadoEm: item.atualizadoEm || criadoEm,
@@ -34,6 +38,7 @@ export function normalizarSolicitacao(item) {
     setorId,
     transferencias: Array.isArray(item.transferencias) ? item.transferencias : [],
     triagem: item.triagem && typeof item.triagem === 'object' ? item.triagem : null,
+    codigoAcessoHash,
     historico,
   }
 }

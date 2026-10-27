@@ -11,16 +11,16 @@ import {
   UserRound,
   WifiOff,
 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import logoColorido from '../assets/logo-icone-colorido.png'
 import logoBranco from '../assets/logo-icone-branco.png'
-import { useConfiguracoes } from '../contexto/Configuracoes.jsx'
+import { useConfiguracoes } from '../contexto/useConfiguracoes.js'
 import { useAtualizacoes } from '../hooks/useAtualizacoes'
 import { useFilaSolicitacoes } from '../hooks/useFilaSolicitacoes'
 import { useOnlineStatus } from '../hooks/useOnlineStatus'
 import { ROTULOS_REDES } from '../utils/identidade'
-import { useI18n } from '../i18n/index.jsx'
+import { useI18n } from '../i18n/useI18n.js'
 
 const ITENS = [
   { para: '/', rotulo: 'Início', Icone: Home, fim: true },
@@ -38,10 +38,9 @@ export default function Layout() {
   const online = useOnlineStatus()
   const { pathname } = useLocation()
   const { naoLidas } = useAtualizacoes()
-  const { pendentes, ultimo } = useFilaSolicitacoes()
+  const { pendentes, envioRecente } = useFilaSolicitacoes()
   const { identidade, rodape } = useConfiguracoes()
   const { t } = useI18n()
-  const [envioRecente, setEnvioRecente] = useState(null)
   const nomeApp = identidade.nome || 'Prefeitura Digital'
   const logo = identidade.logo || null
   const contatos = [
@@ -63,16 +62,6 @@ export default function Layout() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }, [pathname])
-
-  useEffect(() => {
-    if (!ultimo?.em) return undefined
-    const idade = Date.now() - new Date(ultimo.em).getTime()
-    if (!Number.isFinite(idade) || idade > 15_000) return undefined
-
-    setEnvioRecente(ultimo)
-    const timer = window.setTimeout(() => setEnvioRecente(null), 8000)
-    return () => window.clearTimeout(timer)
-  }, [ultimo])
 
   const itens = ITENS.map((item) =>
     item.para === '/acompanhar' ? { ...item, badge: naoLidas } : item,
@@ -140,7 +129,11 @@ export default function Layout() {
       )}
 
       {envioRecente && (
-        <div className="faixa-envio" role="status">
+        <div
+          key={`${envioRecente.protocolo}-${envioRecente.em}`}
+          className="faixa-envio faixa-envio--temporaria"
+          role="status"
+        >
           <Check aria-hidden="true" />
           <span>Pedido enviado: {envioRecente.protocolo}</span>
           <Link to={`/acompanhar?protocolo=${envioRecente.protocolo}`}>Acompanhar</Link>

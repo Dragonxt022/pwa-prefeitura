@@ -1,5 +1,11 @@
 /** Dados iniciais usados somente quando o arquivo local ainda não existe. */
 
+/**
+ * Código conhecido apenas para os protocolos fictícios de demonstração. Novos
+ * pedidos recebem um código individual gerado pelo navegador.
+ */
+export const CODIGO_ACESSO_SEMENTE = 'DEMA-ACES-S226'
+
 export const SOLICITACOES_SEMENTE = [
   {
     protocolo: 'PREF-2026-000001',
