@@ -65,6 +65,7 @@ test('Ollama usa /api/chat com o modo de pensamento desativado', async () => {
     assert.equal(chamadas.length, 1)
     assert.equal(chamadas[0].url, '/api/chat')
     assert.equal(chamadas[0].corpo.think, false)
+    assert.equal(chamadas[0].corpo.format, 'json')
     assert.equal(chamadas[0].corpo.stream, false)
     assert.equal(chamadas[0].corpo.model, 'qwen3:1.7b')
   } finally {

@@ -59,9 +59,12 @@ function montarPrompt({ tipo, descricao, endereco }, setores) {
     `Descrição: ${descricao}`,
     `Endereço: ${endereco}`,
     '',
-    'Responda SOMENTE com um objeto JSON válido, sem markdown, no formato:',
-    '{"setorId":"id_permitido","confianca":0.0,"justificativa":"texto curto em português"}',
-    'A confiança deve ser um número entre 0 e 1.',
+    'Regras de resposta:',
+    '- Responda SOMENTE com um objeto JSON válido, sem markdown.',
+    '- Formato: {"setorId":"id_permitido","confianca":0.85,"justificativa":"texto curto em português"}',
+    '- Quando o setor for claramente identificável, confianca deve ficar entre 0.5 e 1.0.',
+    '- Use confianca abaixo de 0.5 somente quando a solicitação for ambígua.',
+    '- Exemplo: {"setorId":"meio_ambiente","confianca":0.9,"justificativa":"Poda de árvore em via pública."}',
   ].join('\n')
 }
 
@@ -173,6 +176,7 @@ async function chamarOllama(config, prompt) {
         model: config.modelo,
         stream: false,
         think: false,
+        format: 'json',
         keep_alive: '30m',
         options: {
           temperature: config.temperatura,
