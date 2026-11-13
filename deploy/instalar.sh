@@ -151,7 +151,7 @@ docker run -d \
   --network "${PROXY_NETWORK}" \
   --add-host host.docker.internal:host-gateway \
   -v "${APP_DIR}/frontend/dist:/usr/share/nginx/html:ro" \
-  -v "/opt/digital-home/conf/default.conf:/etc/nginx/conf.d/default.conf:ro" \
+  -v "/opt/digital-home/conf:/etc/nginx/conf.d:ro" \
   "${NGINX_IMAGE}" >/dev/null
 
 log "verificacao"
