@@ -7,6 +7,7 @@
 # Faz pull, reinstala dependencias, gera o build, recarrega o nginx e reinicia
 # o processo PM2. O arquivo de dados do piloto nao e alterado.
 set -euo pipefail
+umask 022
 
 APP_SLUG="pwa-prefeitura"
 APP_USER="app-${APP_SLUG}"
@@ -37,6 +38,8 @@ runuser -u "${APP_USER}" -- bash -lc "
   npm --prefix frontend ci --no-audit --no-fund
   npm --prefix frontend run build
 "
+# O nginx roda como usuario sem privilegios dentro do container.
+chmod -R a+rX "${APP_DIR}/frontend/dist"
 
 log "3/4 - nginx"
 install -m 644 "${APP_DIR}/deploy/nginx/digital-home.conf" /opt/digital-home/conf/default.conf

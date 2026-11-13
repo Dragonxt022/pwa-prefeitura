@@ -7,6 +7,7 @@
 # O script e idempotente: pode ser executado novamente para reaplicar
 # dependencias, build, PM2, firewall e o gateway nginx.
 set -euo pipefail
+umask 022
 
 APP_SLUG="pwa-prefeitura"
 APP_USER="app-${APP_SLUG}"
@@ -102,6 +103,7 @@ fi
 
 chown "${APP_USER}:${APP_USER}" "${ENV_FILE}"
 chmod 600 "${ENV_FILE}"
+umask 022
 
 log "4/7 - dependencias e build"
 runuser -u "${APP_USER}" -- bash -lc "
@@ -111,6 +113,8 @@ runuser -u "${APP_USER}" -- bash -lc "
   npm --prefix frontend ci --no-audit --no-fund
   npm --prefix frontend run build
 "
+# O nginx roda como usuario sem privilegios dentro do container.
+chmod -R a+rX "${APP_DIR}/frontend/dist"
 
 log "5/7 - processo PM2"
 runuser -u "${APP_USER}" -- bash -lc "
