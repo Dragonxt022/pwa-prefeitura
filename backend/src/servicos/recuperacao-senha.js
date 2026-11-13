@@ -107,7 +107,7 @@ export async function redefinirSenha(token, novaSenha) {
   const bruto = String(token ?? '').trim()
   if (bruto.length < 20) return { erro: 'token_invalido' }
 
-  const registro = repositorioRecuperacao.buscarPorTokenHash(hashToken(bruto))
+  const registro = await repositorioRecuperacao.buscarPorTokenHash(hashToken(bruto))
   if (!registro || registro.usadoEm) return { erro: 'token_invalido' }
   if (new Date(registro.expiraEm).getTime() <= Date.now()) {
     return { erro: 'token_expirado' }

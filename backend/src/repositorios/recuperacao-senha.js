@@ -8,6 +8,7 @@
 import { estado, persistir } from './estado.js'
 import { mysqlConfigurado } from './mysql.js'
 import {
+  buscarRecuperacaoSenha,
   inserirRecuperacaoSenha,
   marcarRecuperacaoUsada,
   removerRecuperacoesDoCidadao,
@@ -17,10 +18,18 @@ function clonar(registro) {
   return registro ? structuredClone(registro) : null
 }
 
-export function buscarPorTokenHash(tokenHash) {
-  return clonar(
-    estado.recuperacoesSenha.find((registro) => registro.tokenHash === tokenHash),
+export async function buscarPorTokenHash(tokenHash) {
+  const local = estado.recuperacoesSenha.find(
+    (registro) => registro.tokenHash === tokenHash,
   )
+  if (local) return clonar(local)
+  if (!mysqlConfigurado) return null
+
+  // Fallback para outra instância/reinício: o token só existe no banco.
+  const registro = await buscarRecuperacaoSenha(tokenHash)
+  if (!registro) return null
+  estado.recuperacoesSenha.push(registro)
+  return clonar(registro)
 }
 
 export async function criar(registro) {

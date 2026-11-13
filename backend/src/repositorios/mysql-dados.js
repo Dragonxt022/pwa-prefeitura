@@ -582,6 +582,17 @@ export async function removerSessoesDoCidadao(cidadaoId) {
   await pool.execute('DELETE FROM dados_cidadaos_sessoes WHERE cidadao_id = ?', [cidadaoId])
 }
 
+export async function buscarRecuperacaoSenha(tokenHash) {
+  const pool = obterPool()
+  const [linhas] = await pool.execute(
+    `SELECT * FROM dados_recuperacao_senha
+      WHERE token_hash = ? AND usado_em IS NULL
+      LIMIT 1`,
+    [tokenHash],
+  )
+  return linhas[0] ? mapearRecuperacaoSenha(linhas[0]) : null
+}
+
 export async function inserirRecuperacaoSenha(registro) {
   const pool = obterPool()
   const [resultado] = await pool.execute(
