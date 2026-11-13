@@ -39,7 +39,8 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
 - **Conta do cidadão (LGPD):** cadastro com e-mail, senha, telefone e endereço; telefone e endereço
   preenchem automaticamente novas solicitações. O perfil permite editar, baixar os dados, excluir a
   conta e recuperar a senha por link de uso único enviado por e-mail, com consentimento registrado e
-  Aviso de Privacidade próprio.
+  Aviso de Privacidade próprio. Sem SMTP configurado, o admin gera o mesmo link em Configurações →
+  Cidadãos para entregar por um canal verificado.
 - **Pedidos da conta:** solicitações feitas logado ficam vinculadas ao cadastro e aparecem em
   “Meus pedidos” sem depender do aparelho. Pedidos antigos podem ser vinculados com protocolo + código,
   e a avaliação também funciona pela conta.
@@ -300,6 +301,7 @@ Rotas de gestão (sessão por cookie `HttpOnly`; `x-admin-token` aceito como eme
 | GET | `/gestao/usuarios` | Lista usuários (somente admin) |
 | POST | `/gestao/usuarios` | Cria usuário de setor, triagem ou admin (somente admin) |
 | PATCH | `/gestao/usuarios/:id` | Altera dados ou ativa/desativa usuário (somente admin) |
+| POST | `/gestao/cidadaos/recuperacao` | Gera link de recuperação para um e-mail (somente admin; resposta `no-store`) |
 
 Exemplo de login via PowerShell (o cookie fica na sessão do `Invoke-RestMethod`):
 
@@ -471,7 +473,8 @@ build em um host HTTPS. O piloto valida o PWA no desktop via `localhost`.
 | Sem opção de instalar no celular | HTTP na LAN não é contexto seguro | Use HTTPS local (`mkcert`) ou publique o build em host HTTPS |
 | Dados de teste indesejados | Estado persistido no MySQL ou no JSON local | Em produção, limpe o banco com backup; sem MySQL, pare a API e remova `backend/data/estado.json` (ou `DATA_FILE`) |
 | Catálogo “Memória” no painel | `DB_HOST`/`DB_USER`/`DB_NAME` ausentes | Configure o `app.env` e reinicie o PM2 |
-| Recuperação de senha não envia e-mail | SMTP sem host/remetente ou credenciais inválidas | Confira `Configurações → E-mail` e os logs da API; a resposta ao cidadão continua genérica |
+| Recuperação de senha não envia e-mail | SMTP sem host/remetente ou credenciais inválidas | Confira `Configurações → E-mail`; se o SMTP não estiver disponível, gere o link em `Configurações → Cidadãos` e entregue por um canal verificado |
+| Cidadão esqueceu a senha e não recebe e-mail | SMTP não configurado no piloto | Use `Configurações → Cidadãos` para gerar um link de uso único, válido por 30 minutos |
 | Múltiplas instâncias do PM2 | Sessões e caches são por processo | Mantenha `instances: 1`; a fila de IA no MySQL já evita processamento duplicado |
 
 ## Documentação

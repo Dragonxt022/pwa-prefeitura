@@ -4873,6 +4873,33 @@ html[data-contraste='alto'] .modal {
   font-size: 1rem;
 }
 
+.config-cidadaos__form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.config-cidadaos__form .campo {
+  flex: 1 1 260px;
+}
+
+.config-cidadaos__resultado {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--borda);
+  border-radius: 14px;
+  background: var(--superficie-2);
+}
+
+.config-cidadaos__resultado input {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.76rem;
+}
+
 .config-secao__topo .texto-suave {
   max-width: 70ch;
   font-size: 0.8rem;

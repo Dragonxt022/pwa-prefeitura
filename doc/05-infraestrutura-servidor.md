@@ -484,7 +484,9 @@ As contas ficam em `dados_cidadaos` e as sessões em `dados_cidadaos_sessoes`. S
 cidadão em `/perfil`, com confirmação de senha) apaga nome, e-mail, telefone e endereço, anula o hash
 da senha, marca `removido_em` e revoga todas as sessões. Tokens de recuperação ficam em
 `dados_recuperacao_senha`, apenas como hash, com validade de 30 minutos e uso único. O envio do link
-usa o SMTP de Configurações → E-mail e `APP_URL`. Registros de solicitações já abertas
+usa o SMTP de Configurações → E-mail e `APP_URL`. Se o SMTP não estiver configurado, o administrador
+gera o link em Configurações → Cidadãos; o token aparece apenas na resposta dessa ação e nunca é
+registrado em log. Registros de solicitações já abertas
 permanecem para a finalidade do atendimento público, conforme o Aviso de Privacidade em
 `/privacidade`.
 

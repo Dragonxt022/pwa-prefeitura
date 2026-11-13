@@ -76,10 +76,13 @@ async function enviarEmailPadrao({ para, nome, link, nomeApp }) {
 export async function criarTokenRecuperacao(cidadao, { enviar = enviarEmailPadrao } = {}) {
   const token = randomBytes(32).toString('base64url')
   const agora = new Date()
+  const expiraEm = new Date(
+    agora.getTime() + VALIDADE_MINUTOS * 60 * 1000,
+  ).toISOString()
   await repositorioRecuperacao.criar({
     cidadaoId: cidadao.id,
     tokenHash: hashToken(token),
-    expiraEm: new Date(agora.getTime() + VALIDADE_MINUTOS * 60 * 1000).toISOString(),
+    expiraEm,
     criadoEm: agora.toISOString(),
     usadoEm: null,
   })
@@ -93,7 +96,20 @@ export async function criarTokenRecuperacao(cidadao, { enviar = enviarEmailPadra
     link,
     nomeApp,
   })
-  return { token, enviado: Boolean(envio?.enviado) }
+  return { token, expiraEm, link, enviado: Boolean(envio?.enviado) }
+}
+
+/**
+ * Gera o link para um administrador enviar por um canal verificado. Não usa
+ * SMTP e nunca registra o token.
+ */
+export async function gerarLinkRecuperacao(email) {
+  const cidadao = repositorioCidadaos.buscarPorEmail(normalizarEmail(email))
+  if (!cidadao || !cidadao.ativo) return null
+  const { link, expiraEm } = await criarTokenRecuperacao(cidadao, {
+    enviar: async () => ({ enviado: false }),
+  })
+  return { link, expiraEm }
 }
 
 export async function solicitarRecuperacao(email, opcoes = {}) {

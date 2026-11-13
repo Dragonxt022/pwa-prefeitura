@@ -258,6 +258,42 @@ test('recuperação de senha usa token de uso único e revoga sessões', async (
     assert.ok(resposta.payload.erro.campos.token)
   })
 
+  await t.test('admin gera link de recuperação e cidadão não pode', async () => {
+    const triagem = await chamar('/gestao/login', {
+      metodo: 'POST',
+      corpo: { email: 'triagem@prefeitura.demo', senha: 'prefeitura-demo' },
+    })
+    const semAdmin = await chamar('/gestao/cidadaos/recuperacao', {
+      metodo: 'POST',
+      cookie: cookieDaResposta(triagem),
+      corpo: { email },
+    })
+    assert.equal(semAdmin.status, 403)
+
+    const admin = await chamar('/gestao/login', {
+      metodo: 'POST',
+      corpo: { email: 'admin@prefeitura.demo', senha: 'prefeitura-demo' },
+    })
+    const cookieAdmin = cookieDaResposta(admin)
+
+    const resposta = await chamar('/gestao/cidadaos/recuperacao', {
+      metodo: 'POST',
+      cookie: cookieAdmin,
+      corpo: { email },
+    })
+    assert.equal(resposta.status, 200)
+    assert.match(resposta.payload.dados.link, /\/redefinir-senha#token=/)
+    assert.ok(resposta.payload.dados.expiraEm)
+    assert.equal(resposta.payload.dados.token, undefined)
+
+    const inexistente = await chamar('/gestao/cidadaos/recuperacao', {
+      metodo: 'POST',
+      cookie: cookieAdmin,
+      corpo: { email: 'nao.existe@example.invalid' },
+    })
+    assert.equal(inexistente.status, 404)
+  })
+
   let token = ''
   await t.test('cria token e envia link por e-mail', async () => {
     const cidadao = repositorioCidadaos.buscarPorEmail(email)

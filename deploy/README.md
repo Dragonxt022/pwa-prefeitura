@@ -149,6 +149,8 @@ exige leitura compartilhada/sticky sessions.
   defina prazo de descarte.
 - A recuperacao de senha usa o SMTP de `Configuracoes -> E-mail`. Verifique o host, remetente e
   credenciais; o link usa `APP_URL` e expira em 30 minutos.
+- Sem SMTP configurado, o admin gera o link em `Configuracoes -> Cidadaos` e entrega ao cidadao por
+  telefone ou atendimento presencial. O link tambem expira em 30 minutos e e de uso unico.
 - Pedidos feitos com conta ficam vinculados ao cadastro (`cidadao_id`) e aparecem em "Meus pedidos".
   Pedidos antigos podem ser vinculados com protocolo + codigo de acesso.
 

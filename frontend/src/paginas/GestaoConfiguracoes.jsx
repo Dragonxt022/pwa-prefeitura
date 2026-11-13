@@ -10,11 +10,13 @@ import {
   ShieldCheck,
   Sparkles,
   TriangleAlert,
+  UsersRound,
 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import logoColorido from '../assets/logo-icone-colorido.png'
 import ConfigCatalogo from '../componentes/configuracoes/ConfigCatalogo'
+import ConfigCidadaos from '../componentes/configuracoes/ConfigCidadaos'
 import ConfigEmail from '../componentes/configuracoes/ConfigEmail'
 import ConfigIA from '../componentes/configuracoes/ConfigIA'
 import ConfigIdentidade from '../componentes/configuracoes/ConfigIdentidade'
@@ -55,6 +57,12 @@ const ABAS = [
     Icone: Sparkles,
     titulo: 'config.menu.ia',
     descricao: 'config.menu.iaDescricao',
+  },
+  {
+    id: 'cidadaos',
+    Icone: UsersRound,
+    titulo: 'config.menu.cidadaos',
+    descricao: 'config.menu.cidadaosDescricao',
   },
 ]
 
@@ -416,7 +424,7 @@ export default function GestaoConfiguracoes() {
                   onSalvar={salvarSecao}
                   onTestarEmail={testarEmail}
                 />
-              ) : (
+              ) : aba === 'ia' ? (
                 <ConfigIA
                   key={`ia-${config.atualizadoEm ?? 'inicial'}`}
                   config={config.ia}
@@ -424,6 +432,8 @@ export default function GestaoConfiguracoes() {
                   onSalvar={salvarSecao}
                   onTestarIA={testarIA}
                 />
+              ) : (
+                <ConfigCidadaos onSessaoExpirada={irParaLogin} />
               )}
             </section>
           </div>

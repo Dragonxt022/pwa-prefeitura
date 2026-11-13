@@ -86,6 +86,8 @@ const ptBR = {
   'config.menu.catalogoDescricao': 'Secretarias, setores e serviços.',
   'config.menu.ia': 'Inteligência artificial',
   'config.menu.iaDescricao': 'Modelo, credenciais e teste de qualidade.',
+  'config.menu.cidadaos': 'Cidadãos',
+  'config.menu.cidadaosDescricao': 'Recuperação de senha e apoio à conta.',
 
   // Identidade
   'identidade.sobre': 'Aparência da aplicação',

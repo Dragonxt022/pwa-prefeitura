@@ -246,6 +246,13 @@ export const atualizarServicoGestao = (id, dados) =>
 
 export const listarUsuariosGestao = () => requisicao('/gestao/usuarios', { timeout: 10000 })
 
+export const gerarLinkRecuperacaoGestao = (dados) =>
+  requisicao('/gestao/cidadaos/recuperacao', {
+    metodo: 'POST',
+    corpo: dados,
+    timeout: 15000,
+  })
+
 export const criarUsuarioGestao = (dados) =>
   requisicao('/gestao/usuarios', { metodo: 'POST', corpo: dados, timeout: 12000 })
 
