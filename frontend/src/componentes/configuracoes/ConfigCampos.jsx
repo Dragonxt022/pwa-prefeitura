@@ -1,7 +1,22 @@
 import { cloneElement, isValidElement } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Network, Plus, ShieldCheck, Trash2 } from 'lucide-react'
 import { useI18n } from '../../i18n/useI18n.js'
 import { codigoDoErro, mensagemAmigavel } from '../../utils/erros'
+
+export function SeloPersistencia({ persistencia, prefixo = 'catalogo' }) {
+  const { t } = useI18n()
+  if (!persistencia) return null
+  const mysql = persistencia === 'mysql'
+  return (
+    <span
+      className={`config-catalogo__selo${mysql ? ' is-mysql' : ' is-memoria'}`}
+      title={t(mysql ? `${prefixo}.persistenciaMysqlAjuda` : `${prefixo}.persistenciaMemoriaAjuda`)}
+    >
+      {mysql ? <ShieldCheck aria-hidden="true" /> : <Network aria-hidden="true" />}
+      {t(mysql ? `${prefixo}.persistenciaMysql` : `${prefixo}.persistenciaMemoria`)}
+    </span>
+  )
+}
 
 export function CampoConfig({ id, rotulo, ajuda, erro, children, className = '' }) {
   const idErro = `${id}-erro`

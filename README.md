@@ -47,6 +47,9 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
 - **Catálogo administrativo:** 11 secretarias oficiais, setores e serviços editáveis em
   Configurações → Catálogo, persistidos no MySQL, com soft delete, bloqueio por solicitação aberta e
   auditoria de alterações. A Ouvidoria foi removida do catálogo.
+- **Avisos da cidade:** editáveis em Configurações → Avisos, persistidos no MySQL, com agendamento
+  por data de publicação, soft delete (ativar/desativar) e auditoria. A Home exibe apenas avisos
+  ativos já publicados, do mais recente para o mais antigo.
 - Acessibilidade: atalho “Pular para o conteúdo”, foco visível, navegação por teclado, textos
   alternativos e controles de **fonte ampliada** e **alto contraste** no Perfil.
 
@@ -294,6 +297,8 @@ Rotas de gestão (sessão por cookie `HttpOnly`; `x-admin-token` aceito como eme
 | GET | `/gestao/secretarias` | Secretarias ativas do catálogo |
 | GET | `/gestao/catalogo` | Catálogo completo (inclusive inativos) e auditoria; qualquer sessão |
 | POST/PATCH | `/gestao/catalogo/secretarias`, `/setores`, `/servicos` | Criação e edição do catálogo (somente admin) |
+| GET | `/gestao/avisos` | Avisos completos (inclusive inativos e agendados) e auditoria; qualquer sessão |
+| POST/PATCH | `/gestao/avisos` | Criação e edição de avisos, inclusive ativar/desativar (somente admin) |
 | GET | `/gestao/solicitacoes?status=&tipo=&busca=&setor=&ids=&limite=` | Fila com total e estatísticas, escopada pelo setor do usuário |
 | GET | `/gestao/solicitacoes/:protocolo` | Detalhe completo para atendimento |
 | PATCH | `/gestao/solicitacoes/:protocolo/status` | Status, prioridade e observação |

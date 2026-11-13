@@ -2,6 +2,7 @@ import { criarApp } from './src/app.js'
 import { fecharPool } from './src/repositorios/mysql.js'
 import { inicializarDados } from './src/repositorios/estado.js'
 import { inicializarCatalogo } from './src/servicos/catalogo.js'
+import { inicializarAvisos } from './src/servicos/avisos.js'
 import {
   iaTriagemAtiva,
   triagemAutomaticaAtiva,
@@ -17,6 +18,7 @@ try {
   // setores e serviços efetivamente cadastrados no banco.
   catalogo = await inicializarCatalogo()
   dados = await inicializarDados()
+  await inicializarAvisos()
   await iniciarFilaTriagem()
 } catch (erro) {
   console.error('[dados] falha ao inicializar a persistência:', erro.message)

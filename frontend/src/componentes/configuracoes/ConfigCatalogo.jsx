@@ -7,7 +7,6 @@ import {
   Plus,
   Power,
   RefreshCw,
-  ShieldCheck,
   Wrench,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -22,7 +21,7 @@ import {
   obterCatalogoGestao,
 } from '../../servicos/api'
 import { formatarDataHora } from '../../utils/format'
-import { CampoConfig, ErroOperacao, SwitchConfig } from './ConfigCampos'
+import { CampoConfig, ErroOperacao, SeloPersistencia, SwitchConfig } from './ConfigCampos'
 
 const ABAS = [
   { id: 'secretarias', titulo: 'catalogo.abaSecretarias', Icone: Building2 },
@@ -103,21 +102,6 @@ function payloadDe(tipo, form) {
     novo: Boolean(form.novo),
     ativo: Boolean(form.ativo),
   }
-}
-
-function SeloPersistencia({ persistencia }) {
-  const { t } = useI18n()
-  if (!persistencia) return null
-  const mysql = persistencia === 'mysql'
-  return (
-    <span
-      className={`config-catalogo__selo${mysql ? ' is-mysql' : ' is-memoria'}`}
-      title={t(mysql ? 'catalogo.persistenciaMysqlAjuda' : 'catalogo.persistenciaMemoriaAjuda')}
-    >
-      {mysql ? <ShieldCheck aria-hidden="true" /> : <Network aria-hidden="true" />}
-      {t(mysql ? 'catalogo.persistenciaMysql' : 'catalogo.persistenciaMemoria')}
-    </span>
-  )
 }
 
 export default function ConfigCatalogo({ onSessaoExpirada }) {

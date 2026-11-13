@@ -264,41 +264,6 @@ export const servicosSemente = [
   },
 ]
 
-export const avisos = [
-  {
-    id: 'aviso-1',
-    titulo: 'Vacinação antirrábica neste sábado',
-    resumo: 'Postos móveis em três bairros, das 8h às 16h. Leve o cartão de vacinação do animal.',
-    publicadoEm: '2026-10-20T13:00:00-03:00',
-    prioridade: 'alta',
-    categoria: 'Saúde',
-  },
-  {
-    id: 'aviso-2',
-    titulo: 'Manutenção programada no portal',
-    resumo: 'O acompanhamento de protocolos fica indisponível das 22h às 23h30 desta quinta-feira.',
-    publicadoEm: '2026-10-19T09:30:00-03:00',
-    prioridade: 'normal',
-    categoria: 'Serviço',
-  },
-  {
-    id: 'aviso-3',
-    titulo: 'Nova unidade de saúde no Jardim das Acácias',
-    resumo: 'Atendimento começa na segunda-feira, das 7h às 19h, com clínico geral e pediatria.',
-    publicadoEm: '2026-10-16T16:45:00-03:00',
-    prioridade: 'normal',
-    categoria: 'Saúde',
-  },
-  {
-    id: 'aviso-4',
-    titulo: 'Coleta seletiva ampliada',
-    resumo: 'Mais quatro bairros passam a ter coleta seletiva semanal a partir de novembro.',
-    publicadoEm: '2026-10-14T11:15:00-03:00',
-    prioridade: 'baixa',
-    categoria: 'Zeladoria',
-  },
-]
-
 export const perfil = {
   id: 'cidadao-demo',
   nome: 'Cidadão Demo',
@@ -389,10 +354,6 @@ export function buscarServico(id, { incluirInativos = false } = {}) {
       (servico) => servico.id === id && (incluirInativos || servico.ativo),
     ),
   ) ?? null
-}
-
-export function listarAvisos() {
-  return [...avisos].sort((a, b) => new Date(b.publicadoEm) - new Date(a.publicadoEm))
 }
 
 export function listarSetores({ incluirInativos = false } = {}) {
