@@ -136,6 +136,14 @@ if ! systemctl is-enabled "pm2-${APP_USER}" >/dev/null 2>&1; then
 fi
 systemctl enable "pm2-${APP_USER}" >/dev/null 2>&1 || true
 
+# Entrega o daemon ao systemd. O `pm2 start` acima pode ter iniciado um daemon
+# solto; o dump salvo e restaurado pelo `pm2 resurrect` do servico.
+if ! systemctl is-active --quiet "pm2-${APP_USER}"; then
+  runuser -u "${APP_USER}" -- bash -lc "cd '${APP_HOME}' && pm2 kill" >/dev/null 2>&1 || true
+  systemctl reset-failed "pm2-${APP_USER}" >/dev/null 2>&1 || true
+  systemctl start "pm2-${APP_USER}"
+fi
+
 log "6/7 - firewall (somente a rede proxy acessa a API)"
 ufw allow from "${PROXY_SUBNET}" to any port "${API_PORT}" proto tcp \
   comment "proxy -> ${APP_SLUG}" >/dev/null
