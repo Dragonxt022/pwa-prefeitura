@@ -45,8 +45,11 @@ O script:
 7. recria o container `digital-home` com o nginx e o build atual.
 
 As credenciais iniciais do painel ficam em
-`/root/pwa-prefeitura-credenciais.txt` (modo `600`). Troque a senha no painel
-`/gestao/configuracoes` depois do primeiro acesso.
+`/root/pwa-prefeitura-credenciais.txt` (modo `600`). A senha e definida por
+`DEMO_PASSWORD` na primeira inicializacao. Para troca-la, remova a variavel,
+apague `backend/data/estado.json` e reinicie o PM2 (isso recria as contas
+semente e perde os dados do piloto). Novos usuarios podem ser criados pelo
+painel.
 
 ## Atualizacao
 
@@ -67,6 +70,8 @@ nginx e reinicia o PM2. O arquivo `backend/data/estado.json` e preservado.
 
 ```bash
 # status e logs da API
+sudo systemctl status pm2-app-pwa-prefeitura
+sudo systemctl restart pm2-app-pwa-prefeitura
 sudo -u app-pwa-prefeitura -H pm2 status
 sudo -u app-pwa-prefeitura -H pm2 logs pwa-prefeitura --lines 100
 

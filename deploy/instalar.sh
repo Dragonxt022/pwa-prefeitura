@@ -90,10 +90,10 @@ Contas demonstrativas (mesma senha):
 
 Senha: ${DEMO_PASSWORD}
 
-Troque a senha pelo painel em /gestao/configuracoes e mantenha este arquivo
-fora de qualquer repositorio. Para recriar as contas semente com outra senha,
-remova DEMO_PASSWORD do ${ENV_FILE}, apague backend/data/estado.json e
-reinicie o PM2 (isso perde os dados do piloto).
+Guarde esta senha. Para troca-la, remova DEMO_PASSWORD do ${ENV_FILE},
+apague backend/data/estado.json e reinicie o PM2 (isso recria as contas
+semente e perde os dados do piloto). Tambem e possivel criar novos usuarios
+de gestao pelo proprio painel.
 EOF
   chmod 600 "${CRED_FILE}"
   echo "Credenciais iniciais gravadas em ${CRED_FILE} (modo 600)."
