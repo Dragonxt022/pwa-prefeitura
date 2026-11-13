@@ -2,7 +2,10 @@ import { criarApp } from './src/app.js'
 import { fecharPool } from './src/repositorios/mysql.js'
 import { inicializarDados } from './src/repositorios/estado.js'
 import { inicializarCatalogo } from './src/servicos/catalogo.js'
-import { triagemAutomaticaAtiva } from './src/servicos/configuracoes.js'
+import {
+  iaTriagemAtiva,
+  triagemAutomaticaAtiva,
+} from './src/servicos/configuracoes.js'
 
 const porta = Number(process.env.PORT ?? 3000)
 
@@ -39,7 +42,8 @@ const servidor = app.listen(porta, () => {
   )
   console.log('Configurações e catálogo administrativos em /gestao (somente admin para editar).')
   console.log(
-    `Triagem automática: ${triagemAutomaticaAtiva() ? 'ativada' : 'desativada (triagem manual)'}.`,
+    `Triagem por IA: ${iaTriagemAtiva() ? 'ativa em fila' : 'regras locais'} | ` +
+    `aplicação automática do setor: ${triagemAutomaticaAtiva() ? 'sim' : 'não'}.`,
   )
 })
 
