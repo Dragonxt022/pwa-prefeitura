@@ -2,7 +2,7 @@ import { gerarHashSenha, hashToken } from '../utils/seguranca.js'
 import { normalizarCodigoAcesso } from '../../../shared/codigo-acesso.js'
 import { adicionarDias } from '../utils/data.js'
 import { normalizarEmail } from '../utils/texto.js'
-import { PAPEIS, STATUS, servicos, setorDoServico } from './catalogo.js'
+import { PAPEIS, STATUS, buscarServico, setorDoServico } from './catalogo.js'
 import { SENHA_DEMO, USUARIOS_SEMENTE } from './sementes.js'
 
 /**
@@ -11,7 +11,7 @@ import { SENHA_DEMO, USUARIOS_SEMENTE } from './sementes.js'
  */
 export function normalizarSolicitacao(item) {
   const { codigoAcesso: codigoAcessoLegado, ...dados } = item
-  const servico = servicos.find((servicoAtual) => servicoAtual.id === dados.tipo)
+  const servico = buscarServico(dados.tipo, { incluirInativos: true })
   const criadoEm = dados.criadoEm || new Date().toISOString()
   const prazoDias = Number(dados.prazoDias) || servico?.prazoDias || 10
   const status = STATUS[dados.status] ? dados.status : 'recebida'

@@ -144,6 +144,38 @@ export const obterSessaoGestao = () => requisicao('/gestao/sessao', { timeout: 8
 
 export const listarSetoresGestao = () => requisicao('/gestao/setores', { timeout: 8000 })
 
+export const obterCatalogoGestao = () => requisicao('/gestao/catalogo', { timeout: 12000 })
+
+export const criarSecretariaGestao = (dados) =>
+  requisicao('/gestao/catalogo/secretarias', { metodo: 'POST', corpo: dados, timeout: 12000 })
+
+export const atualizarSecretariaGestao = (id, dados) =>
+  requisicao(`/gestao/catalogo/secretarias/${encodeURIComponent(id)}`, {
+    metodo: 'PATCH',
+    corpo: dados,
+    timeout: 12000,
+  })
+
+export const criarSetorGestao = (dados) =>
+  requisicao('/gestao/catalogo/setores', { metodo: 'POST', corpo: dados, timeout: 12000 })
+
+export const atualizarSetorGestao = (id, dados) =>
+  requisicao(`/gestao/catalogo/setores/${encodeURIComponent(id)}`, {
+    metodo: 'PATCH',
+    corpo: dados,
+    timeout: 12000,
+  })
+
+export const criarServicoGestao = (dados) =>
+  requisicao('/gestao/catalogo/servicos', { metodo: 'POST', corpo: dados, timeout: 12000 })
+
+export const atualizarServicoGestao = (id, dados) =>
+  requisicao(`/gestao/catalogo/servicos/${encodeURIComponent(id)}`, {
+    metodo: 'PATCH',
+    corpo: dados,
+    timeout: 12000,
+  })
+
 export const listarUsuariosGestao = () => requisicao('/gestao/usuarios', { timeout: 10000 })
 
 export const criarUsuarioGestao = (dados) =>

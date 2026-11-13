@@ -10,7 +10,7 @@ import {
   STATUS_ABERTOS,
   buscarServico,
   buscarSetor,
-  setores,
+  listarSetores,
 } from '../dominio/catalogo.js'
 import { normalizarSolicitacao } from '../dominio/normalizacao.js'
 import { classificarSolicitacao, MODELO_TRIAGEM } from '../dominio/triagem.js'
@@ -93,6 +93,7 @@ export function criarSolicitacao({
 
   const agora = new Date().toISOString()
   const servico = buscarServico(tipo)
+  const setores = listarSetores()
   const sugestao = sugestaoExterna ?? classificarSolicitacao({ tipo, descricao, endereco, setores })
   const automatica = triagemAutomaticaAtiva()
   const setorSugerido = setores.find(

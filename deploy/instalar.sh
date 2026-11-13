@@ -86,7 +86,6 @@ Contas demonstrativas (mesma senha):
   ambiente@prefeitura.demo
   fiscalizacao@prefeitura.demo
   mobilidade@prefeitura.demo
-  ouvidoria@prefeitura.demo
 
 Senha: ${DEMO_PASSWORD}
 

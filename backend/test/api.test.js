@@ -27,18 +27,34 @@ after(async () => {
   rmSync(diretorio, { recursive: true, force: true })
 })
 
-async function chamar(caminho, { metodo = 'GET', corpo, codigoAcesso } = {}) {
+async function chamar(caminho, { metodo = 'GET', corpo, codigoAcesso, cookie } = {}) {
   const resposta = await fetch(`${base}${caminho}`, {
     method: metodo,
     headers: {
       Accept: 'application/json',
       ...(corpo ? { 'Content-Type': 'application/json' } : {}),
       ...(codigoAcesso ? { 'x-codigo-acesso': codigoAcesso } : {}),
+      ...(cookie ? { Cookie: cookie } : {}),
     },
     body: corpo ? JSON.stringify(corpo) : undefined,
   })
   const payload = await resposta.json().catch(() => null)
-  return { status: resposta.status, payload }
+  const cookies = resposta.headers.getSetCookie?.() ??
+    [resposta.headers.get('set-cookie')].filter(Boolean)
+  return { status: resposta.status, payload, cookies }
+}
+
+function cookieDaResposta(resposta) {
+  return resposta.cookies.map((item) => item.split(';')[0]).join('; ')
+}
+
+async function entrarComo(email) {
+  const resposta = await chamar('/gestao/login', {
+    metodo: 'POST',
+    corpo: { email, senha: process.env.DEMO_PASSWORD || 'prefeitura-demo' },
+  })
+  assert.equal(resposta.status, 200)
+  return cookieDaResposta(resposta)
 }
 
 function payloadSolicitacao(codigoAcesso, sobrescritas = {}) {
@@ -214,6 +230,56 @@ test('consulta administrativa de secretarias exige sessão', async () => {
   const resposta = await chamar('/gestao/secretarias')
   assert.equal(resposta.status, 401)
   assert.equal(resposta.payload.erro.codigo, 'nao_autorizado')
+})
+
+test('catálogo administrativo exige sessão e escrita de administrador', async () => {
+  assert.equal((await chamar('/gestao/catalogo')).status, 401)
+
+  const admin = await entrarComo('admin@prefeitura.demo')
+  const listagem = await chamar('/gestao/catalogo', { cookie: admin })
+  assert.equal(listagem.status, 200)
+  assert.equal(listagem.payload.dados.persistencia, 'memoria')
+  assert.equal(listagem.payload.dados.secretarias.length, 11)
+  assert.equal(
+    listagem.payload.dados.setores.some((setor) => setor.id === 'ouvidoria'),
+    false,
+  )
+
+  const criada = await chamar('/gestao/catalogo/secretarias', {
+    metodo: 'POST',
+    cookie: admin,
+    corpo: {
+      sigla: 'SEMTUR',
+      nome: 'Secretaria Municipal de Turismo',
+      slug: 'semtur-secretaria-municipal-de-turismo',
+    },
+  })
+  assert.equal(criada.status, 201)
+  assert.equal(criada.payload.dados.id, 'semtur')
+
+  const atualizada = await chamar('/gestao/catalogo/secretarias/semtur', {
+    metodo: 'PATCH',
+    cookie: admin,
+    corpo: { nome: 'Secretaria de Turismo e Cultura' },
+  })
+  assert.equal(atualizada.status, 200)
+  assert.equal(atualizada.payload.dados.nome, 'Secretaria de Turismo e Cultura')
+
+  const bloqueada = await chamar('/gestao/catalogo/setores/infraestrutura', {
+    metodo: 'PATCH',
+    cookie: admin,
+    corpo: { ativo: false },
+  })
+  assert.equal(bloqueada.status, 422)
+  assert.ok(bloqueada.payload.erro.campos.ativo)
+
+  const triagem = await entrarComo('triagem@prefeitura.demo')
+  const semPermissao = await chamar('/gestao/catalogo/secretarias', {
+    metodo: 'POST',
+    cookie: triagem,
+    corpo: { sigla: 'SEMOUTRA', nome: 'Outra secretaria', slug: 'outra-secretaria' },
+  })
+  assert.equal(semPermissao.status, 403)
 })
 
 test.after(async () => {

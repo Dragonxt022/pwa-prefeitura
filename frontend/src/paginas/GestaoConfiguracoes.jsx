@@ -1,5 +1,6 @@
 import {
   ArrowLeft,
+  Building2,
   Check,
   LoaderCircle,
   LogOut,
@@ -13,6 +14,7 @@ import {
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import logoColorido from '../assets/logo-icone-colorido.png'
+import ConfigCatalogo from '../componentes/configuracoes/ConfigCatalogo'
 import ConfigEmail from '../componentes/configuracoes/ConfigEmail'
 import ConfigIA from '../componentes/configuracoes/ConfigIA'
 import ConfigIdentidade from '../componentes/configuracoes/ConfigIdentidade'
@@ -35,6 +37,12 @@ const ABAS = [
     Icone: Palette,
     titulo: 'config.menu.identidade',
     descricao: 'config.menu.identidadeDescricao',
+  },
+  {
+    id: 'catalogo',
+    Icone: Building2,
+    titulo: 'config.menu.catalogo',
+    descricao: 'config.menu.catalogoDescricao',
   },
   {
     id: 'email',
@@ -189,6 +197,10 @@ export default function GestaoConfiguracoes() {
     },
     [navigate],
   )
+
+  const irParaLogin = useCallback(() => {
+    navigate('/gestao', { replace: true })
+  }, [navigate])
 
   async function sair() {
     try {
@@ -387,6 +399,8 @@ export default function GestaoConfiguracoes() {
                   <LoaderCircle className="girando" aria-hidden="true" />
                   <p>{t('config.carregando')}</p>
                 </div>
+              ) : aba === 'catalogo' ? (
+                <ConfigCatalogo onSessaoExpirada={irParaLogin} />
               ) : aba === 'identidade' ? (
                 <ConfigIdentidade
                   key={`identidade-${config.atualizadoEm ?? 'inicial'}`}

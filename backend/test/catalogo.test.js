@@ -2,10 +2,15 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   buscarSecretaria,
+  buscarServico,
   listarSecretarias,
+  listarServicos,
+  listarSetores,
   secretariaDoSetor,
-  secretarias,
-  setores,
+  secretariasSemente,
+  servicosSemente,
+  setorDoServico,
+  setoresSemente,
 } from '../src/dominio/catalogo.js'
 
 const SECRETARIAS_ESPERADAS = {
@@ -23,19 +28,19 @@ const SECRETARIAS_ESPERADAS = {
 }
 
 test('catálogo tem as 11 secretarias oficiais', () => {
-  assert.equal(secretarias.length, 11)
-  assert.equal(new Set(secretarias.map((secretaria) => secretaria.id)).size, 11)
-  assert.equal(new Set(secretarias.map((secretaria) => secretaria.slug)).size, 11)
+  assert.equal(secretariasSemente.length, 11)
+  assert.equal(new Set(secretariasSemente.map((secretaria) => secretaria.id)).size, 11)
+  assert.equal(new Set(secretariasSemente.map((secretaria) => secretaria.slug)).size, 11)
   assert.deepEqual(
     Object.fromEntries(
-      secretarias.map((secretaria) => [
+      secretariasSemente.map((secretaria) => [
         secretaria.id,
         { sigla: secretaria.sigla, slug: secretaria.slug },
       ]),
     ),
     SECRETARIAS_ESPERADAS,
   )
-  for (const secretaria of secretarias) {
+  for (const secretaria of secretariasSemente) {
     assert.ok(secretaria.nome, `secretaria ${secretaria.id} sem nome`)
     assert.equal(secretaria.ativo, true)
   }
@@ -49,11 +54,11 @@ test('busca e listagem de secretarias', () => {
   const lista = listarSecretarias()
   assert.equal(lista.length, 11)
   lista[0].nome = 'Alterado'
-  assert.notEqual(secretarias[0].nome, 'Alterado')
+  assert.notEqual(secretariasSemente[0].nome, 'Alterado')
 })
 
 test('setores apontam apenas para secretarias existentes', () => {
-  for (const setor of setores) {
+  for (const setor of setoresSemente) {
     if (setor.secretariaId === null || setor.secretariaId === undefined) continue
     assert.ok(
       buscarSecretaria(setor.secretariaId),
@@ -66,4 +71,26 @@ test('setores apontam apenas para secretarias existentes', () => {
   assert.equal(secretariaDoSetor('triagem')?.sigla, 'GABINETE')
   assert.equal(secretariaDoSetor('zeladoria'), null)
   assert.equal(secretariaDoSetor('inexistente'), null)
+})
+
+test('Ouvidoria foi removida do catálogo', () => {
+  assert.equal(listarSetores({ incluirInativos: true }).some((setor) => setor.id === 'ouvidoria'), false)
+  assert.equal(listarServicos({ incluirInativos: true }).some((servico) => servico.id === 'ouvidoria'), false)
+  assert.equal(setorDoServico('ouvidoria')?.id, 'triagem')
+})
+
+test('serviços são ligados a setores ativos e a lista do setor é derivada', () => {
+  for (const servico of servicosSemente) {
+    assert.ok(servico.setorId, `serviço ${servico.id} sem setor`)
+    assert.ok(
+      setoresSemente.some((setor) => setor.id === servico.setorId),
+      `serviço ${servico.id} aponta para setor inexistente`,
+    )
+  }
+
+  const setores = listarSetores()
+  const infraestrutura = setores.find((setor) => setor.id === 'infraestrutura')
+  assert.deepEqual(infraestrutura.servicos.sort(), ['iluminacao', 'pavimentacao'])
+  assert.equal(buscarServico('poda')?.setorId, 'meio_ambiente')
+  assert.equal(buscarServico('ouvidoria'), null)
 })

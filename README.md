@@ -3,13 +3,14 @@
 Piloto de atendimento ao cidadão: abrir solicitação, receber protocolo, acompanhar o andamento,
 avaliar o atendimento e consultar avisos da cidade — com funcionamento offline e instalação como app.
 
-> ⚠️ **Ambiente de demonstração.** Os dados são fictícios e ficam no arquivo local
-> `backend/data/estado.json`. Não use dados pessoais reais neste projeto.
+> ⚠️ **Ambiente de demonstração.** Os dados são fictícios. O catálogo administrativo fica no MySQL e
+> solicitações, usuários, sessões e configurações no arquivo local `backend/data/estado.json`. Não use
+> dados pessoais reais neste projeto.
 
 ## O que já está no piloto
 
-- Catálogo com **9 serviços**: iluminação, pavimentação, limpeza, poda, fiscalização, sinalização,
-  ouvidoria, zeladoria urbana e meio ambiente.
+- Catálogo com **8 serviços**: iluminação, pavimentação, limpeza, poda, fiscalização, sinalização,
+  zeladoria urbana e meio ambiente.
 - Busca de serviços sem diferenciar maiúsculas ou acentos, na Home e em `/servicos`, com filtro por
   categoria e destaque dos 6 serviços principais.
 - Nova solicitação com descrição, endereço, contato opcional, **CEP assistido** (ViaCEP),
@@ -34,6 +35,9 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
 - **Mini IA de triagem:** classificador local por regras, desligado por padrão e ativável por
   `TRIAGEM_IA_ATIVA=true`; quando ligado, sugere e aplica o setor automaticamente. A triagem manual
   continua disponível.
+- **Catálogo administrativo:** 11 secretarias oficiais, setores e serviços editáveis em
+  Configurações → Catálogo, persistidos no MySQL, com soft delete, bloqueio por solicitação aberta e
+  auditoria de alterações. A Ouvidoria foi removida do catálogo.
 - Acessibilidade: atalho “Pular para o conteúdo”, foco visível, navegação por teclado, textos
   alternativos e controles de **fonte ampliada** e **alto contraste** no Perfil.
 
@@ -43,7 +47,7 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
 |---|---|
 | Frontend | React 19 + Vite 8 + react-router-dom 7 |
 | PWA | vite-plugin-pwa 2 (Workbox, `generateSW`, `autoUpdate`) |
-| Backend | Express 5 (ESM) + cors + persistência JSON + sessões com `scrypt` |
+| Backend | Express 5 (ESM) + MySQL (`mysql2`) para o catálogo + JSON para o restante + sessões com `scrypt` |
 | Estilo | CSS próprio, mobile-first, dark mode automático |
 | Triagem | Regras locais com contrato para mini IA/LLM local no futuro |
 | Qualidade | oxlint (frontend), `node:test` (backend), Playwright E2E e GitHub Actions |
@@ -110,9 +114,8 @@ Contas demonstrativas (senha padrão `prefeitura-demo`, configurável por `DEMO_
 | `ambiente@prefeitura.demo` | Setor | Apenas Meio Ambiente |
 | `fiscalizacao@prefeitura.demo` | Setor | Apenas Fiscalização e Posturas |
 | `mobilidade@prefeitura.demo` | Setor | Apenas Mobilidade e Trânsito |
-| `ouvidoria@prefeitura.demo` | Setor | Apenas Ouvidoria |
 
-O administrador pode criar novos usuários de setor no próprio painel. A triagem central recebe as
+O administrador pode criar novos usuários de setor e editar o catálogo no próprio painel. A triagem central recebe as
 novas solicitações quando a automação está desligada. Com `TRIAGEM_IA_ATIVA=true`, o classificador
 local aplica o setor sugerido na criação; a equipe ainda pode transferir ou reclassificar manualmente.
 
@@ -185,7 +188,7 @@ e os testes E2E em cada push/PR.
 │       ├── rotas/             # declaração dos endpoints e middlewares
 │       ├── controladores/     # entrada e saída HTTP
 │       ├── servicos/          # regras de negócio, sessões e notificações
-│       ├── repositorios/      # estado e persistência JSON
+│       ├── repositorios/      # catálogo em MySQL, estado e persistência JSON
 │       ├── dominio/           # catálogo, sementes, normalização e triagem
 │       ├── validadores/       # validação de solicitações, usuários e configurações
 │       ├── apresentadores/    # contratos públicos e administrativos
@@ -234,7 +237,7 @@ Rotas públicas:
 | Método | Rota | Descrição |
 |---|---|---|
 | GET | `/health` | Status e versão |
-| GET | `/servicos` | Catálogo com os 9 serviços |
+| GET | `/servicos` | Catálogo com os 8 serviços ativos |
 | GET | `/avisos` | Avisos da cidade |
 | GET | `/perfil` | Perfil fictício |
 | GET | `/solicitacoes/semelhantes?tipo=&endereco=&latitude=&longitude=` | Pedidos parecidos: apenas tipo, status e distância; sem protocolo, endereço ou contato |
@@ -259,7 +262,10 @@ Rotas de gestão (sessão por cookie `HttpOnly`; `x-admin-token` aceito como eme
 | POST | `/gestao/login` | E-mail, senha e `lembrar`; grava o cookie de sessão |
 | POST | `/gestao/logout` | Revoga a sessão e limpa o cookie |
 | GET | `/gestao/sessao` | Restaura a sessão e informa usuário, papel, setor e triagem automática |
-| GET | `/gestao/setores` | Setores disponíveis (mapa demonstrativo) |
+| GET | `/gestao/setores` | Setores ativos do catálogo |
+| GET | `/gestao/secretarias` | Secretarias ativas do catálogo |
+| GET | `/gestao/catalogo` | Catálogo completo (inclusive inativos) e auditoria; qualquer sessão |
+| POST/PATCH | `/gestao/catalogo/secretarias`, `/setores`, `/servicos` | Criação e edição do catálogo (somente admin) |
 | GET | `/gestao/solicitacoes?status=&tipo=&busca=&setor=&ids=&limite=` | Fila com total e estatísticas, escopada pelo setor do usuário |
 | GET | `/gestao/solicitacoes/:protocolo` | Detalhe completo para atendimento |
 | PATCH | `/gestao/solicitacoes/:protocolo/status` | Status, prioridade e observação |
@@ -395,6 +401,12 @@ build em um host HTTPS. O piloto valida o PWA no desktop via `localhost`.
 | `TRIAGEM_IA_ATIVA` | backend | `false` | Ativa a aplicação automática do setor sugerido pelo classificador local |
 | `SESSION_DAYS` | backend | `30` | Duração do cookie/sessão quando “manter conectado” está marcado |
 | `COOKIE_SECURE` | backend | `false` | Envia o cookie apenas por HTTPS quando `true` (produção) |
+| `DB_HOST` | backend | ausente | Servidor MySQL do catálogo; sem ele o catálogo fica em memória |
+| `DB_PORT` | backend | `3306` | Porta do MySQL |
+| `DB_NAME` | backend | ausente | Banco do catálogo |
+| `DB_USER` | backend | ausente | Usuário do banco |
+| `DB_PASSWORD` | backend | ausente | Senha do banco (nunca versione) |
+| `DB_POOL_SIZE` | backend | `5` | Conexões simultâneas do pool |
 
 ## Problemas comuns
 
@@ -411,7 +423,8 @@ build em um host HTTPS. O piloto valida o PWA no desktop via `localhost`.
 | Service Worker não registra | Rodando em `dev` ou HTTP remoto | Use `build` + `preview` em HTTPS/`localhost`; em HTTP na LAN não registra (esperado) |
 | Celular não abre `http://IP:5173` | Firewall, rede Pública ou Wi-Fi diferente | Rode `.\scripts\liberar-firewall.ps1` como admin, confirme a mesma rede e desative "isolamento de clientes" no roteador |
 | Sem opção de instalar no celular | HTTP na LAN não é contexto seguro | Use HTTPS local (`mkcert`) ou publique o build em host HTTPS |
-| Dados de teste indesejados | Estado persistido em disco | Pare a API e remova `backend/data/estado.json` (ou `DATA_FILE`) |
+| Dados de teste indesejados | Estado persistido em disco | Pare a API e remova `backend/data/estado.json` (ou `DATA_FILE`); o catálogo fica no MySQL |
+| Catálogo “Memória” no painel | `DB_HOST`/`DB_USER`/`DB_NAME` ausentes | Configure o `app.env` e reinicie o PM2 |
 
 ## Documentação
 

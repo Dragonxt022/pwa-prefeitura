@@ -100,8 +100,8 @@ Container digital-home (nginx:alpine)           │
               usuário app-pwa-prefeitura
               /home/app-pwa-prefeitura/app/backend
                         │
-                        ├── backend/data/estado.json (dados do piloto)
-                        └── MySQL 127.0.0.1:3306 (reservado, ainda não usado)
+                        ├── backend/data/estado.json (solicitações, usuários, sessões e configurações)
+                        └── MySQL 127.0.0.1:3306 (catálogo administrativo)
 ```
 
 ### Componentes
@@ -111,7 +111,7 @@ Container digital-home (nginx:alpine)           │
 | `cloudflared` | container na rede `proxy` | mantém o túnel com a Cloudflare |
 | `digital-home` | container `nginx:alpine` na rede `proxy` | entrega o SPA e faz proxy de `/api` |
 | API Express | host, via PM2/systemd | regras de negócio, autenticação e persistência |
-| MySQL 8.4 | host, `127.0.0.1:3306` | banco isolado por aplicação (reservado) |
+| MySQL 8.4 | host, `127.0.0.1:3306` | catálogo de secretarias, setores, serviços e auditoria |
 | `portainer` | container na rede `proxy` | administração visual do Docker |
 | PM2 | host, usuário `app-pwa-prefeitura` | gerencia o processo Node |
 | systemd | host | sobe o PM2 no boot e reinicia em caso de falha |
@@ -316,10 +316,10 @@ sem privilégio.
 | Branch | `main` |
 | Diretório no servidor | `/home/app-pwa-prefeitura/app` |
 | Frontend | React 19 + Vite 8 + vite-plugin-pwa 2 |
-| Backend | Express 5 (ESM) + persistência JSON |
+| Backend | Express 5 (ESM) + MySQL (`mysql2`) + JSON |
 | Processo | PM2 `pwa-prefeitura` (systemd `pm2-app-pwa-prefeitura.service`) |
 | Porta interna | `3000` |
-| Dados | `backend/data/estado.json` (+ `.bak`) |
+| Dados | Catálogo no MySQL; demais dados em `backend/data/estado.json` (+ `.bak`) |
 
 O piloto usa dados fictícios. **Não inserir dados pessoais reais** sem revisar
 a política de privacidade e a segurança do ambiente.
@@ -344,7 +344,8 @@ Modelo: [`deploy/app.env.example`](../deploy/app.env.example).
 |---|---|
 | `APP_NAME` | nome lógico da aplicação (`pwa-prefeitura`) |
 | `APP_DIR` | diretório da aplicação |
-| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | banco MySQL provisionado |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | banco MySQL do catálogo |
+| `DB_POOL_SIZE` | conexões simultâneas do pool (`5`) |
 | `PORT` | porta da API (`3000`) |
 | `APP_URL` | URL pública usada em e-mails |
 | `CORS_ORIGINS` | origens permitidas |
@@ -352,8 +353,9 @@ Modelo: [`deploy/app.env.example`](../deploy/app.env.example).
 | `MOCK_LATENCY_MS` | latência artificial (`0` em produção) |
 | `DEMO_PASSWORD` | senha das contas semente na primeira inicialização |
 
-> O MySQL está provisionado, mas a versão atual do backend persiste em JSON.
-> A variável `DB_*` fica reservada para a evolução.
+> O catálogo administrativo usa as variáveis `DB_*`. Sem elas, o backend inicia
+> com o catálogo em memória (apenas para desenvolvimento); em produção o painel
+> exibe “Memória” e as alterações não sobrevivem a reinícios.
 
 ### Contas de demonstração
 
@@ -367,7 +369,6 @@ zeladoria@prefeitura.demo      (setor)
 ambiente@prefeitura.demo       (setor)
 fiscalizacao@prefeitura.demo   (setor)
 mobilidade@prefeitura.demo     (setor)
-ouvidoria@prefeitura.demo      (setor)
 ```
 
 A senha **não** está neste documento. Consulte a seção
@@ -375,9 +376,12 @@ A senha **não** está neste documento. Consulte a seção
 
 ### Persistência e backup
 
-- Gravação atômica: arquivo temporário + `fsync` + `rename`.
-- Backup automático: `estado.json.bak` antes de cada gravação válida.
-- Se o principal estiver corrompido, o backend tenta o `.bak`; se ambos forem
+- Catálogo: tabelas `catalogo_secretarias`, `catalogo_setores`, `catalogo_servicos`
+  e `catalogo_auditoria` no MySQL. O schema e as sementes são criados de forma
+  idempotente na inicialização; `INSERT IGNORE` não sobrescreve edições do painel.
+- JSON: gravação atômica (arquivo temporário + `fsync` + `rename`) e backup
+  automático `estado.json.bak` antes de cada gravação válida.
+- Se o JSON principal estiver corrompido, o backend tenta o `.bak`; se ambos forem
   inválidos, o processo falha para não perder dados silenciosamente.
 - Não há backup externo agendado. Veja a seção [Backup](#12-backup-e-restauração).
 
@@ -436,7 +440,7 @@ sudo docker rm portainer-antigo
 | Banco da aplicação | `app_pwa_prefeitura` |
 | Usuário da aplicação | `app_pwa_prefeitura@localhost` |
 | Senha da aplicação | `DB_PASSWORD` em `app.env` / credenciais no servidor |
-| Uso atual | provisionado e reservado; o backend ainda usa JSON |
+| Uso atual | catálogo administrativo (secretarias, setores, serviços e auditoria) |
 
 Comandos:
 
@@ -446,6 +450,10 @@ sudo mysql
 
 # entrar no banco da aplicação
 sudo mysql app_pwa_prefeitura
+
+# conferir o catálogo
+sudo mysql app_pwa_prefeitura -e "SELECT COUNT(*) AS secretarias FROM catalogo_secretarias;"
+sudo mysql app_pwa_prefeitura -e "SELECT entidade, acao, usuario_nome, em FROM catalogo_auditoria ORDER BY em DESC LIMIT 10;"
 
 # listar bancos e usuários
 sudo mysql -e "SHOW DATABASES; SELECT user,host FROM mysql.user;"
@@ -600,7 +608,7 @@ a cada push em `main`.
 | Variáveis/segredos | `/home/app-pwa-prefeitura/.config/app.env` |
 | Config do gateway | `/opt/digital-home/conf/` |
 | Credenciais administrativas | `/root/infraestrutura-credenciais.md` e `/root/*.txt` |
-| Banco MySQL (quando usado) | dump de `app_pwa_prefeitura` |
+| Catálogo no MySQL | dump de `app_pwa_prefeitura` (tabelas `catalogo_*`) |
 | Código | já está no GitHub |
 
 ### Backup manual
@@ -616,7 +624,7 @@ sudo tar -czf "/root/backups/pwa-$(date +%F-%H%M).tgz" \
 
 sudo chmod 600 /root/backups/pwa-*.tgz
 
-# MySQL (mesmo que ainda não usado)
+# Catálogo no MySQL
 sudo mysqldump --databases app_pwa_prefeitura \
   > "/root/backups/mysql-app_pwa_prefeitura-$(date +%F).sql"
 sudo chmod 600 /root/backups/mysql-*.sql
@@ -934,7 +942,7 @@ f4e9f07 feat: adiciona deploy de producao com nginx, PM2 e tunel
 | Média | Proteger Portainer e `/gestao` com Cloudflare Access | pendente |
 | Média | Rotação de logs (PM2 e Docker) | pendente |
 | Média | Monitoramento de uptime | pendente |
-| Baixa | Integrar o backend ao MySQL (hoje usa JSON) | evolução |
+| Baixa | Migrar solicitações, usuários e sessões do JSON para o MySQL | evolução |
 | Baixa | Automatizar deploy via GitHub Actions | evolução |
 
 ---

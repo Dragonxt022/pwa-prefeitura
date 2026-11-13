@@ -108,11 +108,4 @@ export const USUARIOS_SEMENTE = [
     papel: 'setor',
     setorId: 'mobilidade',
   },
-  {
-    id: 'usuario-ouvidoria',
-    nome: 'Equipe de Ouvidoria',
-    email: 'ouvidoria@prefeitura.demo',
-    papel: 'setor',
-    setorId: 'ouvidoria',
-  },
 ]

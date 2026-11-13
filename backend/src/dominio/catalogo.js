@@ -1,8 +1,12 @@
 /**
- * Catálogo estático do piloto.
+ * Catálogo de serviços, setores e secretarias.
  *
- * Serviços, setores, avisos e perfil não são mutáveis em tempo de execução. A
- * lista oficial de secretarias ainda depende de confirmação do município.
+ * As listas `...Semente` são a carga inicial do banco. Em execução, as funções
+ * de leitura usam um cache sincronizado pelo repositório do catálogo, mantendo
+ * os contratos síncronos consumidos pela triagem e pelos apresentadores.
+ *
+ * A hierarquia é Secretaria -> Setor -> Serviço. O vínculo autoritativo do
+ * serviço é `servico.setorId`; a lista `setor.servicos` é derivada no cache.
  */
 
 export const STATUS = {
@@ -27,9 +31,8 @@ export const PAPEIS = {
  *
  * Esta é a semente do cadastro administrativo. O `id` é curto e estável; o
  * `slug` preserva o identificador externo usado no cadastro do município.
- * A criação/edição pelo painel será adicionada em uma etapa própria.
  */
-export const secretarias = [
+export const secretariasSemente = [
   {
     id: 'comunicacao',
     sigla: 'GABINETE',
@@ -117,14 +120,13 @@ export const secretarias = [
  * definido. Setores com `null` ainda dependem de confirmação do município.
  * A triagem central nunca deixa de ver tudo.
  */
-export const setores = [
+export const setoresSemente = [
   {
     id: 'triagem',
     nome: 'Triagem e Protocolo',
     secretaria: 'Comunicação e Atendimento',
     secretariaId: 'comunicacao',
     descricao: 'Recebe, classifica e encaminha as solicitações para os setores.',
-    servicos: [],
     central: true,
     ativo: true,
   },
@@ -134,7 +136,6 @@ export const setores = [
     secretaria: 'Secretaria de Obras',
     secretariaId: 'semosp',
     descricao: 'Iluminação pública e pavimentação.',
-    servicos: ['iluminacao', 'pavimentacao'],
     central: false,
     ativo: true,
   },
@@ -144,7 +145,6 @@ export const setores = [
     secretaria: 'Secretaria de Serviços Urbanos',
     secretariaId: null,
     descricao: 'Limpeza, coleta e conservação da cidade.',
-    servicos: ['limpeza', 'zeladoria'],
     central: false,
     ativo: true,
   },
@@ -154,7 +154,6 @@ export const setores = [
     secretaria: 'Secretaria de Meio Ambiente',
     secretariaId: 'sema',
     descricao: 'Poda, arborização e proteção ambiental.',
-    servicos: ['poda', 'meio_ambiente'],
     central: false,
     ativo: true,
   },
@@ -164,7 +163,6 @@ export const setores = [
     secretaria: 'Secretaria de Fiscalização',
     secretariaId: null,
     descricao: 'Terrenos, construções e posturas municipais.',
-    servicos: ['fiscalizacao'],
     central: false,
     ativo: true,
   },
@@ -174,23 +172,12 @@ export const setores = [
     secretaria: 'Secretaria de Mobilidade',
     secretariaId: null,
     descricao: 'Sinalização, trânsito e acessibilidade viária.',
-    servicos: ['sinalizacao'],
-    central: false,
-    ativo: true,
-  },
-  {
-    id: 'ouvidoria',
-    nome: 'Ouvidoria',
-    secretaria: 'Controladoria / Ouvidoria',
-    secretariaId: null,
-    descricao: 'Elogios, reclamações, sugestões e denúncias.',
-    servicos: ['ouvidoria'],
     central: false,
     ativo: true,
   },
 ]
 
-export const servicos = [
+export const servicosSemente = [
   {
     id: 'iluminacao',
     titulo: 'Iluminação pública',
@@ -199,6 +186,7 @@ export const servicos = [
     prazoDias: 5,
     ordem: 1,
     destaque: true,
+    setorId: 'infraestrutura',
   },
   {
     id: 'pavimentacao',
@@ -208,6 +196,7 @@ export const servicos = [
     prazoDias: 15,
     ordem: 2,
     destaque: true,
+    setorId: 'infraestrutura',
   },
   {
     id: 'limpeza',
@@ -217,6 +206,7 @@ export const servicos = [
     prazoDias: 3,
     ordem: 3,
     destaque: true,
+    setorId: 'zeladoria',
   },
   {
     id: 'poda',
@@ -226,6 +216,7 @@ export const servicos = [
     prazoDias: 10,
     ordem: 4,
     destaque: true,
+    setorId: 'meio_ambiente',
   },
   {
     id: 'fiscalizacao',
@@ -235,6 +226,7 @@ export const servicos = [
     prazoDias: 20,
     ordem: 5,
     destaque: true,
+    setorId: 'fiscalizacao',
   },
   {
     id: 'sinalizacao',
@@ -244,16 +236,7 @@ export const servicos = [
     prazoDias: 7,
     ordem: 6,
     destaque: true,
-  },
-  {
-    id: 'ouvidoria',
-    titulo: 'Ouvidoria',
-    descricao: 'Elogio, reclamação, sugestão ou denúncia sobre o atendimento público.',
-    categoria: 'Atendimento',
-    prazoDias: 10,
-    ordem: 7,
-    destaque: false,
-    novo: true,
+    setorId: 'mobilidade',
   },
   {
     id: 'zeladoria',
@@ -264,6 +247,7 @@ export const servicos = [
     ordem: 8,
     destaque: false,
     novo: true,
+    setorId: 'zeladoria',
   },
   {
     id: 'meio_ambiente',
@@ -274,6 +258,7 @@ export const servicos = [
     ordem: 9,
     destaque: false,
     novo: true,
+    setorId: 'meio_ambiente',
   },
 ]
 
@@ -326,12 +311,82 @@ export const perfil = {
   },
 }
 
-export function listarServicos() {
-  return [...servicos].sort((a, b) => a.ordem - b.ordem)
+function clonar(valor) {
+  return valor ? structuredClone(valor) : valor
 }
 
-export function buscarServico(id) {
-  return servicos.find((servico) => servico.id === id)
+const cache = {
+  secretarias: [],
+  setores: [],
+  servicos: [],
+}
+
+/**
+ * Substitui o cache em memória pelo catálogo carregado do repositório.
+ * Setores recebem a lista de serviços derivada de `servico.setorId`.
+ */
+export function aplicarCatalogo({ secretarias = [], setores = [], servicos = [] } = {}) {
+  const secretariasNormalizadas = secretarias.map((secretaria) => ({
+    ...secretaria,
+    ativo: secretaria.ativo !== false,
+    teste: Boolean(secretaria.teste),
+  }))
+  const nomesSecretarias = new Map(
+    secretariasNormalizadas.map((secretaria) => [secretaria.id, secretaria.nome]),
+  )
+  const servicosNormalizados = servicos.map((servico) => ({
+    ...servico,
+    ativo: servico.ativo !== false,
+    destaque: Boolean(servico.destaque),
+    novo: Boolean(servico.novo),
+    setorId: servico.setorId ?? null,
+  }))
+  const setoresNormalizados = setores.map((setor) => ({
+    ...setor,
+    central: Boolean(setor.central),
+    ativo: setor.ativo !== false,
+    secretariaId: setor.secretariaId ?? null,
+    secretaria: setor.secretariaId
+      ? (nomesSecretarias.get(setor.secretariaId) ?? setor.secretaria ?? 'Sem secretaria')
+      : (setor.secretaria ?? 'Sem secretaria'),
+    servicos: servicosNormalizados
+      .filter((servico) => servico.setorId === setor.id)
+      .map((servico) => servico.id),
+  }))
+
+  cache.secretarias = secretariasNormalizadas
+  cache.setores = setoresNormalizados
+  cache.servicos = servicosNormalizados
+}
+
+/** Cópia do catálogo efetivamente em uso, útil para repositórios e testes. */
+export function catalogoAtual() {
+  return {
+    secretarias: clonar(cache.secretarias),
+    setores: clonar(cache.setores),
+    servicos: clonar(cache.servicos),
+  }
+}
+
+aplicarCatalogo({
+  secretarias: secretariasSemente,
+  setores: setoresSemente,
+  servicos: servicosSemente,
+})
+
+export function listarServicos({ incluirInativos = false } = {}) {
+  return cache.servicos
+    .filter((servico) => incluirInativos || servico.ativo)
+    .sort((a, b) => a.ordem - b.ordem)
+    .map((servico) => ({ ...servico }))
+}
+
+export function buscarServico(id, { incluirInativos = false } = {}) {
+  return clonar(
+    cache.servicos.find(
+      (servico) => servico.id === id && (incluirInativos || servico.ativo),
+    ),
+  ) ?? null
 }
 
 export function listarAvisos() {
@@ -339,28 +394,37 @@ export function listarAvisos() {
 }
 
 export function listarSetores({ incluirInativos = false } = {}) {
-  return setores
+  return cache.setores
     .filter((setor) => incluirInativos || setor.ativo)
     .map((setor) => ({ ...setor, servicos: [...setor.servicos] }))
 }
 
 export function listarSecretarias({ incluirInativos = false } = {}) {
-  return secretarias
+  return cache.secretarias
     .filter((secretaria) => incluirInativos || secretaria.ativo)
     .map((secretaria) => ({ ...secretaria }))
 }
 
-export function buscarSecretaria(id) {
-  return secretarias.find((secretaria) => secretaria.id === id) ?? null
+export function buscarSecretaria(id, { incluirInativos = true } = {}) {
+  return clonar(
+    cache.secretarias.find(
+      (secretaria) => secretaria.id === id && (incluirInativos || secretaria.ativo),
+    ),
+  ) ?? null
 }
 
 export function secretariaDoSetor(setorId) {
   const setor = buscarSetor(setorId)
-  return setor?.secretariaId ? buscarSecretaria(setor.secretariaId) : null
+  if (!setor?.secretariaId) return null
+  return buscarSecretaria(setor.secretariaId)
 }
 
-export function buscarSetor(id) {
-  return setores.find((setor) => setor.id === id) ?? null
+export function buscarSetor(id, { incluirInativos = true } = {}) {
+  return clonar(
+    cache.setores.find(
+      (setor) => setor.id === id && (incluirInativos || setor.ativo),
+    ),
+  ) ?? null
 }
 
 export function setorPublico(id) {
@@ -376,7 +440,18 @@ export function setorPublico(id) {
 }
 
 export function setorDoServico(tipo) {
-  return setores.find(
-    (setor) => !setor.central && Array.isArray(setor.servicos) && setor.servicos.includes(tipo),
-  ) ?? setores.find((setor) => setor.central)
+  return cache.setores.find(
+    (setor) =>
+      setor.ativo &&
+      !setor.central &&
+      Array.isArray(setor.servicos) &&
+      setor.servicos.includes(tipo),
+  ) ?? cache.setores.find((setor) => setor.ativo && setor.central) ?? null
+}
+
+export function servicosDoSetor(setorId) {
+  return cache.servicos
+    .filter((servico) => servico.setorId === setorId)
+    .sort((a, b) => a.ordem - b.ordem)
+    .map((servico) => ({ ...servico }))
 }

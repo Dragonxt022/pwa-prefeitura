@@ -67,11 +67,6 @@ const REGRAS = [
     termos: ['transito', 'semaforo', 'placa', 'faixa', 'sinalizacao', 'estacionamento'],
     peso: 2,
   },
-  {
-    setorId: 'ouvidoria',
-    termos: ['atendimento', 'reclamacao', 'elogio', 'sugestao', 'denuncia', 'servidor'],
-    peso: 1,
-  },
 ]
 
 export const MODELO_TRIAGEM = 'regras-locais-v1'

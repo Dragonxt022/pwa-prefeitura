@@ -2,13 +2,14 @@
  * Orquestra a classificação automática: modelo externo quando habilitado,
  * regras locais como fallback. A triagem manual nunca depende deste resultado.
  */
-import { setores } from '../dominio/catalogo.js'
+import { listarSetores } from '../dominio/catalogo.js'
 import { classificarSolicitacao, MODELO_TRIAGEM } from '../dominio/triagem.js'
 import { classificarComModelo } from './ia.js'
 import { obterConfiguracoes } from './configuracoes.js'
 
 export async function sugerirClassificacao(dados) {
   const ia = obterConfiguracoes().ia
+  const setores = listarSetores()
   if (!ia.ativo || ia.provedor === 'regras') {
     return classificarSolicitacao({ ...dados, setores })
   }

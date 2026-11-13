@@ -10,7 +10,6 @@ import {
   Leaf,
   Lightbulb,
   Megaphone,
-  MessagesSquare,
   ScanSearch,
   Signpost,
   Trash2,
@@ -29,7 +28,6 @@ export const SERVICOS_VISUAL = {
   poda: { rotulo: 'Poda', Icone: TreePine, tom: 'teal' },
   fiscalizacao: { rotulo: 'Fiscalização', Icone: Fence, tom: 'roxo' },
   sinalizacao: { rotulo: 'Sinalização', Icone: Signpost, tom: 'azul' },
-  ouvidoria: { rotulo: 'Ouvidoria', Icone: MessagesSquare, tom: 'ambar' },
   zeladoria: { rotulo: 'Zeladoria', Icone: Building2, tom: 'teal' },
   meio_ambiente: { rotulo: 'Meio ambiente', Icone: Leaf, tom: 'verde' },
 }

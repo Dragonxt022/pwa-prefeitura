@@ -186,6 +186,52 @@ function normalizarSolicitacaoCarregada(item) {
   return normalizada
 }
 
+/**
+ * Migração única da extinta Ouvidoria.
+ *
+ * O setor e o serviço foram removidos do catálogo. Usuários de demonstração
+ * vinculados à Ouvidoria são descartados; qualquer outro vínculo e as
+ * solicitações antigas voltam para a triagem central, com registro no
+ * histórico. A remoção do setor não pode deixar pedidos inacessíveis.
+ */
+function migrarOuvidoria() {
+  let alterou = false
+  const usuariosMantidos = estado.usuarios.filter(
+    (usuario) =>
+      usuario.id !== 'usuario-ouvidoria' &&
+      usuario.email !== 'ouvidoria@prefeitura.demo',
+  )
+  if (usuariosMantidos.length !== estado.usuarios.length) {
+    estado.usuarios.splice(0, estado.usuarios.length, ...usuariosMantidos)
+    alterou = true
+  }
+
+  for (const usuario of estado.usuarios) {
+    if (usuario.setorId !== 'ouvidoria') continue
+    usuario.setorId = 'triagem'
+    alterou = true
+  }
+
+  for (const solicitacao of estado.solicitacoes) {
+    if (solicitacao.setorId !== 'ouvidoria') continue
+    const agora = new Date().toISOString()
+    solicitacao.setorId = 'triagem'
+    solicitacao.atualizadoEm = agora
+    solicitacao.historico.push({
+      status: solicitacao.status,
+      em: agora,
+      tipo: 'migracao',
+      observacao: 'Setor de Ouvidoria removido; solicitação devolvida à triagem.',
+    })
+    alterou = true
+  }
+
+  if (alterou) {
+    console.log('[dados] Ouvidoria removida; vínculos e solicitações antigas migrados para a triagem.')
+  }
+  return alterou
+}
+
 function carregar() {
   const salvo = lerEstadoSalvo()
 
@@ -232,6 +278,8 @@ function carregar() {
     ? usuariosCarregados.map(normalizarUsuario)
     : criarUsuariosSemente()))
 
+  const ouvidoriaMigrada = migrarOuvidoria()
+
   Object.assign(estado.configuracoes, normalizarConfiguracoes(configuracoesCarregadas ?? {}))
 
   const agora = Date.now()
@@ -245,6 +293,8 @@ function carregar() {
       )
     }),
   )
+
+  if (ouvidoriaMigrada) persistir()
 }
 
 carregar()

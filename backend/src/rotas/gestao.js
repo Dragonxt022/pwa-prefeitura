@@ -8,6 +8,7 @@ import {
 import { listarSecretarias } from '../controladores/gestao/catalogo.js'
 import { exigirSessao } from '../middlewares/autenticacao.js'
 import { criarRateLimit } from '../middlewares/rate-limit.js'
+import catalogoRouter from './gestao/catalogo.js'
 import configuracoesRouter from './gestao/configuracoes.js'
 import solicitacoesRouter from './gestao/solicitacoes.js'
 import usuariosRouter from './gestao/usuarios.js'
@@ -23,6 +24,7 @@ router.get('/sessao', obterSessao)
 router.get('/setores', listarSetores)
 router.get('/secretarias', listarSecretarias)
 
+router.use('/catalogo', catalogoRouter)
 router.use('/configuracoes', configuracoesRouter)
 router.use('/usuarios', usuariosRouter)
 router.use('/solicitacoes', solicitacoesRouter)

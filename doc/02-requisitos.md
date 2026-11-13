@@ -60,11 +60,11 @@ o termo.
 
 ### RF-02 — Catálogo de serviços
 
-Listar os 9 serviços com categoria, descrição, prazo estimado e selo de novidade quando aplicável. A
-busca filtra por título, descrição e categoria, sem diferenciar maiúsculas ou acentuação; o filtro por
-categoria é combinável com a busca.
+Listar os 8 serviços ativos com categoria, descrição, prazo estimado e selo de novidade quando
+aplicável. A busca filtra por título, descrição e categoria, sem diferenciar maiúsculas ou acentuação;
+o filtro por categoria é combinável com a busca.
 
-**Aceite:** `/servicos` mostra “9 serviços encontrados” sem filtro; busca sem resultado exibe mensagem
+**Aceite:** `/servicos` mostra “8 serviços encontrados” sem filtro; busca sem resultado exibe mensagem
 com o termo; contador “N de M” reflete o filtro; “Ver todos” na Home abre o catálogo.
 
 ### RF-03 — Atalho do catálogo para o formulário
@@ -251,6 +251,25 @@ aplicado na criação. A triagem manual e a transferência continuam funcionando
 de poda com descrição compatível entra em Meio Ambiente; a sugestão interna não é exposta ao cidadão; a
 transferência manual continua disponível.
 
+### RF-20 — Catálogo administrativo
+
+O administrador pode criar e editar secretarias, setores e serviços em Configurações → Catálogo. A
+hierarquia é **Secretaria → Setor → Serviço**. A leitura é liberada para qualquer sessão; a escrita é
+restrita a `admin`. Registros são desativados por soft delete (`ativo: false`), sem exclusão física.
+Cada alteração registra autor, data e os dados antes/depois em auditoria.
+
+A desativação é bloqueada quando:
+
+- o setor possui solicitação em status aberto (`recebida`, `em_analise` ou `em_execucao`);
+- o serviço escolhido por solicitações abertas é desativado;
+- a secretaria ainda possui setores ativos ou solicitações abertas nos setores vinculados;
+- o setor ainda possui serviços ativos (desative ou mova os serviços antes);
+- o registro é a triagem central, que nunca pode ser desativada.
+
+**Aceite:** as 11 secretarias oficiais aparecem na aba; criar setor e serviço reflete a lista do setor;
+desativar um setor com pedido aberto retorna `422 validacao` no campo `ativo`; toda alteração aparece em
+“Últimas alterações”; reiniciar a API preserva o catálogo quando o MySQL está configurado.
+
 ## 4. Regras de negócio
 
 | ID | Regra |
@@ -292,25 +311,26 @@ transferência manual continua disponível.
 | `poda` | Poda de árvores | Meio ambiente | 10 dias |
 | `fiscalizacao` | Fiscalização de terrenos | Fiscalização | 20 dias |
 | `sinalizacao` | Sinalização de trânsito | Mobilidade | 7 dias |
-| `ouvidoria` | Ouvidoria | Atendimento | 10 dias |
 | `zeladoria` | Zeladoria urbana | Zeladoria | 7 dias |
 | `meio_ambiente` | Meio ambiente | Meio ambiente | 10 dias |
 
-### Setores (mapa demonstrativo)
+### Secretarias, setores e serviços
 
-A lista oficial ainda não foi confirmada pelo município. Enquanto isso, o piloto usa:
+As 11 secretarias oficiais foram cadastradas em 13/11/2026 e são a semente do catálogo persistido no
+MySQL. A extinta Ouvidoria foi removida; pedidos e usuários antigos vinculados a ela são migrados para
+a triagem central na primeira inicialização.
 
-| Setor | Serviços encaminhados | Observação |
-|---|---|---|
-| Triagem e Protocolo | — | Fila central; vê todos os pedidos |
-| Obras e Infraestrutura | iluminação, pavimentação | Também recebe pedidos reclassificados |
-| Zeladoria e Serviços Urbanos | limpeza, zeladoria | — |
-| Meio Ambiente | poda, meio ambiente | — |
-| Fiscalização e Posturas | fiscalização | — |
-| Mobilidade e Trânsito | sinalização | — |
-| Ouvidoria | ouvidoria | — |
+| Setor | Serviços encaminhados | Secretaria | Observação |
+|---|---|---|---|
+| Triagem e Protocolo | — | GABINETE | Fila central; vê todos os pedidos |
+| Obras e Infraestrutura | iluminação, pavimentação | SEMOSP | Também recebe pedidos reclassificados |
+| Zeladoria e Serviços Urbanos | limpeza, zeladoria | pendente | — |
+| Meio Ambiente | poda, meio ambiente | SEMA | — |
+| Fiscalização e Posturas | fiscalização | pendente | — |
+| Mobilidade e Trânsito | sinalização | pendente | — |
 
-O mapa fica em `backend/src/dominio/catalogo.js` e pode ser ajustado quando as secretarias oficiais forem definidas.
+O catálogo é editável em Configurações → Catálogo. Enquanto `DB_HOST`, `DB_USER` e `DB_NAME` não
+estiverem definidos, o desenvolvimento usa a cópia em memória com as mesmas sementes.
 
 ## 5. Máquina de estados e SLA
 
@@ -360,7 +380,7 @@ Envelope de sucesso: `{ "dados": ... }`; listagens podem incluir `total` e `esta
 ] }
 ```
 
-Retorna os 9 serviços ordenados por `ordem`; itens novos também podem trazer `novo: true`.
+Retorna os 8 serviços ativos ordenados por `ordem`; itens novos também podem trazer `novo: true`.
 
 ### 6.3 `GET /api/avisos`
 
@@ -544,7 +564,27 @@ Somente `admin`. `POST` recebe `nome`, `email`, `senha` (mínimo 8), `papel` (`a
 `setor`) e `setorId` quando papel for `setor`. `PATCH` aceita `nome`, `email`, `senha`, `papel`,
 `setorId` e `ativo`. O próprio admin não pode desativar a conta; senhas e hashes nunca são devolvidos.
 
-### 6.18 Códigos de erro
+### 6.18 Catálogo administrativo
+
+`GET /api/gestao/catalogo` (qualquer sessão) devolve secretarias, setores, serviços (inclusive
+inativos), a origem da persistência (`mysql` ou `memoria`) e as últimas 15 alterações em `auditoria`.
+
+Escrita restrita a `admin`:
+
+| Método | Rota | Campos |
+|---|---|---|
+| POST | `/gestao/catalogo/secretarias` | `sigla`, `nome`, `slug?`, `ativo?`, `teste?` |
+| PATCH | `/gestao/catalogo/secretarias/:id` | mesmos campos, todos opcionais |
+| POST | `/gestao/catalogo/setores` | `nome`, `secretariaId`, `descricao?`, `ativo?` |
+| PATCH | `/gestao/catalogo/setores/:id` | mesmos campos, todos opcionais |
+| POST | `/gestao/catalogo/servicos` | `titulo`, `setorId`, `descricao?`, `categoria?`, `prazoDias?`, `ordem?`, `destaque?`, `novo?`, `ativo?` |
+| PATCH | `/gestao/catalogo/servicos/:id` | mesmos campos, todos opcionais |
+
+Resposta de escrita: `201` na criação e `200` na atualização, com o registro em `dados`. Conflito de
+sigla/slug ou bloqueio de desativação retorna `422 validacao` com o campo correspondente. O endpoint
+anterior `GET /gestao/secretarias` continua disponível para leitura das secretarias ativas.
+
+### 6.19 Códigos de erro
 
 | HTTP | `codigo` | Quando |
 |---|---|---|
@@ -582,8 +622,8 @@ Exemplo 422:
 | RNF-09 | Idioma | `pt-BR`, com acentuação correta em toda a UI e nas mensagens de erro |
 | RNF-10 | Privacidade de dados | Sem dados reais; contato/clientId/triagem fora das respostas públicas; listagem apenas na gestão e escopada por setor |
 | RNF-11 | Segurança básica | `x-powered-by` desabilitado, corpo limitado a 2 MB, CORS com credenciais restrito, senha `scrypt`, sessão `HttpOnly`/`SameSite=Lax`, código de acesso persistido só como hash SHA-256 |
-| RNF-12 | Persistência | JSON em `backend/data/estado.json` (ignorado pelo Git), configurável por `DATA_FILE`, escrita atômica + `fsync` + backup `.bak` e recuperação/falha explícita em corrupção |
-| RNF-13 | Qualidade de código | `oxlint` com **0 erros e 0 warnings**, build sem erros, 21 testes `node:test` e 1 smoke E2E Playwright; CI no GitHub Actions |
+| RNF-12 | Persistência | Catálogo em MySQL (schema criado na inicialização, sementes idempotentes e auditoria); solicitações, usuários, sessões e configurações em JSON (`DATA_FILE`) com escrita atômica + `fsync` + backup `.bak` |
+| RNF-13 | Qualidade de código | `oxlint` com **0 erros e 0 warnings**, build sem erros, 37 testes `node:test` e 2 E2E Playwright; CI no GitHub Actions |
 | RNF-14 | Sessão | Cookie `HttpOnly`; “manter conectado” 30 dias, sessão curta 12 h; token persistido apenas como hash |
 | RNF-15 | Triagem automática | Classificador local sem envio de dados a terceiros; flag desligada por padrão; fallback para triagem central |
 
@@ -601,6 +641,7 @@ Exemplo 422:
 | RF-16, RF-18 | `paginas/Gestao.jsx`, `componentes/gestao/`, `hooks/useGestao*.js`, `controladores/gestao/`, `servicos/`, `repositorios/` | Playwright + API HTTP |
 | RF-17 | `paginas/Gestao.jsx`, `componentes/gestao/GestaoImpressao.jsx`, `estilos/global.css` | Playwright com mídia de impressão |
 | RF-19 | `dominio/triagem.js`, `servicos/solicitacoes.js`, `rotas/solicitacoes.js` | Teste de integração com a flag ligada/desligada |
+| RF-20 | `componentes/configuracoes/ConfigCatalogo.jsx`, `servicos/catalogo.js`, `repositorios/catalogo.js`, `rotas/gestao/catalogo.js` | `backend/test/catalogo*.test.js` + API HTTP |
 | RN-01..RN-26 | `backend/src/**`, `shared/**` | Testes de contrato (`node:test`), E2E e HTTP |
 
 ## 9. Pendências conhecidas (fora deste ciclo)
@@ -611,6 +652,6 @@ Exemplo 422:
 - Integração de um modelo local/LLM real na mini IA; o contrato e o fallback por regras já existem.
 - Banco de dados transacional, concorrência e migrações; o JSON atende apenas ao piloto.
 - Validação de formato de contato (telefone/e-mail) no servidor.
-- Paginação real, auditoria e exclusão/anonimização de dados.
+- Paginação real, auditoria geral de solicitações e exclusão/anonimização de dados.
 - Cobertura automatizada dos fluxos de gestão, offline e acessibilidade no CI.
 - Auditoria de acessibilidade com leitor de tela (VoiceOver/TalkBack) e Lighthouse/axe.
