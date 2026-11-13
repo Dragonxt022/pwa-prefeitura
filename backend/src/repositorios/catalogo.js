@@ -58,6 +58,10 @@ const TABELAS = [
       FOREIGN KEY (setor_id) REFERENCES catalogo_setores (id)
       ON UPDATE CASCADE ON DELETE RESTRICT
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  `CREATE TABLE IF NOT EXISTS catalogo_meta (
+    chave VARCHAR(64) NOT NULL PRIMARY KEY,
+    valor VARCHAR(255) NOT NULL
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   `CREATE TABLE IF NOT EXISTS catalogo_auditoria (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
     entidade VARCHAR(24) NOT NULL,
@@ -241,14 +245,26 @@ async function ajustarSementes(conexao) {
     )
   }
 
+  // A desativação da secretaria de testes é uma migração única: usa um
+  // marcador para não desfazer uma reativação deliberada feita depois.
   const testes = secretariasSemente.find((secretaria) => secretaria.teste)
-  if (testes) {
-    await conexao.execute(
-      `UPDATE catalogo_secretarias
-          SET ativo = ?
-        WHERE id = ? AND teste = 1 AND ativo = 1 AND atualizado_em = criado_em`,
-      [testes.ativo === false ? 0 : 1, testes.id],
+  if (testes && testes.ativo === false) {
+    const [marcador] = await conexao.execute(
+      "SELECT valor FROM catalogo_meta WHERE chave = 'semente_testes_desativada' LIMIT 1",
     )
+    if (marcador.length === 0) {
+      await conexao.execute(
+        `UPDATE catalogo_secretarias
+            SET ativo = 0, atualizado_em = ?
+          WHERE id = ? AND teste = 1`,
+        [new Date(), testes.id],
+      )
+      await conexao.execute(
+        `INSERT INTO catalogo_meta (chave, valor)
+         VALUES ('semente_testes_desativada', '1')
+         ON DUPLICATE KEY UPDATE valor = VALUES(valor)`,
+      )
+    }
   }
 }
 
