@@ -67,6 +67,14 @@ runuser -u "${APP_USER}" -- bash -lc "
 "
 
 log "verificacao"
+# A API aguarda o catalogo no MySQL antes de abrir a porta; por isso a primeira
+# tentativa pode ocorrer antes do processo terminar de iniciar.
+for _ in $(seq 1 30); do
+  if docker exec "${NGINX_CONTAINER}" wget -qO- "http://127.0.0.1/api/health" >/dev/null 2>&1; then
+    break
+  fi
+  sleep 1
+done
 docker exec "${NGINX_CONTAINER}" wget -qO- "http://127.0.0.1/api/health"
 echo
 echo "Atualizacao concluida (API na porta ${API_PORT})."
