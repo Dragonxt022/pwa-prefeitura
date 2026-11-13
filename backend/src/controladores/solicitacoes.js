@@ -60,7 +60,7 @@ export async function criar(req, res) {
   }
 
   const sugestao = await sugerirClassificacao(dados)
-  const { solicitacao, criada, acessoNegado } = criarSolicitacaoServico({
+  const { solicitacao, criada, acessoNegado } = await criarSolicitacaoServico({
     ...dados,
     sugestao,
   })
@@ -84,7 +84,7 @@ export async function criar(req, res) {
     .json({ dados: apresentarSolicitacaoPublica(solicitacao), criada })
 }
 
-export function avaliar(req, res) {
+export async function avaliar(req, res) {
   const solicitacao = buscarComCodigo(req)
   if (solicitacao.status !== 'concluida') {
     throw validacao({
@@ -96,7 +96,7 @@ export function avaliar(req, res) {
   }
 
   const dados = validarAvaliacao(req.body)
-  const atualizada = avaliarSolicitacaoServico(solicitacao.protocolo, dados)
+  const atualizada = await avaliarSolicitacaoServico(solicitacao.protocolo, dados)
   void notificarEvento('avaliacao', {
     protocolo: atualizada.protocolo,
     tipo: atualizada.tipo,

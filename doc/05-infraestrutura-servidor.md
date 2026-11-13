@@ -440,7 +440,7 @@ sudo docker rm portainer-antigo
 | Banco da aplicação | `app_pwa_prefeitura` |
 | Usuário da aplicação | `app_pwa_prefeitura@localhost` |
 | Senha da aplicação | `DB_PASSWORD` em `app.env` / credenciais no servidor |
-| Uso atual | catálogo administrativo (secretarias, setores, serviços e auditoria) |
+| Uso atual | catálogo, solicitações, usuários, sessões e configurações |
 
 Comandos:
 
@@ -451,9 +451,14 @@ sudo mysql
 # entrar no banco da aplicação
 sudo mysql app_pwa_prefeitura
 
-# conferir o catálogo
+# conferir catálogo e dados
 sudo mysql app_pwa_prefeitura -e "SELECT COUNT(*) AS secretarias FROM catalogo_secretarias;"
 sudo mysql app_pwa_prefeitura -e "SELECT entidade, acao, usuario_nome, em FROM catalogo_auditoria ORDER BY em DESC LIMIT 10;"
+sudo mysql app_pwa_prefeitura -e "SELECT COUNT(*) AS solicitacoes FROM dados_solicitacoes;"
+sudo mysql app_pwa_prefeitura -e "SELECT COUNT(*) AS usuarios FROM dados_usuarios;"
+
+# backup antes de qualquer migração
+sudo mysqldump --single-transaction app_pwa_prefeitura | gzip > /root/pwa-dados-$(date +%F).sql.gz
 
 # listar bancos e usuários
 sudo mysql -e "SHOW DATABASES; SELECT user,host FROM mysql.user;"
@@ -466,6 +471,30 @@ mysql -u app_pwa_prefeitura -p app_pwa_prefeitura -e "SELECT 1;"
 O MySQL não é acessível a partir dos containers da rede `proxy`; se uma
 aplicação em container precisar do banco, será necessário um proxy ou uma
 decisão explícita de exposição (não fazer isso sem revisar o firewall).
+
+A primeira inicialização com o banco vazio importa `backend/data/estado.json`
+em uma transação (solicitações, usuários, sessões, configurações e sequência de
+protocolos). Reinícios seguintes leem apenas o MySQL. O arquivo JSON fica
+preservado como cópia histórica e não é mais atualizado.
+
+### IA local (Ollama)
+
+| Item | Valor |
+|---|---|
+| Serviço | `ollama` (systemd), `127.0.0.1:11434` |
+| Modelo | `qwen3:1.7b` |
+| Pensamento | desativado (`think: false` na API `/api/chat`) |
+| Instalação | `sudo bash deploy/instalar-ollama.sh` |
+
+A aplicação usa a API nativa do Ollama, não o endpoint `/v1`, justamente para
+enviar `think: false`. A configuração fica em Configurações → IA (provedor
+Ollama, modelo `qwen3:1.7b`, URL `http://127.0.0.1:11434`).
+
+```bash
+sudo systemctl status ollama
+curl -s http://127.0.0.1:11434/api/version
+sudo -u ollama ollama list
+```
 
 ---
 

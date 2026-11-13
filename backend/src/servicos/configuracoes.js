@@ -34,7 +34,7 @@ export function triagemAutomaticaAtiva() {
  * Valida e salva uma seção. Retorna `null` para seção desconhecida e
  * `{ campos }` quando a entrada precisa de correção.
  */
-export function atualizarConfiguracao(secao, entrada, usuario) {
+export async function atualizarConfiguracao(secao, entrada, usuario) {
   const preparar = PREPARADORES[secao]
   if (!preparar) return null
 
@@ -43,7 +43,7 @@ export function atualizarConfiguracao(secao, entrada, usuario) {
   if (preparado.campos) return { campos: preparado.campos }
 
   return {
-    dados: repositorioConfiguracoes.salvarSecao(secao, preparado.dados, usuario),
+    dados: await repositorioConfiguracoes.salvarSecao(secao, preparado.dados, usuario),
   }
 }
 

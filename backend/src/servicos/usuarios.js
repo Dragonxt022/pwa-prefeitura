@@ -36,7 +36,7 @@ export function buscarUsuario(id) {
   return repositorioUsuarios.buscar(id)
 }
 
-export function criarUsuario({ nome, email, senha, papel, setorId }) {
+export async function criarUsuario({ nome, email, senha, papel, setorId }) {
   const emailNormalizado = normalizarEmail(email)
   if (!emailNormalizado) return { erro: 'email_obrigatorio' }
   if (repositorioUsuarios.buscarPorEmail(emailNormalizado)) {
@@ -56,10 +56,10 @@ export function criarUsuario({ nome, email, senha, papel, setorId }) {
     ativo: true,
     criadoEm: new Date().toISOString(),
   })
-  return { usuario: repositorioUsuarios.adicionar(usuario) }
+  return { usuario: await repositorioUsuarios.adicionar(usuario) }
 }
 
-export function atualizarUsuario(id, { nome, email, senha, papel, setorId, ativo }) {
+export async function atualizarUsuario(id, { nome, email, senha, papel, setorId, ativo }) {
   const usuario = repositorioUsuarios.buscar(id)
   if (!usuario) return { erro: 'nao_encontrado' }
 
@@ -94,10 +94,10 @@ export function atualizarUsuario(id, { nome, email, senha, papel, setorId, ativo
   usuario.papel = papelFinal
   usuario.setorId = setorFinal
   if (ativo !== undefined) usuario.ativo = Boolean(ativo)
-  return { usuario: repositorioUsuarios.salvar(usuario) }
+  return { usuario: await repositorioUsuarios.salvar(usuario) }
 }
 
-export function criarSessao(usuarioId, { lembrar = false } = {}) {
+export async function criarSessao(usuarioId, { lembrar = false } = {}) {
   const agora = Date.now()
   const duracaoMs = lembrar
     ? DIAS_SESSAO_LEMBRAR * 24 * 60 * 60 * 1000
@@ -110,16 +110,16 @@ export function criarSessao(usuarioId, { lembrar = false } = {}) {
     criadaEm: new Date(agora).toISOString(),
     expiraEm: new Date(agora + duracaoMs).toISOString(),
   }
-  return { token, sessao: repositorioSessoes.criar(sessao) }
+  return { token, sessao: await repositorioSessoes.criar(sessao) }
 }
 
-export function usuarioDaSessao(token) {
+export async function usuarioDaSessao(token) {
   if (!token) return null
   const alvo = hashToken(token)
   const sessao = repositorioSessoes.buscarPorTokenHash(alvo)
   if (!sessao) return null
   if (new Date(sessao.expiraEm).getTime() <= Date.now()) {
-    repositorioSessoes.removerPorTokenHash(alvo)
+    await repositorioSessoes.removerPorTokenHash(alvo)
     return null
   }
   const usuario = repositorioUsuarios.buscar(sessao.usuarioId)
@@ -127,7 +127,7 @@ export function usuarioDaSessao(token) {
   return usuario
 }
 
-export function revogarSessao(token) {
+export async function revogarSessao(token) {
   if (!token) return false
   return repositorioSessoes.removerPorTokenHash(hashToken(token))
 }

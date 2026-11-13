@@ -18,7 +18,7 @@ import { usuarioPublico } from '../../apresentadores/usuarios.js'
 import { booleano } from '../../utils/texto.js'
 import { validarLogin } from '../../validadores/usuarios.js'
 
-export function login(req, res) {
+export async function login(req, res) {
   const { email, senha } = validarLogin(req.body)
   const usuario = autenticarUsuario(email, senha)
   if (!usuario) {
@@ -26,7 +26,7 @@ export function login(req, res) {
   }
 
   const lembrar = booleano(req.body?.lembrar)
-  const { token, sessao } = criarSessao(usuario.id, { lembrar })
+  const { token, sessao } = await criarSessao(usuario.id, { lembrar })
   definirCookieSessao(res, token, lembrar)
   return res.json({
     dados: {
@@ -38,9 +38,9 @@ export function login(req, res) {
   })
 }
 
-export function logout(req, res) {
+export async function logout(req, res) {
   const token = tokenDaRequisicao(req)
-  if (token) revogarSessao(token)
+  if (token) await revogarSessao(token)
   limparCookieSessao(res)
   res.json({ dados: { ok: true } })
 }

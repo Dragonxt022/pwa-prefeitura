@@ -1,11 +1,17 @@
 /**
  * Repositório de solicitações.
  *
- * Concentra o acesso ao array em memória e a persistência. Os serviços recebem
- * cópias e devolvem o objeto atualizado por meio de `salvar`, evitando que
- * referências internas do estado sejam mutadas fora desta camada.
+ * A leitura vem do cache em memória, mantido em sincronia com o MySQL. As
+ * gravações são aguardadas pelo serviço e desfeitas em memória se o banco
+ * rejeitar a operação, evitando divergência entre a resposta HTTP e o estado
+ * persistido.
  */
 import { estado, persistir } from './estado.js'
+import { mysqlConfigurado } from './mysql.js'
+import {
+  atualizarSolicitacao,
+  inserirSolicitacao,
+} from './mysql-dados.js'
 
 function clonar(item) {
   return item ? structuredClone(item) : null
@@ -30,21 +36,41 @@ export function proximaSequencia() {
   return estado.sequencia
 }
 
-export function adicionar(solicitacao) {
+export async function adicionar(solicitacao) {
   if (!solicitacao) return null
   const salva = structuredClone(solicitacao)
   estado.solicitacoes.unshift(salva)
-  persistir()
+  try {
+    if (mysqlConfigurado) {
+      await inserirSolicitacao(salva, estado.sequencia)
+    } else {
+      persistir()
+    }
+  } catch (erro) {
+    const indice = estado.solicitacoes.indexOf(salva)
+    if (indice >= 0) estado.solicitacoes.splice(indice, 1)
+    throw erro
+  }
   return clonar(salva)
 }
 
-export function salvar(solicitacao) {
+export async function salvar(solicitacao) {
   if (!solicitacao?.protocolo) return null
   const indice = estado.solicitacoes.findIndex(
     (item) => item.protocolo === solicitacao.protocolo,
   )
   if (indice < 0) return null
+  const anterior = estado.solicitacoes[indice]
   estado.solicitacoes[indice] = structuredClone(solicitacao)
-  persistir()
+  try {
+    if (mysqlConfigurado) {
+      await atualizarSolicitacao(solicitacao)
+    } else {
+      persistir()
+    }
+  } catch (erro) {
+    estado.solicitacoes[indice] = anterior
+    throw erro
+  }
   return clonar(estado.solicitacoes[indice])
 }

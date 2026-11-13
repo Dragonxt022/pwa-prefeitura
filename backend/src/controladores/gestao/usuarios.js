@@ -22,9 +22,9 @@ export function listar(_req, res) {
   })
 }
 
-export function criar(req, res) {
+export async function criar(req, res) {
   const dados = validarCriacaoUsuario(req.body)
-  const resultado = criarUsuario(dados)
+  const resultado = await criarUsuario(dados)
   if (resultado.erro === 'email_em_uso') {
     throw validacao({ email: 'Já existe um usuário com este e-mail.' })
   }
@@ -32,12 +32,12 @@ export function criar(req, res) {
   res.status(201).json({ dados: usuarioPublico(resultado.usuario) })
 }
 
-export function atualizar(req, res) {
+export async function atualizar(req, res) {
   const alvo = buscarUsuario(req.params.id)
   if (!alvo) throw naoEncontrado('Usuário não encontrado.')
 
   const dados = validarAtualizacaoUsuario(req.body, { alvo, ator: req.usuario })
-  const resultado = atualizarUsuario(alvo.id, dados)
+  const resultado = await atualizarUsuario(alvo.id, dados)
   if (resultado.erro === 'email_em_uso') {
     throw validacao({ email: 'Já existe um usuário com este e-mail.' })
   }

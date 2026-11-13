@@ -52,7 +52,7 @@ export function detalhar(req, res) {
   res.json({ dados: apresentarSolicitacaoGestao(solicitacao) })
 }
 
-export function atualizarStatus(req, res) {
+export async function atualizarStatus(req, res) {
   const solicitacao = buscarSolicitacao(req.params.protocolo)
   if (!solicitacao) throw naoEncontrado('Solicitação não encontrada.')
   if (!podeAcessarSolicitacao(req.usuario, solicitacao)) {
@@ -60,7 +60,7 @@ export function atualizarStatus(req, res) {
   }
 
   const dados = validarAtualizacaoStatus(req.body)
-  const atualizada = atualizarStatusServico(solicitacao.protocolo, {
+  const atualizada = await atualizarStatusServico(solicitacao.protocolo, {
     ...dados,
     porUsuario: req.usuario,
   })
@@ -85,7 +85,7 @@ export function atualizarStatus(req, res) {
   })
 }
 
-export function transferir(req, res) {
+export async function transferir(req, res) {
   const solicitacao = buscarSolicitacao(req.params.protocolo)
   if (!solicitacao) throw naoEncontrado('Solicitação não encontrada.')
   if (!podeAcessarSolicitacao(req.usuario, solicitacao)) {
@@ -93,7 +93,7 @@ export function transferir(req, res) {
   }
 
   const dados = validarTransferencia(req.body, solicitacao)
-  const resultado = transferirSolicitacao(solicitacao.protocolo, {
+  const resultado = await transferirSolicitacao(solicitacao.protocolo, {
     ...dados,
     porUsuario: req.usuario,
   })

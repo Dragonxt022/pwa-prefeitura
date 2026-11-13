@@ -1,15 +1,20 @@
 import { criarApp } from './src/app.js'
 import { fecharPool } from './src/repositorios/mysql.js'
+import { inicializarDados } from './src/repositorios/estado.js'
 import { inicializarCatalogo } from './src/servicos/catalogo.js'
 import { triagemAutomaticaAtiva } from './src/servicos/configuracoes.js'
 
 const porta = Number(process.env.PORT ?? 3000)
 
 let catalogo
+let dados
 try {
+  // O catálogo vem primeiro para que a normalização das solicitações use os
+  // setores e serviços efetivamente cadastrados no banco.
   catalogo = await inicializarCatalogo()
+  dados = await inicializarDados()
 } catch (erro) {
-  console.error('[catalogo] falha ao inicializar a persistência:', erro.message)
+  console.error('[dados] falha ao inicializar a persistência:', erro.message)
   process.exit(1)
 }
 
@@ -22,7 +27,11 @@ const servidor = app.listen(porta, () => {
       ? 'Catálogo persistido no MySQL.'
       : 'DB_HOST/DB_USER/DB_NAME ausentes; catálogo em memória (não persiste reinícios).',
   )
-  console.log('Solicitações, usuários, sessões e configurações continuam em backend/data/estado.json (ou DATA_FILE).')
+  console.log(
+    dados.persistencia === 'mysql'
+      ? 'Solicitações, usuários, sessões e configurações persistidos no MySQL.'
+      : 'Solicitações, usuários, sessões e configurações em backend/data/estado.json (ou DATA_FILE).',
+  )
   console.log(
     `Painel de gestão em /gestao (login: admin@prefeitura.demo ou triagem@prefeitura.demo; ${
       process.env.DEMO_PASSWORD ? 'senha definida em DEMO_PASSWORD' : 'senha demo: prefeitura-demo'

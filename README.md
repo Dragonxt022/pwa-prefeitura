@@ -3,9 +3,9 @@
 Piloto de atendimento ao cidadão: abrir solicitação, receber protocolo, acompanhar o andamento,
 avaliar o atendimento e consultar avisos da cidade — com funcionamento offline e instalação como app.
 
-> ⚠️ **Ambiente de demonstração.** Os dados são fictícios. O catálogo administrativo fica no MySQL e
-> solicitações, usuários, sessões e configurações no arquivo local `backend/data/estado.json`. Não use
-> dados pessoais reais neste projeto.
+> ⚠️ **Ambiente de demonstração.** Os dados são fictícios. Catálogo, solicitações, usuários, sessões e
+> configurações ficam no MySQL em produção. Sem banco configurado, o piloto usa
+> `backend/data/estado.json` para desenvolvimento e testes. Não use dados pessoais reais neste projeto.
 
 ## O que já está no piloto
 
@@ -32,9 +32,9 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
 - **Transferência e reclassificação:** evento auditável em `transferencias`, selo “Transferida”, troca
   de setor/serviço e preservação do SLA original por padrão.
 - **Impressão:** seleção de pedidos ou resultado dos filtros via CSS de impressão, sem expor foto.
-- **Mini IA de triagem:** classificador local por regras, desligado por padrão e ativável por
-  `TRIAGEM_IA_ATIVA=true`; quando ligado, sugere e aplica o setor automaticamente. A triagem manual
-  continua disponível.
+- **Mini IA de triagem:** classificador local por regras, desligado por padrão, com suporte a Ollama
+  (Qwen3 1.7B) via `/api/chat` e modo de pensamento desativado (`think: false`). A aplicação automática
+  do setor é controlada no painel; a triagem manual continua disponível.
 - **Catálogo administrativo:** 11 secretarias oficiais, setores e serviços editáveis em
   Configurações → Catálogo, persistidos no MySQL, com soft delete, bloqueio por solicitação aberta e
   auditoria de alterações. A Ouvidoria foi removida do catálogo.
@@ -47,9 +47,9 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
 |---|---|
 | Frontend | React 19 + Vite 8 + react-router-dom 7 |
 | PWA | vite-plugin-pwa 2 (Workbox, `generateSW`, `autoUpdate`) |
-| Backend | Express 5 (ESM) + MySQL (`mysql2`) para o catálogo + JSON para o restante + sessões com `scrypt` |
+| Backend | Express 5 (ESM) + MySQL (`mysql2`) para catálogo, solicitações, usuários, sessões e configurações + sessões com `scrypt` |
 | Estilo | CSS próprio, mobile-first, dark mode automático |
-| Triagem | Regras locais com contrato para mini IA/LLM local no futuro |
+| Triagem | Regras locais ou modelo local no Ollama (Qwen3 1.7B, sem modo de pensamento) |
 | Qualidade | oxlint (frontend), `node:test` (backend), Playwright E2E e GitHub Actions |
 
 ## Pré-requisitos
@@ -181,14 +181,14 @@ e os testes E2E em cada push/PR.
 ```
 .
 ├── backend/
-│   ├── data/                  # estado.json (runtime, ignorado pelo Git)
+│   ├── data/                  # estado.json legado (runtime, ignorado pelo Git)
 │   ├── server.js              # bootstrap + porta + shutdown
 │   └── src/
 │       ├── app.js             # middlewares, CORS com credenciais, rotas, erros
 │       ├── rotas/             # declaração dos endpoints e middlewares
 │       ├── controladores/     # entrada e saída HTTP
 │       ├── servicos/          # regras de negócio, sessões e notificações
-│       ├── repositorios/      # catálogo em MySQL, estado e persistência JSON
+│       ├── repositorios/      # MySQL (catálogo e dados) e fallback JSON local
 │       ├── dominio/           # catálogo, sementes, normalização e triagem
 │       ├── validadores/       # validação de solicitações, usuários e configurações
 │       ├── apresentadores/    # contratos públicos e administrativos
@@ -305,11 +305,11 @@ Invoke-RestMethod -Uri "http://localhost:3000/api/solicitacoes/$($criada.dados.p
   -Headers @{ 'x-codigo-acesso' = $codigo }
 ```
 
-Os dados de exemplo são carregados no primeiro start. A sequência é persistida junto com os pedidos;
-reiniciar a API não apaga os protocolos. A gravação usa arquivo temporário + `fsync` + renomeação
-atômica e mantém `estado.json.bak`. Se o principal estiver corrompido, o backup é usado; se ambos
-estiverem inválidos, a API falha na inicialização em vez de substituir os dados por sementes. Para
-começar do zero, pare a API e remova `backend/data/estado.json` (ou o arquivo definido em `DATA_FILE`).
+Com MySQL configurado, o primeiro start cria as tabelas e importa o `estado.json` existente (ou as
+sementes, se não houver arquivo) em uma única transação; reinícios seguintes apenas leem o banco. Sem
+MySQL, os dados continuam no `estado.json` com gravação atômica, `fsync`, renomeação e backup `.bak`;
+se principal e backup estiverem inválidos, a API falha na inicialização em vez de substituir os dados
+por sementes.
 
 Contrato completo, limites, códigos de erro e regras: [doc/02-requisitos.md](doc/02-requisitos.md).
 
@@ -395,15 +395,15 @@ build em um host HTTPS. O piloto valida o PWA no desktop via `localhost`.
 | `PORT` | backend | `3000` | Porta da API |
 | `MOCK_LATENCY_MS` | backend | `200` | Latência simulada (`0` desliga) |
 | `CORS_ORIGINS` | backend | 5173 e 4173 | Origens permitidas (vírgula) |
-| `DATA_FILE` | backend | `backend/data/estado.json` | Arquivo JSON de persistência |
+| `DATA_FILE` | backend | `backend/data/estado.json` | Arquivo JSON usado quando não há MySQL (e fonte da migração inicial) |
 | `ADMIN_TOKEN` | backend | desativado | Token legado opt-in de emergência; não é o login normal |
 | `DEMO_PASSWORD` | backend | `prefeitura-demo` | Senha das contas demonstrativas criadas no primeiro start |
 | `TRIAGEM_IA_ATIVA` | backend | `false` | Ativa a aplicação automática do setor sugerido pelo classificador local |
 | `SESSION_DAYS` | backend | `30` | Duração do cookie/sessão quando “manter conectado” está marcado |
 | `COOKIE_SECURE` | backend | `false` | Envia o cookie apenas por HTTPS quando `true` (produção) |
-| `DB_HOST` | backend | ausente | Servidor MySQL do catálogo; sem ele o catálogo fica em memória |
+| `DB_HOST` | backend | ausente | Servidor MySQL; sem ele tudo fica em memória/JSON local |
 | `DB_PORT` | backend | `3306` | Porta do MySQL |
-| `DB_NAME` | backend | ausente | Banco do catálogo |
+| `DB_NAME` | backend | ausente | Banco da aplicação |
 | `DB_USER` | backend | ausente | Usuário do banco |
 | `DB_PASSWORD` | backend | ausente | Senha do banco (nunca versione) |
 | `DB_POOL_SIZE` | backend | `5` | Conexões simultâneas do pool |
@@ -423,7 +423,7 @@ build em um host HTTPS. O piloto valida o PWA no desktop via `localhost`.
 | Service Worker não registra | Rodando em `dev` ou HTTP remoto | Use `build` + `preview` em HTTPS/`localhost`; em HTTP na LAN não registra (esperado) |
 | Celular não abre `http://IP:5173` | Firewall, rede Pública ou Wi-Fi diferente | Rode `.\scripts\liberar-firewall.ps1` como admin, confirme a mesma rede e desative "isolamento de clientes" no roteador |
 | Sem opção de instalar no celular | HTTP na LAN não é contexto seguro | Use HTTPS local (`mkcert`) ou publique o build em host HTTPS |
-| Dados de teste indesejados | Estado persistido em disco | Pare a API e remova `backend/data/estado.json` (ou `DATA_FILE`); o catálogo fica no MySQL |
+| Dados de teste indesejados | Estado persistido no MySQL ou no JSON local | Em produção, limpe o banco com backup; sem MySQL, pare a API e remova `backend/data/estado.json` (ou `DATA_FILE`) |
 | Catálogo “Memória” no painel | `DB_HOST`/`DB_USER`/`DB_NAME` ausentes | Configure o `app.env` e reinicie o PM2 |
 
 ## Documentação

@@ -146,7 +146,7 @@ export async function notificarEvento(evento, dados = {}) {
   const problema = validarTransporte(email)
   const mensagem = montarMensagem(evento, dados)
   if (problema) {
-    registrarNotificacao({
+    await registrarNotificacao({
       evento,
       status: 'erro',
       destinatarios: email.destinatarios,
@@ -160,7 +160,7 @@ export async function notificarEvento(evento, dados = {}) {
 
   try {
     await enviar(email, mensagem, email.destinatarios)
-    registrarNotificacao({
+    await registrarNotificacao({
       evento,
       status: 'enviado',
       destinatarios: email.destinatarios,
@@ -172,7 +172,7 @@ export async function notificarEvento(evento, dados = {}) {
     const detalhe = String(
       erro?.message || mensagemDoErro(CODIGOS_ERRO.SMTP_FALHOU),
     ).slice(0, 400)
-    registrarNotificacao({
+    await registrarNotificacao({
       evento,
       status: 'erro',
       destinatarios: email.destinatarios,
@@ -206,7 +206,7 @@ export async function testarEnvioEmail({ destinatario } = {}) {
   })
   try {
     await enviar({ ...email, destinatarios: [alvo] }, mensagem)
-    registrarNotificacao({
+    await registrarNotificacao({
       evento: 'teste',
       status: 'enviado',
       destinatarios: [alvo],
@@ -217,7 +217,7 @@ export async function testarEnvioEmail({ destinatario } = {}) {
     const detalhe = String(
       erro?.message || mensagemDoErro(CODIGOS_ERRO.SMTP_FALHOU),
     ).slice(0, 400)
-    registrarNotificacao({
+    await registrarNotificacao({
       evento: 'teste',
       status: 'erro',
       destinatarios: [alvo],

@@ -23,8 +23,9 @@ Internet
 | `cloudflared` | container na rede `proxy` | tunel `digital.cujubim` |
 | `digital-home` | container `nginx:alpine` na rede `proxy` | entrega o SPA e faz proxy da API |
 | API Express | host, via PM2 | usuario Linux `app-pwa-prefeitura` |
-| MySQL 8.4 | host, `127.0.0.1:3306` | banco `app_pwa_prefeitura`, reservado para a evolucao |
-| Dados do piloto | `backend/data/estado.json` | persistencia JSON versionada pelo proprio codigo |
+| MySQL 8.4 | host, `127.0.0.1:3306` | banco `app_pwa_prefeitura`: catalogo e dados do piloto |
+| Ollama | host, `127.0.0.1:11434` | modelo local `qwen3:1.7b`, pensamento desativado |
+| `estado.json` | `backend/data/` | legado; importado uma unica vez na primeira carga do MySQL |
 
 O firewall libera a porta `3000` apenas para a sub-rede `172.18.0.0/16`
 (rede `proxy`). A LAN e a internet nao acessam a API diretamente.
@@ -104,16 +105,28 @@ Modelo comentado: [`deploy/app.env.example`](./app.env.example).
 
 ### Dados
 
-- Arquivo principal: `/home/app-pwa-prefeitura/app/backend/data/estado.json`
-- Backup automatico: `estado.json.bak`
+- Fonte principal: MySQL `app_pwa_prefeitura` (catalogo, solicitacoes, usuarios, sessoes e configuracoes).
+- O `backend/data/estado.json` existente e importado automaticamente no primeiro start com o banco
+  vazio; nas inicializacoes seguintes ele nao e mais lido nem regravado.
+- Backup do banco: `mysqldump` do schema `app_pwa_prefeitura`.
 - O diretorio `backend/data/` e ignorado pelo Git.
 
 Para backup manual:
 
 ```bash
-sudo -u app-pwa-prefeitura tar -czf /root/pwa-prefeitura-dados-$(date +%F).tgz \
-  -C /home/app-pwa-prefeitura/app/backend data
+sudo mysqldump --single-transaction app_pwa_prefeitura \
+  | gzip > /root/pwa-prefeitura-dados-$(date +%F).sql.gz
 ```
+
+### IA local (Ollama)
+
+```bash
+sudo bash deploy/instalar-ollama.sh
+```
+
+O script instala o Ollama, habilita o servico, baixa `qwen3:1.7b` e valida a API com
+`think: false`. No painel, escolha o provedor **Ollama**, modelo `qwen3:1.7b` e URL
+`http://127.0.0.1:11434`, depois use **Testar IA**.
 
 ## Cloudflare
 

@@ -30,9 +30,9 @@ export function tokenDaRequisicao(req) {
   return lerCookie(req, COOKIE_SESSAO)
 }
 
-function autenticacaoDaRequisicao(req) {
+async function autenticacaoDaRequisicao(req) {
   const token = tokenDaRequisicao(req)
-  const usuarioDaCookie = usuarioDaSessao(token)
+  const usuarioDaCookie = await usuarioDaSessao(token)
   if (usuarioDaCookie) return { usuario: usuarioDaCookie, token }
 
   // Compatibilidade com scripts e testes antigos. O token legado é aceito
@@ -45,8 +45,8 @@ function autenticacaoDaRequisicao(req) {
   return null
 }
 
-export function exigirSessao(req, _res, next) {
-  const autenticacao = autenticacaoDaRequisicao(req)
+export async function exigirSessao(req, _res, next) {
+  const autenticacao = await autenticacaoDaRequisicao(req)
   if (!autenticacao) {
     throw naoAutorizado('Sessão ausente ou expirada. Entre novamente.')
   }

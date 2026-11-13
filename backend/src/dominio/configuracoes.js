@@ -66,11 +66,11 @@ export const PROVEDORES_IA = [
   {
     id: 'ollama',
     rotulo: 'Ollama (local ou VPS)',
-    tipo: 'openai',
-    baseUrl: 'http://127.0.0.1:11434/v1',
-    modelo: 'llama3.1',
+    tipo: 'ollama',
+    baseUrl: 'http://127.0.0.1:11434',
+    modelo: 'qwen3:1.7b',
     requerChave: false,
-    ajuda: 'Use a URL compatível com OpenAI do Ollama, normalmente terminada em /v1.',
+    ajuda: 'Usa a API nativa do Ollama com o modo de pensamento desativado (think: false).',
   },
   {
     id: 'openai',

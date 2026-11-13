@@ -6,22 +6,36 @@
  * administrativos fica em `apresentadores/configuracoes.js`.
  */
 import { estado, persistir } from './estado.js'
+import { mysqlConfigurado } from './mysql.js'
+import { salvarConfiguracoes } from './mysql-dados.js'
 
 export function obter() {
   return structuredClone(estado.configuracoes)
 }
 
-export function salvarSecao(secao, dados, usuario) {
+export async function salvarSecao(secao, dados, usuario) {
+  const anterior = structuredClone(estado.configuracoes)
   estado.configuracoes[secao] = structuredClone(dados)
   estado.configuracoes.atualizadoEm = new Date().toISOString()
   estado.configuracoes.atualizadoPor = usuario
     ? { id: usuario.id, nome: usuario.nome }
     : null
-  persistir()
+  try {
+    if (mysqlConfigurado) {
+      await salvarConfiguracoes(estado.configuracoes)
+    } else {
+      persistir()
+    }
+  } catch (erro) {
+    Object.keys(estado.configuracoes).forEach((chave) => delete estado.configuracoes[chave])
+    Object.assign(estado.configuracoes, anterior)
+    throw erro
+  }
   return obter()
 }
 
-export function registrarNotificacao(registro) {
+export async function registrarNotificacao(registro) {
+  const anterior = structuredClone(estado.configuracoes)
   const notificacao = {
     id: `notificacao-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     evento: String(registro.evento ?? 'evento'),
@@ -38,6 +52,16 @@ export function registrarNotificacao(registro) {
   }
   estado.configuracoes.notificacoes.unshift(notificacao)
   estado.configuracoes.notificacoes = estado.configuracoes.notificacoes.slice(0, 30)
-  persistir()
+  try {
+    if (mysqlConfigurado) {
+      await salvarConfiguracoes(estado.configuracoes)
+    } else {
+      persistir()
+    }
+  } catch (erro) {
+    Object.keys(estado.configuracoes).forEach((chave) => delete estado.configuracoes[chave])
+    Object.assign(estado.configuracoes, anterior)
+    throw erro
+  }
   return structuredClone(notificacao)
 }

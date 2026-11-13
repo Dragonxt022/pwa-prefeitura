@@ -152,6 +152,66 @@ async function chamarCompativelOpenAI(config, prompt, setores) {
   }
 }
 
+/**
+ * Ollama nativo.
+ *
+ * O endpoint compatível com OpenAI não expõe o controle de raciocínio do Qwen3.
+ * A API `/api/chat` aceita `think: false`, que mantém o modo de pensamento
+ * desligado e devolve apenas a resposta final — mais rápido e previsível para
+ * a classificação de triagem.
+ */
+async function chamarOllama(config, prompt) {
+  const base = String(config.baseUrl || '').trim().replace(/\/+$/, '').replace(/\/v1$/i, '')
+  const url = normalizarUrl(base, '/api/chat')
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), config.timeoutMs)
+  try {
+    const resposta = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: config.modelo,
+        stream: false,
+        think: false,
+        keep_alive: '30m',
+        options: {
+          temperature: config.temperatura,
+          num_predict: 400,
+        },
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Classifique solicitações municipais. Responda apenas JSON válido, sem comentários.',
+          },
+          { role: 'user', content: prompt },
+        ],
+      }),
+      signal: controller.signal,
+    })
+    const corpo = await lerCorpo(resposta)
+    if (!resposta.ok) {
+      const detalhe = typeof corpo === 'string' ? corpo.slice(0, 180) : corpo?.error
+      throw falhaIA(
+        CODIGOS_ERRO.IA_HTTP_ERRO,
+        `Provedor respondeu HTTP ${resposta.status}${detalhe ? `: ${detalhe}` : ''}.`,
+      )
+    }
+    return extrairJson(corpo?.message?.content)
+  } catch (erro) {
+    if (erro?.name === 'AbortError') {
+      throw falhaIA(CODIGOS_ERRO.IA_TIMEOUT)
+    }
+    if (erro instanceof ErroIA) throw erro
+    throw falhaIA(
+      CODIGOS_ERRO.IA_HTTP_ERRO,
+      'Não foi possível conectar ao Ollama. Verifique se o serviço está ativo e a URL está correta.',
+    )
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
 async function chamarAnthropic(config, prompt) {
   const url = normalizarUrl(config.baseUrl || 'https://api.anthropic.com', '/v1/messages')
   const controller = new AbortController()
@@ -235,9 +295,14 @@ export async function classificarComModelo({ config, solicitacao, setores }) {
   }
   const prompt = montarPrompt(solicitacao, setores)
   const inicio = Date.now()
-  const conteudo = provedor.tipo === 'anthropic'
-    ? await chamarAnthropic(config, prompt)
-    : await chamarCompativelOpenAI(config, prompt, setores)
+  let conteudo
+  if (provedor.tipo === 'anthropic') {
+    conteudo = await chamarAnthropic(config, prompt)
+  } else if (provedor.tipo === 'ollama') {
+    conteudo = await chamarOllama(config, prompt)
+  } else {
+    conteudo = await chamarCompativelOpenAI(config, prompt, setores)
+  }
   return validarResposta(conteudo, config, setores, Date.now() - inicio)
 }
 

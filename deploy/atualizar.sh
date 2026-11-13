@@ -5,7 +5,8 @@
 #   sudo bash deploy/atualizar.sh
 #
 # Faz pull, reinstala dependencias, gera o build, recarrega o nginx e reinicia
-# o processo PM2. O arquivo de dados do piloto nao e alterado.
+# o processo PM2. Dados e catalogos ficam no MySQL; na primeira execucao com o
+# banco vazio, o estado.json existente e importado automaticamente.
 set -euo pipefail
 umask 022
 

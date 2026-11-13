@@ -1,10 +1,14 @@
 /**
- * Estado mutável do piloto e persistência em JSON.
+ * Estado mutável do piloto.
  *
- * A gravação usa arquivo temporário + fsync + renomeação atômica, mantendo um
- * `.bak` da última versão válida. Falhas de leitura não caem silenciosamente
- * nas sementes: o backup é tentado e, se também estiver inválido, o processo
- * falha para evitar perda ou exposição silenciosa de dados.
+ * Com MySQL configurado, os dados são lidos uma vez na inicialização e cada
+ * alteração é gravada no banco pela camada de repositório. Sem banco, o piloto
+ * continua usando o arquivo JSON local com gravação atômica (arquivo
+ * temporário + fsync + renomeação) e backup `.bak`.
+ *
+ * Falhas de leitura não caem silenciosamente nas sementes: o backup é tentado
+ * e, se também estiver inválido, o processo falha para evitar perda ou
+ * exposição silenciosa de dados.
  */
 import {
   closeSync,
@@ -29,6 +33,15 @@ import {
 } from '../dominio/normalizacao.js'
 import { CODIGO_ACESSO_SEMENTE, SOLICITACOES_SEMENTE } from '../dominio/sementes.js'
 import { hashToken } from '../utils/seguranca.js'
+import { mysqlConfigurado } from './mysql.js'
+import {
+  atualizarSolicitacao as atualizarSolicitacaoMysql,
+  atualizarUsuario as atualizarUsuarioMysql,
+  carregarTudo,
+  importarEstadoInicial,
+  inicializarTabelas,
+  removerUsuario as removerUsuarioMysql,
+} from './mysql-dados.js'
 
 const raizBackend = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const arquivoDados = process.env.DATA_FILE
@@ -46,6 +59,11 @@ export const estado = {
   sessoes: [],
   configuracoes: criarConfiguracoesPadrao(),
   sequencia: 3,
+}
+
+/** Fonte efetiva dos dados, exposta no painel e nos logs. */
+export function persistenciaDados() {
+  return mysqlConfigurado ? 'mysql' : 'json'
 }
 
 function serializar() {
@@ -108,6 +126,7 @@ function arquivoEstadoValido(caminho) {
   }
 }
 
+/** Gravação no arquivo JSON. Usada apenas quando não há MySQL configurado. */
 export function persistir() {
   try {
     mkdirSync(dirname(arquivoDados), { recursive: true })
@@ -195,21 +214,25 @@ function normalizarSolicitacaoCarregada(item) {
  * histórico. A remoção do setor não pode deixar pedidos inacessíveis.
  */
 function migrarOuvidoria() {
-  let alterou = false
-  const usuariosMantidos = estado.usuarios.filter(
-    (usuario) =>
-      usuario.id !== 'usuario-ouvidoria' &&
-      usuario.email !== 'ouvidoria@prefeitura.demo',
-  )
+  const usuariosRemovidos = []
+  const usuariosAlterados = []
+  const solicitacoesAlteradas = []
+
+  const usuariosMantidos = estado.usuarios.filter((usuario) => {
+    const remover =
+      usuario.id === 'usuario-ouvidoria' ||
+      usuario.email === 'ouvidoria@prefeitura.demo'
+    if (remover) usuariosRemovidos.push(usuario.id)
+    return !remover
+  })
   if (usuariosMantidos.length !== estado.usuarios.length) {
     estado.usuarios.splice(0, estado.usuarios.length, ...usuariosMantidos)
-    alterou = true
   }
 
   for (const usuario of estado.usuarios) {
     if (usuario.setorId !== 'ouvidoria') continue
     usuario.setorId = 'triagem'
-    alterou = true
+    usuariosAlterados.push(usuario)
   }
 
   for (const solicitacao of estado.solicitacoes) {
@@ -223,18 +246,20 @@ function migrarOuvidoria() {
       tipo: 'migracao',
       observacao: 'Setor de Ouvidoria removido; solicitação devolvida à triagem.',
     })
-    alterou = true
+    solicitacoesAlteradas.push(solicitacao)
   }
 
+  const alterou = usuariosRemovidos.length > 0 ||
+    usuariosAlterados.length > 0 ||
+    solicitacoesAlteradas.length > 0
   if (alterou) {
     console.log('[dados] Ouvidoria removida; vínculos e solicitações antigas migrados para a triagem.')
   }
-  return alterou
+  return { alterou, usuariosRemovidos, usuariosAlterados, solicitacoesAlteradas }
 }
 
-function carregar() {
-  const salvo = lerEstadoSalvo()
-
+/** Monta os dados a partir do JSON salvo (ou das sementes, se não houver). */
+function montarDados(salvo) {
   let solicitacoesCarregadas = SOLICITACOES_SEMENTE
   let sequenciaSalva = 0
   let usuariosCarregados = null
@@ -269,32 +294,115 @@ function carregar() {
     }
   }
 
-  estado.solicitacoes.length = 0
-  estado.solicitacoes.push(...solicitacoesCarregadas.map(normalizarSolicitacaoCarregada))
-  estado.sequencia = Math.max(sequenciaSalva, calcularSequencia(estado.solicitacoes))
-
-  estado.usuarios.length = 0
-  estado.usuarios.push(...(usuariosCarregados
+  const solicitacoes = solicitacoesCarregadas.map(normalizarSolicitacaoCarregada)
+  const usuarios = (usuariosCarregados
     ? usuariosCarregados.map(normalizarUsuario)
-    : criarUsuariosSemente()))
-
-  const ouvidoriaMigrada = migrarOuvidoria()
-
-  Object.assign(estado.configuracoes, normalizarConfiguracoes(configuracoesCarregadas ?? {}))
-
+    : criarUsuariosSemente())
   const agora = Date.now()
-  estado.sessoes.length = 0
-  estado.sessoes.push(
-    ...sessoesCarregadas.filter((sessao) => {
-      if (!sessao || typeof sessao !== 'object') return false
-      const expira = new Date(sessao.expiraEm).getTime()
-      return Number.isFinite(expira) && expira > agora && estado.usuarios.some(
-        (usuario) => usuario.id === sessao.usuarioId && usuario.ativo,
-      )
-    }),
-  )
+  const sessoes = sessoesCarregadas.filter((sessao) => {
+    if (!sessao || typeof sessao !== 'object') return false
+    const expira = new Date(sessao.expiraEm).getTime()
+    return Number.isFinite(expira) && expira > agora && usuarios.some(
+      (usuario) => usuario.id === sessao.usuarioId && usuario.ativo,
+    )
+  })
 
-  if (ouvidoriaMigrada) persistir()
+  return {
+    solicitacoes,
+    usuarios,
+    sessoes,
+    configuracoes: normalizarConfiguracoes(configuracoesCarregadas ?? {}),
+    sequencia: Math.max(sequenciaSalva, calcularSequencia(solicitacoes)),
+  }
 }
 
-carregar()
+/** Aplica um conjunto de dados ao estado em memória. */
+function aplicarDados(dados) {
+  estado.solicitacoes.length = 0
+  estado.solicitacoes.push(...dados.solicitacoes.map((item) => structuredClone(item)))
+
+  estado.usuarios.length = 0
+  estado.usuarios.push(...dados.usuarios.map((item) => structuredClone(item)))
+
+  estado.sessoes.length = 0
+  estado.sessoes.push(...dados.sessoes.map((item) => structuredClone(item)))
+
+  Object.assign(
+    estado.configuracoes,
+    structuredClone(dados.configuracoes ?? criarConfiguracoesPadrao()),
+  )
+  estado.sequencia = Math.max(
+    Number(dados.sequencia) || 0,
+    calcularSequencia(dados.solicitacoes),
+  )
+}
+
+/** Carrega o JSON local (modo sem MySQL). */
+function carregarJson() {
+  const salvo = lerEstadoSalvo()
+  aplicarDados(montarDados(salvo))
+  if (migrarOuvidoria().alterou) persistir()
+}
+
+/**
+ * Inicializa os dados no MySQL.
+ *
+ * Na primeira execução com banco vazio, importa o arquivo JSON existente
+ * (preservando solicitações, usuários, sessões, configurações e sequência) ou,
+ * se não houver arquivo, as sementes do piloto. Nas demais, apenas carrega o
+ * banco.
+ */
+export async function inicializarDados() {
+  if (!mysqlConfigurado) {
+    carregarJson()
+    return { persistencia: 'json' }
+  }
+
+  await inicializarTabelas()
+  const dados = await carregarTudo()
+
+  if (dados.vazio) {
+    const salvo = lerEstadoSalvo()
+    aplicarDados(montarDados(salvo))
+    const ouvidoriaMigrada = migrarOuvidoria().alterou
+    const paraImportar = {
+      solicitacoes: estado.solicitacoes,
+      usuarios: estado.usuarios,
+      sessoes: estado.sessoes,
+      configuracoes: estado.configuracoes,
+      sequencia: estado.sequencia,
+    }
+    await importarEstadoInicial(paraImportar)
+    console.log(
+      `[dados] MySQL inicializado a partir de ${salvo ? 'backend/data/estado.json' : 'sementes'}` +
+      `${ouvidoriaMigrada ? ' (Ouvidoria migrada)' : ''}.`,
+    )
+    return { persistencia: 'mysql', importado: true }
+  }
+
+  aplicarDados(dados)
+  const migracao = migrarOuvidoria()
+  if (migracao.alterou) {
+    await persistirMigracaoOuvidoria(migracao)
+  }
+  return { persistencia: 'mysql', importado: false }
+}
+
+/** Regrava no MySQL apenas os registros alterados pela migração da Ouvidoria. */
+async function persistirMigracaoOuvidoria({ usuariosRemovidos, usuariosAlterados, solicitacoesAlteradas }) {
+  for (const id of usuariosRemovidos) {
+    await removerUsuarioMysql(id)
+  }
+  for (const usuario of usuariosAlterados) {
+    await atualizarUsuarioMysql(usuario)
+  }
+  for (const solicitacao of solicitacoesAlteradas) {
+    await atualizarSolicitacaoMysql(solicitacao)
+  }
+}
+
+// Sem MySQL, o estado precisa estar disponível de forma síncrona assim que o
+// módulo é importado (testes, scripts e desenvolvimento local).
+if (!mysqlConfigurado) {
+  carregarJson()
+}

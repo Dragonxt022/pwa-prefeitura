@@ -67,7 +67,7 @@ export function listarSolicitacoes({ status, tipo, busca, setorId, ids, limite =
   return { dados: dados.slice(0, limiteSeguro), total }
 }
 
-export function criarSolicitacao({
+export async function criarSolicitacao({
   tipo,
   descricao,
   endereco,
@@ -135,11 +135,11 @@ export function criarSolicitacao({
     ],
   })
 
-  const salva = repositorioSolicitacoes.adicionar(solicitacao)
+  const salva = await repositorioSolicitacoes.adicionar(solicitacao)
   return { solicitacao: salva, criada: true }
 }
 
-export function atualizarStatus(protocolo, { status, observacao, prioridade, porUsuario }) {
+export async function atualizarStatus(protocolo, { status, observacao, prioridade, porUsuario }) {
   const solicitacao = buscarSolicitacao(protocolo)
   if (!solicitacao) return null
 
@@ -162,7 +162,7 @@ export function atualizarStatus(protocolo, { status, observacao, prioridade, por
  * execução etc.) é preservado. O SLA original também é preservado, a menos que
  * o operador marque explicitamente recalcularSla.
  */
-export function transferirSolicitacao(protocolo, {
+export async function transferirSolicitacao(protocolo, {
   setorDestinoId,
   motivo,
   tipoDestino,
@@ -215,11 +215,11 @@ export function transferirSolicitacao(protocolo, {
     ...(porUsuario ? { por: { id: porUsuario.id, nome: porUsuario.nome } } : {}),
   })
 
-  const salva = repositorioSolicitacoes.salvar(solicitacao)
+  const salva = await repositorioSolicitacoes.salvar(solicitacao)
   return { solicitacao: salva, transferencia }
 }
 
-export function avaliarSolicitacao(protocolo, { nota, comentario }) {
+export async function avaliarSolicitacao(protocolo, { nota, comentario }) {
   const solicitacao = buscarSolicitacao(protocolo)
   if (!solicitacao) return null
 

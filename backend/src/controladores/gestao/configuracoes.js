@@ -21,9 +21,9 @@ export function obter(_req, res) {
   })
 }
 
-export function salvarSecao(req, res) {
+export async function salvarSecao(req, res) {
   const secao = texto(req.params.secao)
-  const resultado = atualizarConfiguracao(secao, req.body, req.usuario)
+  const resultado = await atualizarConfiguracao(secao, req.body, req.usuario)
   if (!resultado) {
     throw naoEncontrado('Seção de configuração desconhecida.')
   }
