@@ -2,6 +2,11 @@
 
 Documentacao do ambiente publicado em `https://digital.cujubim.ro.gov.br`.
 
+Para a visao completa do servidor (dados de hardware, rede, firewall, pastas,
+usuarios, MySQL, tunel, backup, diagnostico e credenciais), consulte
+[`doc/05-infraestrutura-servidor.md`](../doc/05-infraestrutura-servidor.md).
+Este README e o runbook resumido do dia a dia.
+
 ## Arquitetura
 
 ```text
