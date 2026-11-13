@@ -6,6 +6,7 @@ import {
   iaTriagemAtiva,
   triagemAutomaticaAtiva,
 } from './src/servicos/configuracoes.js'
+import { iniciarFilaTriagem } from './src/servicos/triagem.js'
 
 const porta = Number(process.env.PORT ?? 3000)
 
@@ -16,9 +17,17 @@ try {
   // setores e serviços efetivamente cadastrados no banco.
   catalogo = await inicializarCatalogo()
   dados = await inicializarDados()
+  await iniciarFilaTriagem()
 } catch (erro) {
   console.error('[dados] falha ao inicializar a persistência:', erro.message)
   process.exit(1)
+}
+
+if (process.env.NODE_APP_INSTANCE && process.env.NODE_APP_INSTANCE !== '0') {
+  console.warn(
+    '[processo] múltiplas instâncias: a fila de IA é coordenada pelo MySQL, mas sessões e ' +
+    'cache de dados são por processo. Mantenha uma única instância do PM2.',
+  )
 }
 
 const app = criarApp()

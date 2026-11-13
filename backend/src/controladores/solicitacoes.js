@@ -61,11 +61,14 @@ export async function criar(req, res) {
 
   // A classificação por IA entra na fila depois da gravação. O cidadão recebe
   // o protocolo imediatamente, com a triagem por regras como ponto de partida.
-  const { solicitacao, criada, acessoNegado } = await criarSolicitacaoServico(dados)
+  const { solicitacao, criada, acessoNegado } = await criarSolicitacaoServico({
+    ...dados,
+    cidadaoId: req.cidadao?.id ?? null,
+  })
   if (acessoNegado) throw codigoAcessoInvalido()
   let fila = null
   if (criada) {
-    fila = agendarTriagem(solicitacao.protocolo)
+    fila = await agendarTriagem(solicitacao.protocolo)
   }
   if (criada) {
     void notificarEvento('nova_solicitacao', {

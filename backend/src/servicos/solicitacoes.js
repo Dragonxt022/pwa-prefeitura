@@ -75,6 +75,7 @@ export async function criarSolicitacao({
   foto = null,
   localizacao = null,
   clientId = null,
+  cidadaoId = null,
   codigoAcesso,
   sugestao: sugestaoExterna = null,
 }) {
@@ -104,7 +105,7 @@ export async function criarSolicitacao({
   const setorInicialId = automatica && sugestao.confianca >= 0.5 && setorSugerido
     ? setorSugerido.id
     : 'triagem'
-  const sequencia = repositorioSolicitacoes.proximaSequencia()
+  const sequencia = await repositorioSolicitacoes.proximaSequencia()
 
   const solicitacao = normalizarSolicitacao({
     protocolo: `PREF-${new Date().getFullYear()}-${String(sequencia).padStart(6, '0')}`,
@@ -121,6 +122,7 @@ export async function criarSolicitacao({
     foto,
     localizacao,
     clientId,
+    cidadaoId,
     codigoAcessoHash: hashToken(normalizarCodigoAcesso(codigoAcesso)),
     setorId: setorInicialId,
     transferencias: [],
@@ -283,6 +285,45 @@ export function listarSemelhantes({ tipo, endereco, latitude, longitude }) {
       status: item.status,
       distanciaMetros,
     }))
+}
+
+/** Pedidos vinculados à conta do cidadão autenticado. */
+export function listarSolicitacoesDoCidadao(cidadaoId) {
+  if (!cidadaoId) return []
+  return repositorioSolicitacoes
+    .listarTodas()
+    .filter((item) => item.cidadaoId === cidadaoId)
+    .sort((a, b) => new Date(b.criadoEm).getTime() - new Date(a.criadoEm).getTime())
+}
+
+export function buscarSolicitacaoDoCidadao(cidadaoId, protocolo) {
+  if (!cidadaoId) return null
+  const alvo = String(protocolo ?? '').toUpperCase().trim()
+  return repositorioSolicitacoes
+    .listarTodas()
+    .find((item) => item.protocolo === alvo && item.cidadaoId === cidadaoId) ?? null
+}
+
+/**
+ * Vincula um pedido antigo à conta usando protocolo + código de acesso.
+ * Pedidos já vinculados a outra conta respondem como inexistentes.
+ */
+export async function vincularSolicitacao(cidadaoId, protocolo, codigoAcesso) {
+  const solicitacao = buscarSolicitacao(protocolo)
+  if (!solicitacao || !codigoAcessoConfere(solicitacao, codigoAcesso)) {
+    return { erro: 'invalido' }
+  }
+  if (solicitacao.cidadaoId && solicitacao.cidadaoId !== cidadaoId) {
+    return { erro: 'invalido' }
+  }
+  if (solicitacao.cidadaoId === cidadaoId) {
+    return { solicitacao }
+  }
+
+  solicitacao.cidadaoId = cidadaoId
+  solicitacao.atualizadoEm = new Date().toISOString()
+  const salva = await repositorioSolicitacoes.salvar(solicitacao)
+  return { solicitacao: salva }
 }
 
 export function estatisticasGestao({ setorId } = {}) {

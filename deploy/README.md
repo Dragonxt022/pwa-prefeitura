@@ -131,9 +131,14 @@ O script instala o Ollama, habilita o servico, baixa `qwen3:1.7b` e valida a API
 `think: false`. No painel, escolha o provedor **Ollama**, modelo `qwen3:1.7b` e URL
 `http://127.0.0.1:11434`, depois use **Testar IA**.
 
-A classificacao roda em fila depois de o pedido ser gravado. Ajuste com
-`TRIAGEM_FILA_CONCORRENCIA` (padrao `1`), `TRIAGEM_FILA_AVISO` (padrao `2`) e
+A classificacao roda em fila persistida no MySQL depois de o pedido ser gravado.
+Um lock global do MySQL faz o trabalho ser processado por uma instancia de cada
+vez. Ajuste o aviso e o limite com `TRIAGEM_FILA_AVISO` (padrao `2`) e
 `TRIAGEM_FILA_MAX` (padrao `20`).
+
+Mantenha **uma instancia** do PM2. A fila de IA e coordenada pelo banco, mas
+sessoes, usuarios e solicitacoes usam cache por processo; escalar horizontalmente
+exige leitura compartilhada/sticky sessions.
 
 ### Privacidade e LGPD
 
@@ -142,6 +147,10 @@ A classificacao roda em fila depois de o pedido ser gravado. Ajuste com
   Service Worker.
 - O backup do banco inclui dados pessoais: guarde os arquivos em `/root/backups` com permissao restrita e
   defina prazo de descarte.
+- A recuperacao de senha usa o SMTP de `Configuracoes -> E-mail`. Verifique o host, remetente e
+  credenciais; o link usa `APP_URL` e expira em 30 minutos.
+- Pedidos feitos com conta ficam vinculados ao cadastro (`cidadao_id`) e aparecem em "Meus pedidos".
+  Pedidos antigos podem ser vinculados com protocolo + codigo de acesso.
 
 ## Cloudflare
 

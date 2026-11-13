@@ -5,7 +5,6 @@
  * estiver desligado, nenhuma conexão SMTP é aberta. Falhas ficam registradas no
  * histórico recente exibido na aba de e-mail do painel.
  */
-import nodemailer from 'nodemailer'
 import {
   CODIGOS_ERRO,
   mensagemDoErro,
@@ -16,6 +15,7 @@ import {
   obter as obterConfiguracoes,
   registrarNotificacao,
 } from '../repositorios/configuracoes.js'
+import { criarTransporte, enderecoRemetente } from './email-transporte.js'
 
 const URL_APP = (process.env.APP_URL || 'http://localhost:5173').replace(/\/+$/, '')
 
@@ -30,15 +30,6 @@ function escaparHtml(valor) {
 
 function eventoPorId(id) {
   return EVENTOS_NOTIFICACAO.find((evento) => evento.id === id)
-}
-
-function enderecoRemetente(email) {
-  const endereco = email.smtp.remetenteEmail
-  if (!endereco) return null
-  return {
-    name: email.smtp.remetenteNome || obterConfiguracoes().identidade.nome,
-    address: endereco,
-  }
 }
 
 function falha(codigo, mensagem) {
@@ -60,20 +51,6 @@ function validarTransporte(email) {
     return falha(CODIGOS_ERRO.SMTP_NAO_CONFIGURADO, 'Cadastre ao menos um destinatário.')
   }
   return null
-}
-
-function criarTransporte(email) {
-  return nodemailer.createTransport({
-    host: email.smtp.host,
-    port: email.smtp.porta,
-    secure: Boolean(email.smtp.seguro),
-    ...(email.smtp.usuario
-      ? { auth: { user: email.smtp.usuario, pass: email.smtp.senha || '' } }
-      : {}),
-    connectionTimeout: 10_000,
-    greetingTimeout: 10_000,
-    socketTimeout: 15_000,
-  })
 }
 
 function montarMensagem(evento, dados = {}) {

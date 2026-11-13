@@ -17,7 +17,13 @@ function Estrelas({ nota, rotulo = true }) {
   )
 }
 
-export default function Avaliacao({ protocolo, codigoAcesso, avaliacao, aoAvaliar }) {
+export default function Avaliacao({
+  protocolo,
+  codigoAcesso,
+  avaliacao,
+  aoAvaliar,
+  aoEnviarAvaliacao,
+}) {
   const [nota, setNota] = useState(0)
   const [comentario, setComentario] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -52,11 +58,9 @@ export default function Avaliacao({ protocolo, codigoAcesso, avaliacao, aoAvalia
     setEnviando(true)
     setErro('')
     try {
-      const atualizada = await avaliarSolicitacao(
-        protocolo,
-        { nota, comentario },
-        codigoAcesso,
-      )
+      const atualizada = aoEnviarAvaliacao
+        ? await aoEnviarAvaliacao({ nota, comentario })
+        : await avaliarSolicitacao(protocolo, { nota, comentario }, codigoAcesso)
       setSucesso(true)
       aoAvaliar?.(atualizada)
     } catch (falha) {

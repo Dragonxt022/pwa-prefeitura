@@ -10,6 +10,8 @@ process.env.DATA_FILE = arquivoDados
 process.env.MOCK_LATENCY_MS = '0'
 
 const { criarApp } = await import('../src/app.js')
+const repositorioCidadaos = await import('../src/repositorios/cidadaos.js')
+const servicoRecuperacao = await import('../src/servicos/recuperacao-senha.js')
 
 const app = criarApp({ latenciaMs: 0 })
 const servidor = await new Promise((resolver) => {
@@ -225,5 +227,79 @@ test('cadastro do cidadão exige consentimento e não expõe segredos', async (t
     assert.equal(salvo.includes(CADASTRO.email), false)
     assert.equal(salvo.includes(CADASTRO.telefone), false)
     assert.equal(salvo.includes(CADASTRO.logradouro), false)
+  })
+})
+
+test('recuperação de senha usa token de uso único e revoga sessões', async (t) => {
+  const email = 'recupera.senha@example.invalid'
+  const cadastro = await chamar('/cidadao/cadastro', {
+    metodo: 'POST',
+    corpo: { ...CADASTRO, email },
+  })
+  assert.equal(cadastro.status, 201)
+  const cookie = cookieDaResposta(cadastro)
+
+  await t.test('pedido para e-mail inexistente responde de forma genérica', async () => {
+    const resposta = await chamar('/cidadao/senha/solicitar', {
+      metodo: 'POST',
+      corpo: { email: 'nao.existe@example.invalid' },
+    })
+    assert.equal(resposta.status, 200)
+    assert.equal(resposta.payload.dados.ok, true)
+    assert.match(resposta.payload.dados.mensagem, /Se houver uma conta/i)
+  })
+
+  await t.test('token inválido é rejeitado', async () => {
+    const resposta = await chamar('/cidadao/senha/redefinir', {
+      metodo: 'POST',
+      corpo: { token: 'x'.repeat(43), novaSenha: 'NovaSenha456' },
+    })
+    assert.equal(resposta.status, 422)
+    assert.ok(resposta.payload.erro.campos.token)
+  })
+
+  let token = ''
+  await t.test('cria token e envia link por e-mail', async () => {
+    const cidadao = repositorioCidadaos.buscarPorEmail(email)
+    let link = ''
+    const resultado = await servicoRecuperacao.criarTokenRecuperacao(cidadao, {
+      enviar: async (dados) => {
+        link = dados.link
+        return { enviado: true }
+      },
+    })
+    token = resultado.token
+    assert.equal(resultado.enviado, true)
+    assert.match(link, /\/redefinir-senha#token=/)
+    assert.equal(link.includes(token), true)
+  })
+
+  await t.test('redefine a senha, revoga a sessão antiga e invalida o token', async () => {
+    const resposta = await chamar('/cidadao/senha/redefinir', {
+      metodo: 'POST',
+      corpo: { token, novaSenha: 'NovaSenha456' },
+    })
+    assert.equal(resposta.status, 200)
+
+    const sessaoAntiga = await chamar('/cidadao/perfil', { cookie })
+    assert.equal(sessaoAntiga.status, 401)
+
+    const senhaAntiga = await chamar('/cidadao/login', {
+      metodo: 'POST',
+      corpo: { email, senha: CADASTRO.senha },
+    })
+    assert.equal(senhaAntiga.status, 401)
+
+    const senhaNova = await chamar('/cidadao/login', {
+      metodo: 'POST',
+      corpo: { email, senha: 'NovaSenha456' },
+    })
+    assert.equal(senhaNova.status, 200)
+
+    const repetido = await chamar('/cidadao/senha/redefinir', {
+      metodo: 'POST',
+      corpo: { token, novaSenha: 'OutraSenha789' },
+    })
+    assert.equal(repetido.status, 422)
   })
 })

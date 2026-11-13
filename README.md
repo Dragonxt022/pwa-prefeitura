@@ -22,7 +22,7 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
 - **Código de acesso** individual, gerado no aparelho e exibido apenas na confirmação. O protocolo só
   pode ser consultado com o código; o backend guarda apenas o hash.
 - Acompanhamento por protocolo + código de acesso, com status, prazo/SLA, histórico, foto, mapa e
-  **Meus pedidos** salvos no aparelho.
+  **Meus pedidos** salvos no aparelho. Quem tem conta vê também os pedidos vinculados no servidor.
 - Avaliação de 1 a 5 estrelas após a conclusão, com comentário opcional e o mesmo código de acesso.
 - Notificações locais no app quando um status muda (sem push em segundo plano neste ciclo).
 - **Painel de gestão com login:** sessão por cookie `HttpOnly`, “manter conectado” por 30 dias e
@@ -37,8 +37,12 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
   roda em fila depois da gravação: o cidadão recebe o protocolo na hora, a sugestão é aplicada quando
   o modelo responde e o formulário avisa quando há muitas solicitações na fila.
 - **Conta do cidadão (LGPD):** cadastro com e-mail, senha, telefone e endereço; telefone e endereço
-  preenchem automaticamente novas solicitações. O perfil permite editar, baixar os dados e excluir a
-  conta, com consentimento registrado e Aviso de Privacidade próprio.
+  preenchem automaticamente novas solicitações. O perfil permite editar, baixar os dados, excluir a
+  conta e recuperar a senha por link de uso único enviado por e-mail, com consentimento registrado e
+  Aviso de Privacidade próprio.
+- **Pedidos da conta:** solicitações feitas logado ficam vinculadas ao cadastro e aparecem em
+  “Meus pedidos” sem depender do aparelho. Pedidos antigos podem ser vinculados com protocolo + código,
+  e a avaliação também funciona pela conta.
 - **Catálogo administrativo:** 11 secretarias oficiais, setores e serviços editáveis em
   Configurações → Catálogo, persistidos no MySQL, com soft delete, bloqueio por solicitação aberta e
   auditoria de alterações. A Ouvidoria foi removida do catálogo.
@@ -262,6 +266,12 @@ Rotas da conta do cidadão (cookie `HttpOnly` próprio; nenhuma resposta inclui 
 | GET/PUT | `/cidadao/perfil` | Lê ou atualiza os próprios dados |
 | GET | `/cidadao/dados` | Portabilidade: download dos dados pessoais em JSON |
 | DELETE | `/cidadao/conta` | Exclusão com confirmação de senha; anonimiza o cadastro e revoga sessões |
+| POST | `/cidadao/senha/solicitar` | Envia link de recuperação; resposta genérica para qualquer e-mail |
+| POST | `/cidadao/senha/redefinir` | Token de uso único + nova senha; revoga todas as sessões |
+| GET | `/cidadao/solicitacoes` | Pedidos vinculados à conta autenticada |
+| GET | `/cidadao/solicitacoes/:protocolo` | Detalhe de um pedido da própria conta, sem código |
+| POST | `/cidadao/solicitacoes/vincular` | Vincula pedido antigo usando protocolo + código de acesso |
+| POST | `/cidadao/solicitacoes/:protocolo/avaliacao` | Avaliação pela conta, sem código |
 
 O código de acesso tem o formato `ABCD-EFGH-JKLM` (12 caracteres, sem `I`, `O`, `0` ou `1`) e é
 gerado com `crypto.getRandomValues` no navegador. Ele **nunca** vai na URL, em payload público ou em
@@ -362,7 +372,13 @@ Contrato completo, limites, códigos de erro e regras: [doc/02-requisitos.md](do
   atendimento público, conforme explicado no aviso.
 - Rotas com dados pessoais respondem `Cache-Control: no-store` e nunca aceitam o identificador do
   cidadão vindo do cliente.
-- Senhas são persistidas com `scrypt` + sal; tokens de sessão são persistidos apenas como hash SHA-256.
+- Senhas são persistidas com `scrypt` + sal; tokens de sessão e de recuperação são persistidos apenas
+  como hash SHA-256. O link de recuperação vale 30 minutos e só pode ser usado uma vez; ao redefinir a
+  senha, todas as sessões da conta são revogadas.
+- O e-mail de recuperação é transacional e usa o SMTP configurado no painel. A resposta da API é
+  genérica, sem confirmar se o e-mail existe.
+- Execute **uma instância** do PM2. A fila de IA é persistida no MySQL e usa um lock global, evitando
+  trabalho duplicado entre processos, mas sessões e leituras ainda usam cache por processo.
 - O cookie de sessão é `HttpOnly`, `SameSite=Lax` e, em produção, deve usar `Secure` (`COOKIE_SECURE=true`).
 - O token legado `ADMIN_TOKEN` é apenas compatibilidade/emergência quando definido; o login normal não
   o utiliza.
@@ -418,6 +434,7 @@ build em um host HTTPS. O piloto valida o PWA no desktop via `localhost`.
 | `API_TARGET` | `frontend/.env` | `http://localhost:3000` | Destino do proxy `/api` |
 | `VITE_API_BASE_URL` | `frontend/.env` | `/api` | Base usada pelo cliente |
 | `PORT` | backend | `3000` | Porta da API |
+| `APP_URL` | backend | `http://localhost:5173` | URL pública usada nos links de recuperação de senha e e-mails |
 | `MOCK_LATENCY_MS` | backend | `200` | Latência simulada (`0` desliga) |
 | `CORS_ORIGINS` | backend | 5173 e 4173 | Origens permitidas (vírgula) |
 | `DATA_FILE` | backend | `backend/data/estado.json` | Arquivo JSON usado quando não há MySQL (e fonte da migração inicial) |
@@ -426,7 +443,7 @@ build em um host HTTPS. O piloto valida o PWA no desktop via `localhost`.
 | `TRIAGEM_IA_ATIVA` | backend | `false` | Ativa a aplicação automática do setor sugerido (a sugestão em si é configurada no painel) |
 | `TRIAGEM_FILA_AVISO` | backend | `2` | Total de classificações em andamento/aguardando que dispara o aviso ao cidadão |
 | `TRIAGEM_FILA_MAX` | backend | `20` | Máximo de classificações aguardando; acima disso o pedido segue com as regras |
-| `TRIAGEM_FILA_CONCORRENCIA` | backend | `1` | Quantas inferências rodam ao mesmo tempo |
+| `TRIAGEM_FILA_CONCORRENCIA` | backend | `1` | Quantas inferências rodam ao mesmo tempo (modo sem MySQL) |
 | `SESSION_DAYS` | backend | `30` | Duração do cookie/sessão de gestão quando “manter conectado” está marcado |
 | `CIDADAO_SESSION_DAYS` | backend | `30` | Duração do cookie/sessão do cidadão quando “manter conectado” está marcado |
 | `COOKIE_SECURE` | backend | `false` | Envia os cookies apenas por HTTPS quando `true` (produção) |
@@ -454,6 +471,8 @@ build em um host HTTPS. O piloto valida o PWA no desktop via `localhost`.
 | Sem opção de instalar no celular | HTTP na LAN não é contexto seguro | Use HTTPS local (`mkcert`) ou publique o build em host HTTPS |
 | Dados de teste indesejados | Estado persistido no MySQL ou no JSON local | Em produção, limpe o banco com backup; sem MySQL, pare a API e remova `backend/data/estado.json` (ou `DATA_FILE`) |
 | Catálogo “Memória” no painel | `DB_HOST`/`DB_USER`/`DB_NAME` ausentes | Configure o `app.env` e reinicie o PM2 |
+| Recuperação de senha não envia e-mail | SMTP sem host/remetente ou credenciais inválidas | Confira `Configurações → E-mail` e os logs da API; a resposta ao cidadão continua genérica |
+| Múltiplas instâncias do PM2 | Sessões e caches são por processo | Mantenha `instances: 1`; a fila de IA no MySQL já evita processamento duplicado |
 
 ## Documentação
 

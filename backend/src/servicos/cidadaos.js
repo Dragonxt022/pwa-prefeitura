@@ -14,6 +14,7 @@ import {
 } from '../utils/seguranca.js'
 import { normalizarEmail } from '../utils/texto.js'
 import * as repositorioCidadaos from '../repositorios/cidadaos.js'
+import * as repositorioRecuperacao from '../repositorios/recuperacao-senha.js'
 import * as repositorioSessoes from '../repositorios/sessoes-cidadao.js'
 
 const DIAS_SESSAO_LEMBRAR = Math.max(1, Number(process.env.CIDADAO_SESSION_DAYS) || 30)
@@ -135,6 +136,7 @@ export async function excluirConta(id, senha) {
   })
 
   await repositorioCidadaos.salvar(anonimizado)
+  await repositorioRecuperacao.removerDoCidadao(id)
   const sessoesRemovidas = await repositorioSessoes.removerDoCidadao(id)
   return { ok: true, sessoesRemovidas }
 }

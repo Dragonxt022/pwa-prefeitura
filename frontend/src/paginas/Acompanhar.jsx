@@ -22,7 +22,14 @@ import ErrorState from '../componentes/ErrorState'
 import { IlustracaoBusca } from '../componentes/Ilustracoes'
 import { SkeletonBloco } from '../componentes/Loading'
 import { Badge, StatusBadge } from '../componentes/StatusBadge'
-import { consultarSolicitacao } from '../servicos/api'
+import {
+  avaliarMinhaSolicitacao,
+  consultarMinhaSolicitacao,
+  consultarSolicitacao,
+  listarMinhasSolicitacoes,
+  vincularMinhaSolicitacao,
+} from '../servicos/api'
+import { useCidadao } from '../contexto/useCidadao'
 import { CODIGOS_ERRO } from '../utils/erros'
 import {
   listarConsultas,
@@ -54,6 +61,10 @@ export default function Acompanhar() {
   const [avisoCodigo, setAvisoCodigo] = useState('')
   const [recentes, setRecentes] = useState(listarConsultas)
   const [pedidos, setPedidos] = useState(listarPedidos)
+  const [minhas, setMinhas] = useState([])
+  const [carregandoMinhas, setCarregandoMinhas] = useState(false)
+  const [detalheConta, setDetalheConta] = useState(false)
+  const { cidadao } = useCidadao()
 
   const consultadoRef = useRef({ protocolo: '', codigo: '' })
   const codigoRef = useRef('')
@@ -87,12 +98,23 @@ export default function Acompanhar() {
       const dados = await consultarSolicitacao(limpo, codigoLimpo)
       setCodigoConsultado(codigoLimpo)
       setResultado(dados)
+      setDetalheConta(false)
       setRecentes(registrarConsulta(dados.protocolo))
       registrarPedido(dados, codigoLimpo)
       marcarPedidoVisto(dados.protocolo)
       setPedidos(listarPedidos())
       marcarNotificacoesLidas()
       window.dispatchEvent(new CustomEvent('prefeitura:notificacoes'))
+
+      // Aproveita o código válido para vincular o pedido antigo à conta.
+      if (cidadao) {
+        vincularMinhaSolicitacao({ protocolo: dados.protocolo, codigoAcesso: codigoLimpo })
+          .then(() => listarMinhasSolicitacoes())
+          .then((resposta) => setMinhas(resposta?.dados ?? []))
+          .catch(() => {
+            // O vínculo é opcional; a consulta por código continua valendo.
+          })
+      }
     } catch (falha) {
       setErro(falha)
       if (falha?.codigo === CODIGOS_ERRO.CODIGO_ACESSO_INVALIDO) {
@@ -102,7 +124,7 @@ export default function Acompanhar() {
     } finally {
       setCarregando(false)
     }
-  }, [])
+  }, [cidadao])
 
   useEffect(() => {
     if (!protocoloParam || consultadoRef.current.protocolo === protocoloParam) return
@@ -138,6 +160,53 @@ export default function Acompanhar() {
       window.removeEventListener('prefeitura:fila', atualizar)
     }
   }, [])
+
+  useEffect(() => {
+    if (!cidadao) return undefined
+    let ativo = true
+    // Carregamento assíncrono da lista da conta.
+    // oxlint-disable-next-line react/set-state-in-effect
+    setCarregandoMinhas(true)
+    listarMinhasSolicitacoes()
+      .then((resposta) => {
+        if (ativo) setMinhas(resposta?.dados ?? [])
+      })
+      .catch(() => {
+        if (ativo) setMinhas([])
+      })
+      .finally(() => {
+        if (ativo) setCarregandoMinhas(false)
+      })
+    return () => {
+      ativo = false
+    }
+  }, [cidadao])
+
+  async function abrirPedidoConta(protocolo) {
+    setAviso('')
+    setAvisoCodigo('')
+    setErro(null)
+    setResultado(null)
+    setCarregando(true)
+    try {
+      const dados = await consultarMinhaSolicitacao(protocolo)
+      setValor(protocolo)
+      setCodigo('')
+      setCodigoConsultado('')
+      codigoRef.current = ''
+      consultadoRef.current = { protocolo, codigo: '' }
+      setResultado(dados)
+      setDetalheConta(true)
+      setParams({ protocolo }, { replace: true })
+      setRecentes(registrarConsulta(dados.protocolo))
+      marcarNotificacoesLidas()
+      window.dispatchEvent(new CustomEvent('prefeitura:notificacoes'))
+    } catch (falha) {
+      setErro(falha)
+    } finally {
+      setCarregando(false)
+    }
+  }
 
   function abrirPedido(protocolo, codigoAcesso) {
     const salvo = listarPedidos().find((item) => item.protocolo === protocolo)
@@ -183,6 +252,7 @@ export default function Acompanhar() {
 
   function voltarParaPedidos() {
     setResultado(null)
+    setDetalheConta(false)
     setCodigoConsultado('')
     setErro(null)
     setValor('')
@@ -198,6 +268,10 @@ export default function Acompanhar() {
   const status = resultado ? infoStatus(resultado.status) : null
   const visual = resultado ? visualStatus(resultado.status) : null
   const prazo = resultado ? infoPrazo(resultado) : null
+  const protocolosDaConta = new Set(minhas.map((item) => item.protocolo))
+  const pedidosLocais = cidadao
+    ? pedidos.filter((item) => !protocolosDaConta.has(item.protocolo))
+    : pedidos
   const naoEncontrado = erro?.codigo === CODIGOS_ERRO.NAO_ENCONTRADO
   const acessoInvalido = erro?.codigo === CODIGOS_ERRO.CODIGO_ACESSO_INVALIDO
 
@@ -290,17 +364,64 @@ export default function Acompanhar() {
         </button>
       </form>
 
-      {!resultado && pedidos.length > 0 && (
+      {cidadao && !resultado && (
+        <section className="meus-pedidos" aria-labelledby="titulo-pedidos-conta">
+          <div className="secao__cabecalho">
+            <div>
+              <h2 id="titulo-pedidos-conta">Pedidos da minha conta</h2>
+              <p className="secao__apoio">Sincronizados com o servidor.</p>
+            </div>
+            <span className="secao__contagem">{minhas.length}</span>
+          </div>
+
+          {carregandoMinhas ? (
+            <SkeletonBloco linhas={2} />
+          ) : minhas.length === 0 ? (
+            <p className="texto-suave">
+              Nenhum pedido vinculado ainda. Pedidos feitos com a conta entram aqui automaticamente.
+            </p>
+          ) : (
+            <ul className="lista-pedidos">
+              {minhas.map((pedido) => (
+                <li key={pedido.protocolo}>
+                  <button
+                    type="button"
+                    className="pedido-card"
+                    onClick={() => abrirPedidoConta(pedido.protocolo)}
+                    aria-label={`Abrir ${pedido.protocolo}, ${pedido.tipoTitulo ?? 'serviço'}`}
+                  >
+                    <span className="pedido-card__topo">
+                      <code>{pedido.protocolo}</code>
+                      <StatusBadge status={pedido.status} />
+                    </span>
+                    <strong className="pedido-card__titulo">{pedido.tipoTitulo ?? 'Serviço'}</strong>
+                    <span className="pedido-card__endereco">{pedido.endereco}</span>
+                    <span className="pedido-card__rodape">
+                      <span>Atualizado em {formatarDataHora(pedido.atualizadoEm)}</span>
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <p className="campo__ajuda">
+            Para trazer um pedido antigo para a conta, consulte-o com protocolo e código de acesso.
+          </p>
+        </section>
+      )}
+
+      {!resultado && pedidosLocais.length > 0 && (
         <section className="meus-pedidos" aria-labelledby="titulo-meus-pedidos">
           <div className="secao__cabecalho">
             <div>
               <h2 id="titulo-meus-pedidos">Meus pedidos</h2>
               <p className="secao__apoio">Salvos neste aparelho.</p>
             </div>
-            <span className="secao__contagem">{pedidos.length}</span>
+            <span className="secao__contagem">{pedidosLocais.length}</span>
           </div>
           <ul className="lista-pedidos">
-            {pedidos.map((pedido) => {
+            {pedidosLocais.map((pedido) => {
               const atualizado = pedido.vistoEm !== pedido.atualizadoEm
               return (
                 <li key={pedido.protocolo}>
@@ -504,10 +625,23 @@ export default function Acompanhar() {
               protocolo={resultado.protocolo}
               codigoAcesso={codigoConsultado}
               avaliacao={resultado.avaliacao}
+              aoEnviarAvaliacao={detalheConta
+                ? (dados) => avaliarMinhaSolicitacao(resultado.protocolo, dados)
+                : undefined}
               aoAvaliar={(atualizada) => {
                 setResultado(atualizada)
-                registrarPedido(atualizada, codigoConsultado)
-                setPedidos(listarPedidos())
+                if (detalheConta) {
+                  setMinhas((atuais) =>
+                    atuais.map((item) =>
+                      item.protocolo === atualizada.protocolo
+                        ? { ...item, avaliacao: atualizada.avaliacao, status: atualizada.status }
+                        : item,
+                    ),
+                  )
+                } else {
+                  registrarPedido(atualizada, codigoConsultado)
+                  setPedidos(listarPedidos())
+                }
               }}
             />
           )}

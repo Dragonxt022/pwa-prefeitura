@@ -1,7 +1,7 @@
 import { LoaderCircle, LogIn, ShieldCheck, UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { useCidadao } from '../../contexto/useCidadao'
-import { ApiError } from '../../servicos/api'
+import { ApiError, solicitarRecuperacaoSenha } from '../../servicos/api'
 import PerfilFormulario from './PerfilFormulario'
 
 function mensagemDoErro(erro, padrao) {
@@ -19,6 +19,11 @@ export default function PerfilAcesso() {
   const [errosCadastro, setErrosCadastro] = useState({})
   const [erroCadastro, setErroCadastro] = useState(null)
   const [enviandoCadastro, setEnviandoCadastro] = useState(false)
+
+  const [emailRecuperacao, setEmailRecuperacao] = useState('')
+  const [erroRecuperacao, setErroRecuperacao] = useState('')
+  const [mensagemRecuperacao, setMensagemRecuperacao] = useState('')
+  const [enviandoRecuperacao, setEnviandoRecuperacao] = useState(false)
 
   async function submeterLogin(evento) {
     evento.preventDefault()
@@ -64,6 +69,32 @@ export default function PerfilAcesso() {
     }
   }
 
+  async function submeterRecuperacao(evento) {
+    evento.preventDefault()
+    setErroRecuperacao('')
+    setMensagemRecuperacao('')
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRecuperacao.trim())) {
+      setErroRecuperacao('Informe o e-mail da conta.')
+      return
+    }
+
+    setEnviandoRecuperacao(true)
+    try {
+      const resposta = await solicitarRecuperacaoSenha({ email: emailRecuperacao.trim() })
+      setMensagemRecuperacao(
+        resposta?.mensagem ||
+          'Se houver uma conta com este e-mail, enviaremos um link para criar uma nova senha.',
+      )
+    } catch (erro) {
+      setErroRecuperacao(
+        mensagemDoErro(erro, 'Não foi possível solicitar a recuperação agora. Tente novamente.'),
+      )
+    } finally {
+      setEnviandoRecuperacao(false)
+    }
+  }
+
   return (
     <section className="cartao perfil-acesso" aria-labelledby="titulo-conta">
       <div className="perfil-acesso__topo">
@@ -101,7 +132,63 @@ export default function PerfilAcesso() {
         </button>
       </div>
 
-      {modo === 'entrar' ? (
+      {modo === 'recuperar' ? (
+        <form className="perfil-login" onSubmit={submeterRecuperacao} noValidate>
+          <div>
+            <h3>Recuperar senha</h3>
+            <p className="texto-suave">
+              Informe o e-mail da conta. Se ele existir, enviaremos um link válido por 30 minutos.
+            </p>
+          </div>
+
+          {mensagemRecuperacao && (
+            <p className="alerta alerta--sucesso" role="status">{mensagemRecuperacao}</p>
+          )}
+          {erroRecuperacao && (
+            <p className="alerta alerta--erro" role="alert">{erroRecuperacao}</p>
+          )}
+
+          <div className={`campo${erroRecuperacao ? ' campo--erro' : ''}`}>
+            <label htmlFor="recuperar-email">E-mail da conta</label>
+            <input
+              id="recuperar-email"
+              type="email"
+              autoComplete="email"
+              maxLength={180}
+              value={emailRecuperacao}
+              onChange={(evento) => {
+                setEmailRecuperacao(evento.target.value)
+                setErroRecuperacao('')
+                setMensagemRecuperacao('')
+              }}
+            />
+          </div>
+
+          <div className="formulario__acoes">
+            <button
+              type="button"
+              className="botao botao--secundario"
+              onClick={() => {
+                setModo('entrar')
+                setErroRecuperacao('')
+                setMensagemRecuperacao('')
+              }}
+            >
+              Voltar
+            </button>
+            <button type="submit" className="botao botao--primario" disabled={enviandoRecuperacao}>
+              {enviandoRecuperacao ? (
+                <>
+                  <LoaderCircle className="girando" aria-hidden="true" />
+                  Enviando
+                </>
+              ) : (
+                'Enviar link'
+              )}
+            </button>
+          </div>
+        </form>
+      ) : modo === 'entrar' ? (
         <form className="perfil-login" onSubmit={submeterLogin} noValidate>
           {erroLogin && (
             <p className="alerta alerta--erro" role="alert">{erroLogin}</p>
@@ -158,6 +245,19 @@ export default function PerfilAcesso() {
                 Entrar
               </>
             )}
+          </button>
+
+          <button
+            type="button"
+            className="link-botao"
+            onClick={() => {
+              setModo('recuperar')
+              setEmailRecuperacao(login.email)
+              setErroRecuperacao('')
+              setMensagemRecuperacao('')
+            }}
+          >
+            Esqueci minha senha
           </button>
         </form>
       ) : (

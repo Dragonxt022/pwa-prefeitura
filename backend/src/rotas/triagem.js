@@ -8,9 +8,9 @@ const router = Router()
 router.get(
   '/fila',
   criarRateLimit({ janelaMs: 60_000, maximo: 120 }),
-  (_req, res) => {
+  async (_req, res) => {
     res.set('Cache-Control', 'no-store')
-    res.json({ dados: estadoFilaTriagem() })
+    res.json({ dados: await estadoFilaTriagem() })
   },
 )
 

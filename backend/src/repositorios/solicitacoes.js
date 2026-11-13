@@ -11,6 +11,7 @@ import { mysqlConfigurado } from './mysql.js'
 import {
   atualizarSolicitacao,
   inserirSolicitacao,
+  reservarSequencia,
 } from './mysql-dados.js'
 
 function clonar(item) {
@@ -19,6 +20,15 @@ function clonar(item) {
 
 export function listarTodas() {
   return estado.solicitacoes.map(clonar)
+}
+
+/** Atualiza o cache local depois de uma gravação feita diretamente no banco. */
+export function atualizarCache(solicitacao) {
+  if (!solicitacao?.protocolo) return
+  const indice = estado.solicitacoes.findIndex(
+    (item) => item.protocolo === solicitacao.protocolo,
+  )
+  if (indice >= 0) estado.solicitacoes[indice] = structuredClone(solicitacao)
 }
 
 export function buscar(protocolo) {
@@ -31,7 +41,12 @@ export function buscarPorClientId(clientId) {
   return clonar(estado.solicitacoes.find((item) => item.clientId === clientId))
 }
 
-export function proximaSequencia() {
+export async function proximaSequencia() {
+  if (mysqlConfigurado) {
+    const sequencia = await reservarSequencia()
+    estado.sequencia = Math.max(estado.sequencia, sequencia)
+    return sequencia
+  }
   estado.sequencia += 1
   return estado.sequencia
 }
@@ -42,7 +57,7 @@ export async function adicionar(solicitacao) {
   estado.solicitacoes.unshift(salva)
   try {
     if (mysqlConfigurado) {
-      await inserirSolicitacao(salva, estado.sequencia)
+      await inserirSolicitacao(salva)
     } else {
       persistir()
     }

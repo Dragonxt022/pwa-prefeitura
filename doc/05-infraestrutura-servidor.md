@@ -474,10 +474,17 @@ decisão explícita de exposição (não fazer isso sem revisar o firewall).
 
 ### Dados de cidadãos e LGPD
 
+A fila da IA fica em `dados_triagem_jobs` e é processada sob o lock
+`pwa_triagem_fila`, um job por vez em todo o servidor. A sequência de protocolos
+é reservada atomicamente em `dados_meta`. Mantenha uma única instância do PM2:
+a fila é compartilhada, mas sessões e cache de leituras ainda são por processo.
+
 As contas ficam em `dados_cidadaos` e as sessões em `dados_cidadaos_sessoes`. Senhas usam hash
 `scrypt`; sessões expiradas são removidas na inicialização. A exclusão de conta (feita pelo próprio
 cidadão em `/perfil`, com confirmação de senha) apaga nome, e-mail, telefone e endereço, anula o hash
-da senha, marca `removido_em` e revoga todas as sessões. Registros de solicitações já abertas
+da senha, marca `removido_em` e revoga todas as sessões. Tokens de recuperação ficam em
+`dados_recuperacao_senha`, apenas como hash, com validade de 30 minutos e uso único. O envio do link
+usa o SMTP de Configurações → E-mail e `APP_URL`. Registros de solicitações já abertas
 permanecem para a finalidade do atendimento público, conforme o Aviso de Privacidade em
 `/privacidade`.
 

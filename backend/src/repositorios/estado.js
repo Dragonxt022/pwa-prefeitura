@@ -60,6 +60,7 @@ export const estado = {
   sessoes: [],
   cidadaos: [],
   sessoesCidadao: [],
+  recuperacoesSenha: [],
   configuracoes: criarConfiguracoesPadrao(),
   sequencia: 3,
 }
@@ -79,6 +80,7 @@ function serializar() {
     sessoes: estado.sessoes,
     cidadaos: estado.cidadaos,
     sessoesCidadao: estado.sessoesCidadao,
+    recuperacoesSenha: estado.recuperacoesSenha,
     configuracoes: estado.configuracoes,
   }, null, 2)
 }
@@ -117,6 +119,9 @@ function validarEstado(salvo) {
   }
   if (salvo.sessoesCidadao !== undefined && !Array.isArray(salvo.sessoesCidadao)) {
     throw new Error('o campo "sessoesCidadao" deve ser uma lista')
+  }
+  if (salvo.recuperacoesSenha !== undefined && !Array.isArray(salvo.recuperacoesSenha)) {
+    throw new Error('o campo "recuperacoesSenha" deve ser uma lista')
   }
   if (
     salvo.configuracoes !== undefined &&
@@ -277,6 +282,7 @@ function montarDados(salvo) {
   let sessoesCarregadas = []
   let cidadaosCarregados = []
   let sessoesCidadaoCarregadas = []
+  let recuperacoesCarregadas = []
   let configuracoesCarregadas = null
 
   if (salvo) {
@@ -310,6 +316,12 @@ function montarDados(salvo) {
       }
       sessoesCidadaoCarregadas = salvo.sessoesCidadao
     }
+    if (salvo.recuperacoesSenha !== undefined) {
+      if (!Array.isArray(salvo.recuperacoesSenha)) {
+        throw new Error('[dados] o campo "recuperacoesSenha" deve ser uma lista.')
+      }
+      recuperacoesCarregadas = salvo.recuperacoesSenha
+    }
     if (salvo.configuracoes !== undefined) {
       if (!salvo.configuracoes || typeof salvo.configuracoes !== 'object' ||
         Array.isArray(salvo.configuracoes)) {
@@ -340,12 +352,18 @@ function montarDados(salvo) {
     )
   })
 
+  const recuperacoesSenha = recuperacoesCarregadas.filter((registro) => {
+    if (!registro || typeof registro !== 'object' || registro.usadoEm) return false
+    return new Date(registro.expiraEm).getTime() > agora
+  })
+
   return {
     solicitacoes,
     usuarios,
     sessoes,
     cidadaos,
     sessoesCidadao,
+    recuperacoesSenha,
     configuracoes: normalizarConfiguracoes(configuracoesCarregadas ?? {}),
     sequencia: Math.max(sequenciaSalva, calcularSequencia(solicitacoes)),
   }
@@ -368,6 +386,11 @@ function aplicarDados(dados) {
   estado.sessoesCidadao.length = 0
   estado.sessoesCidadao.push(
     ...(dados.sessoesCidadao ?? []).map((item) => structuredClone(item)),
+  )
+
+  estado.recuperacoesSenha.length = 0
+  estado.recuperacoesSenha.push(
+    ...(dados.recuperacoesSenha ?? []).map((item) => structuredClone(item)),
   )
 
   Object.assign(
@@ -414,6 +437,7 @@ export async function inicializarDados() {
       sessoes: estado.sessoes,
       cidadaos: estado.cidadaos,
       sessoesCidadao: estado.sessoesCidadao,
+      recuperacoesSenha: estado.recuperacoesSenha,
       configuracoes: estado.configuracoes,
       sequencia: estado.sequencia,
     }

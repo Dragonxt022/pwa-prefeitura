@@ -6,8 +6,17 @@
  * cidadão autenticado pelo cookie.
  */
 import { cidadaoPublico } from '../apresentadores/cidadaos.js'
+import { apresentarSolicitacaoPublica } from '../apresentadores/solicitacoes.js'
 import { VERSAO_PRIVACIDADE } from '../dominio/cidadaos.js'
-import { credenciaisInvalidas, validacao } from '../utils/erros.js'
+import {
+  codigoAcessoInvalido,
+  credenciaisInvalidas,
+  jaAvaliada,
+  naoEncontrado,
+  validacao,
+} from '../utils/erros.js'
+import { texto } from '../utils/texto.js'
+import { validarAvaliacao } from '../validadores/solicitacoes.js'
 import { booleano } from '../utils/texto.js'
 import {
   definirCookieCidadao,
@@ -22,11 +31,23 @@ import {
   revogarSessao,
 } from '../servicos/cidadaos.js'
 import {
+  avaliarSolicitacao,
+  buscarSolicitacaoDoCidadao,
+  listarSolicitacoesDoCidadao,
+  vincularSolicitacao,
+} from '../servicos/solicitacoes.js'
+import {
   validarAtualizacaoPerfil,
   validarCadastro,
   validarExclusaoConta,
   validarLogin,
+  validarRedefinicaoSenha,
+  validarSolicitacaoRecuperacao,
 } from '../validadores/cidadaos.js'
+import {
+  redefinirSenha as redefinirSenhaServico,
+  solicitarRecuperacao,
+} from '../servicos/recuperacao-senha.js'
 
 export async function cadastrar(req, res) {
   const dados = validarCadastro(req.body)
@@ -106,6 +127,74 @@ export function exportarDados(req, res) {
   res.set('Content-Disposition', 'attachment; filename="meus-dados-prefeitura.json"')
   res.set('Content-Type', 'application/json; charset=utf-8')
   res.send(JSON.stringify(dados, null, 2))
+}
+
+export function listarSolicitacoes(req, res) {
+  const dados = listarSolicitacoesDoCidadao(req.cidadao.id)
+    .map(apresentarSolicitacaoPublica)
+  res.json({ dados, total: dados.length })
+}
+
+export function detalharSolicitacao(req, res) {
+  const solicitacao = buscarSolicitacaoDoCidadao(req.cidadao.id, req.params.protocolo)
+  if (!solicitacao) throw naoEncontrado('Solicitação não encontrada.')
+  res.json({ dados: apresentarSolicitacaoPublica(solicitacao) })
+}
+
+export async function vincularPedido(req, res) {
+  const protocolo = texto(req.body?.protocolo).toUpperCase()
+  const codigoAcesso = texto(req.body?.codigoAcesso)
+  const resultado = await vincularSolicitacao(req.cidadao.id, protocolo, codigoAcesso)
+  if (resultado.erro) throw codigoAcessoInvalido()
+  res.json({ dados: apresentarSolicitacaoPublica(resultado.solicitacao) })
+}
+
+export async function avaliarPedido(req, res) {
+  const solicitacao = buscarSolicitacaoDoCidadao(req.cidadao.id, req.params.protocolo)
+  if (!solicitacao) throw naoEncontrado('Solicitação não encontrada.')
+  if (solicitacao.status !== 'concluida') {
+    throw validacao({
+      avaliacao: 'A avaliação fica disponível após a conclusão do atendimento.',
+    })
+  }
+  if (solicitacao.avaliacao) throw jaAvaliada()
+
+  const dados = validarAvaliacao(req.body)
+  const atualizada = await avaliarSolicitacao(solicitacao.protocolo, dados)
+  return res.status(201).json({ dados: apresentarSolicitacaoPublica(atualizada) })
+}
+
+/**
+ * Sempre devolve a mesma resposta, exista ou não a conta, para não permitir
+ * descobrir e-mails cadastrados.
+ */
+export async function solicitarSenha(req, res) {
+  const { email } = validarSolicitacaoRecuperacao(req.body)
+  await solicitarRecuperacao(email)
+  return res.json({
+    dados: {
+      ok: true,
+      mensagem:
+        'Se houver uma conta com este e-mail, enviaremos um link para criar uma nova senha.',
+    },
+  })
+}
+
+export async function redefinirSenha(req, res) {
+  const { token, novaSenha } = validarRedefinicaoSenha(req.body)
+  const resultado = await redefinirSenhaServico(token, novaSenha)
+  if (resultado.erro) {
+    throw validacao(
+      {
+        token:
+          resultado.erro === 'token_expirado'
+            ? 'Este link expirou. Solicite um novo.'
+            : 'Este link é inválido ou já foi usado. Solicite um novo.',
+      },
+      'Não foi possível redefinir a senha.',
+    )
+  }
+  return res.json({ dados: { ok: true } })
 }
 
 export async function excluir(req, res) {

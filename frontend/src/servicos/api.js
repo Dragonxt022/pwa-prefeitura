@@ -113,6 +113,32 @@ export const logoutCidadao = () =>
 export const atualizarPerfilCidadao = (dados) =>
   requisicao('/cidadao/perfil', { metodo: 'PUT', corpo: dados, timeout: 15000 })
 
+export const solicitarRecuperacaoSenha = (dados) =>
+  requisicao('/cidadao/senha/solicitar', { metodo: 'POST', corpo: dados, timeout: 15000 })
+
+export const redefinirSenha = (dados) =>
+  requisicao('/cidadao/senha/redefinir', { metodo: 'POST', corpo: dados, timeout: 15000 })
+
+export const listarMinhasSolicitacoes = () =>
+  requisicao('/cidadao/solicitacoes', { timeout: 12000, completo: true })
+
+export const consultarMinhaSolicitacao = (protocolo) =>
+  requisicao(`/cidadao/solicitacoes/${encodeURIComponent(protocolo)}`, { timeout: 12000 })
+
+export const vincularMinhaSolicitacao = (dados) =>
+  requisicao('/cidadao/solicitacoes/vincular', {
+    metodo: 'POST',
+    corpo: dados,
+    timeout: 12000,
+  })
+
+export const avaliarMinhaSolicitacao = (protocolo, dados) =>
+  requisicao(`/cidadao/solicitacoes/${encodeURIComponent(protocolo)}/avaliacao`, {
+    metodo: 'POST',
+    corpo: dados,
+    timeout: 12000,
+  })
+
 export const excluirContaCidadao = (dados) =>
   requisicao('/cidadao/conta', { metodo: 'DELETE', corpo: dados, timeout: 15000 })
 

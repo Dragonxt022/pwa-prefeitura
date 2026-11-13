@@ -1862,6 +1862,24 @@ fieldset.campo {
   gap: 16px;
 }
 
+.link-botao {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--azul-700);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.link-botao:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--azul-600) 55%, transparent);
+  outline-offset: 2px;
+}
+
 .perfil-formulario__grade {
   display: grid;
   grid-template-columns: 1fr;

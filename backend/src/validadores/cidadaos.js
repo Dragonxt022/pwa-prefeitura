@@ -174,6 +174,26 @@ export function validarAtualizacaoPerfil(body = {}) {
   return dados
 }
 
+export function validarSolicitacaoRecuperacao(body = {}) {
+  const campos = {}
+  const email = lerEmail(body.email, campos)
+  if (Object.keys(campos).length > 0) {
+    throw validacao(campos, 'Informe o e-mail da conta.')
+  }
+  return { email }
+}
+
+export function validarRedefinicaoSenha(body = {}) {
+  const campos = {}
+  const token = String(body.token ?? '').trim()
+  if (token.length < 20) campos.token = 'Link de recuperação inválido.'
+  const novaSenha = lerSenha(body.novaSenha, campos)
+  if (Object.keys(campos).length > 0) {
+    throw validacao(campos, 'Revise os dados para criar a nova senha.')
+  }
+  return { token, novaSenha }
+}
+
 export function validarExclusaoConta(body = {}) {
   const senha = String(body.senha ?? '')
   if (!senha) {

@@ -31,6 +31,7 @@ const TABELAS = [
     localizacao JSON NULL,
     avaliacao JSON NULL,
     client_id VARCHAR(80) NULL,
+    cidadao_id VARCHAR(80) NULL,
     setor_id VARCHAR(64) NULL,
     transferencias JSON NULL,
     triagem JSON NULL,
@@ -38,6 +39,7 @@ const TABELAS = [
     historico JSON NOT NULL,
     KEY idx_dados_solicitacoes_criado (criado_em),
     KEY idx_dados_solicitacoes_setor (setor_id),
+    KEY idx_dados_solicitacoes_cidadao (cidadao_id),
     KEY idx_dados_solicitacoes_status (status),
     UNIQUE KEY uq_dados_solicitacoes_client (client_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
@@ -93,6 +95,29 @@ const TABELAS = [
     KEY idx_dados_cidadaos_sessoes_expira (expira_em),
     KEY idx_dados_cidadaos_sessoes_cidadao (cidadao_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  `CREATE TABLE IF NOT EXISTS dados_recuperacao_senha (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    cidadao_id VARCHAR(80) NOT NULL,
+    token_hash CHAR(64) NOT NULL,
+    expira_em DATETIME(3) NOT NULL,
+    usado_em DATETIME(3) NULL,
+    criado_em DATETIME(3) NOT NULL,
+    UNIQUE KEY uq_dados_recuperacao_token (token_hash),
+    KEY idx_dados_recuperacao_cidadao (cidadao_id),
+    KEY idx_dados_recuperacao_expira (expira_em)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  `CREATE TABLE IF NOT EXISTS dados_triagem_jobs (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    protocolo VARCHAR(32) NOT NULL,
+    status VARCHAR(16) NOT NULL DEFAULT 'pendente',
+    tentativas INT UNSIGNED NOT NULL DEFAULT 0,
+    erro VARCHAR(300) NULL,
+    criado_em DATETIME(3) NOT NULL,
+    iniciado_em DATETIME(3) NULL,
+    concluido_em DATETIME(3) NULL,
+    UNIQUE KEY uq_dados_triagem_jobs_protocolo (protocolo),
+    KEY idx_dados_triagem_jobs_status (status, id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   `CREATE TABLE IF NOT EXISTS dados_configuracoes (
     id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
     dados JSON NOT NULL,
@@ -147,6 +172,7 @@ function mapearSolicitacao(linha) {
     localizacao: lerJson(linha.localizacao),
     avaliacao: lerJson(linha.avaliacao),
     clientId: linha.client_id,
+    cidadaoId: linha.cidadao_id ?? null,
     setorId: linha.setor_id,
     transferencias: lerJson(linha.transferencias, []),
     triagem: lerJson(linha.triagem),
@@ -191,6 +217,17 @@ function mapearCidadao(linha) {
   }
 }
 
+function mapearRecuperacaoSenha(linha) {
+  return {
+    id: String(linha.id),
+    cidadaoId: linha.cidadao_id,
+    tokenHash: linha.token_hash,
+    expiraEm: paraIso(linha.expira_em),
+    usadoEm: paraIso(linha.usado_em),
+    criadoEm: paraIso(linha.criado_em),
+  }
+}
+
 function mapearSessaoCidadao(linha) {
   return {
     tokenHash: linha.token_hash,
@@ -227,11 +264,33 @@ async function emTransacao(operacao) {
   }
 }
 
+/**
+ * Evolução de schema: o `CREATE TABLE IF NOT EXISTS` não adiciona colunas a
+ * bancos já existentes. Cada ajuste é idempotente e verificado antes.
+ */
+async function garantirColunas() {
+  const pool = obterPool()
+  const [colunas] = await pool.query(
+    `SELECT column_name FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'dados_solicitacoes'
+        AND column_name = 'cidadao_id'`,
+  )
+  if (colunas.length === 0) {
+    await pool.query(
+      `ALTER TABLE dados_solicitacoes
+         ADD COLUMN cidadao_id VARCHAR(80) NULL AFTER client_id,
+         ADD KEY idx_dados_solicitacoes_cidadao (cidadao_id)`,
+    )
+  }
+}
+
 export async function inicializarTabelas() {
   const pool = obterPool()
   for (const sql of TABELAS) {
     await pool.query(sql)
   }
+  await garantirColunas()
 }
 
 /** Lê todo o estado persistido. `vazio` indica banco ainda sem dados. */
@@ -239,6 +298,7 @@ export async function carregarTudo() {
   const pool = obterPool()
   await pool.query('DELETE FROM dados_sessoes WHERE expira_em <= UTC_TIMESTAMP(3)')
   await pool.query('DELETE FROM dados_cidadaos_sessoes WHERE expira_em <= UTC_TIMESTAMP(3)')
+  await pool.query('DELETE FROM dados_recuperacao_senha WHERE expira_em <= UTC_TIMESTAMP(3)')
 
   const [solicitacoes] = await pool.query(
     'SELECT * FROM dados_solicitacoes ORDER BY criado_em DESC',
@@ -252,6 +312,9 @@ export async function carregarTudo() {
   const [sessoesCidadao] = await pool.query(
     'SELECT * FROM dados_cidadaos_sessoes WHERE expira_em > UTC_TIMESTAMP(3)',
   )
+  const [recuperacoes] = await pool.query(
+    'SELECT * FROM dados_recuperacao_senha WHERE usado_em IS NULL',
+  )
   const [meta] = await pool.query("SELECT valor FROM dados_meta WHERE chave = 'sequencia' LIMIT 1")
 
   return {
@@ -261,6 +324,7 @@ export async function carregarTudo() {
     sessoes: sessoes.map(mapearSessao),
     cidadaos: cidadaos.map(mapearCidadao),
     sessoesCidadao: sessoesCidadao.map(mapearSessaoCidadao),
+    recuperacoesSenha: recuperacoes.map(mapearRecuperacaoSenha),
     configuracoes: configuracoes[0]
       ? lerJson(configuracoes[0].dados, null)
       : null,
@@ -271,8 +335,9 @@ export async function carregarTudo() {
 const INSERT_SOLICITACAO = `INSERT INTO dados_solicitacoes
   (protocolo, tipo, tipo_titulo, descricao, endereco, contato, status, criado_em,
    atualizado_em, concluido_em, prazo_dias, sla_em, prioridade, foto, localizacao,
-   avaliacao, client_id, setor_id, transferencias, triagem, codigo_acesso_hash, historico)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+   avaliacao, client_id, cidadao_id, setor_id, transferencias, triagem,
+   codigo_acesso_hash, historico)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 function valoresSolicitacao(solicitacao) {
   return [
@@ -293,6 +358,7 @@ function valoresSolicitacao(solicitacao) {
     paraJson(solicitacao.localizacao),
     paraJson(solicitacao.avaliacao),
     solicitacao.clientId ?? null,
+    solicitacao.cidadaoId ?? null,
     solicitacao.setorId ?? null,
     paraJson(solicitacao.transferencias ?? []),
     paraJson(solicitacao.triagem),
@@ -309,10 +375,35 @@ async function gravarSequencia(conexao, sequencia) {
   )
 }
 
-export async function inserirSolicitacao(solicitacao, sequencia) {
-  await emTransacao(async (conexao) => {
-    await conexao.execute(INSERT_SOLICITACAO, valoresSolicitacao(solicitacao))
-    await gravarSequencia(conexao, sequencia)
+export async function buscarSolicitacao(protocolo) {
+  const pool = obterPool()
+  const [linhas] = await pool.execute(
+    'SELECT * FROM dados_solicitacoes WHERE protocolo = ? LIMIT 1',
+    [String(protocolo ?? '').toUpperCase().trim()],
+  )
+  return linhas[0] ? mapearSolicitacao(linhas[0]) : null
+}
+
+export async function inserirSolicitacao(solicitacao) {
+  const pool = obterPool()
+  await pool.execute(INSERT_SOLICITACAO, valoresSolicitacao(solicitacao))
+}
+
+/** Reserva atômica da sequência de protocolos, segura entre processos. */
+export async function reservarSequencia() {
+  return emTransacao(async (conexao) => {
+    await conexao.execute(
+      "INSERT IGNORE INTO dados_meta (chave, valor) VALUES ('sequencia', '0')",
+    )
+    const [linhas] = await conexao.query(
+      "SELECT valor FROM dados_meta WHERE chave = 'sequencia' FOR UPDATE",
+    )
+    const proxima = (Number(linhas[0]?.valor) || 0) + 1
+    await conexao.execute(
+      "UPDATE dados_meta SET valor = ? WHERE chave = 'sequencia'",
+      [String(proxima)],
+    )
+    return proxima
   })
 }
 
@@ -323,7 +414,8 @@ export async function atualizarSolicitacao(solicitacao) {
        tipo = ?, tipo_titulo = ?, descricao = ?, endereco = ?, contato = ?, status = ?,
        criado_em = ?, atualizado_em = ?, concluido_em = ?, prazo_dias = ?, sla_em = ?,
        prioridade = ?, foto = ?, localizacao = ?, avaliacao = ?, client_id = ?,
-       setor_id = ?, transferencias = ?, triagem = ?, codigo_acesso_hash = ?, historico = ?
+       cidadao_id = ?, setor_id = ?, transferencias = ?, triagem = ?,
+       codigo_acesso_hash = ?, historico = ?
      WHERE protocolo = ?`,
     [...valoresSolicitacao(solicitacao).slice(1), solicitacao.protocolo],
   )
@@ -488,6 +580,47 @@ export async function removerSessaoCidadao(tokenHash) {
 export async function removerSessoesDoCidadao(cidadaoId) {
   const pool = obterPool()
   await pool.execute('DELETE FROM dados_cidadaos_sessoes WHERE cidadao_id = ?', [cidadaoId])
+}
+
+export async function inserirRecuperacaoSenha(registro) {
+  const pool = obterPool()
+  const [resultado] = await pool.execute(
+    `INSERT INTO dados_recuperacao_senha
+      (cidadao_id, token_hash, expira_em, usado_em, criado_em)
+     VALUES (?, ?, ?, NULL, ?)`,
+    [
+      registro.cidadaoId,
+      registro.tokenHash,
+      paraData(registro.expiraEm),
+      paraData(registro.criadoEm),
+    ],
+  )
+  return String(resultado.insertId)
+}
+
+export async function marcarRecuperacaoUsada(id, usadoEm) {
+  const pool = obterPool()
+  await pool.execute(
+    'UPDATE dados_recuperacao_senha SET usado_em = ? WHERE id = ?',
+    [paraData(usadoEm), id],
+  )
+}
+
+export async function removerRecuperacoesDoCidadao(cidadaoId) {
+  const pool = obterPool()
+  await pool.execute(
+    'DELETE FROM dados_recuperacao_senha WHERE cidadao_id = ?',
+    [cidadaoId],
+  )
+}
+
+/** Lê a configuração diretamente do banco (usado pela fila entre instâncias). */
+export async function carregarConfiguracoes() {
+  const pool = obterPool()
+  const [linhas] = await pool.query(
+    'SELECT dados FROM dados_configuracoes WHERE id = 1 LIMIT 1',
+  )
+  return linhas[0] ? lerJson(linhas[0].dados, null) : null
 }
 
 export async function salvarConfiguracoes(configuracoes) {

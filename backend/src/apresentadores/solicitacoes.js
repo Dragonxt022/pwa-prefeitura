@@ -21,7 +21,11 @@ export function apresentarSolicitacaoGestao(solicitacao) {
     deSetor: setorPublico(transferencia.deSetorId),
     paraSetor: setorPublico(transferencia.paraSetorId),
   }))
-  const { codigoAcessoHash: _codigoAcessoHash, ...interna } = solicitacao
+  const {
+    codigoAcessoHash: _codigoAcessoHash,
+    cidadaoId: _cidadaoId,
+    ...interna
+  } = solicitacao
   return {
     ...interna,
     protegida: Boolean(solicitacao.codigoAcessoHash),
@@ -45,6 +49,7 @@ export function apresentarSolicitacaoPublica(solicitacao) {
     triagem: _triagem,
     transferencias: _transferencias,
     codigoAcessoHash: _codigoAcessoHash,
+    cidadaoId: _cidadaoId,
     ...publica
   } = solicitacao
   return {
