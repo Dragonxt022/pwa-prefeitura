@@ -5,6 +5,7 @@ import {
   logout,
   obterSessao,
 } from '../controladores/gestao/autenticacao.js'
+import { listarSecretarias } from '../controladores/gestao/catalogo.js'
 import { exigirSessao } from '../middlewares/autenticacao.js'
 import { criarRateLimit } from '../middlewares/rate-limit.js'
 import configuracoesRouter from './gestao/configuracoes.js'
@@ -20,6 +21,7 @@ router.use(exigirSessao)
 
 router.get('/sessao', obterSessao)
 router.get('/setores', listarSetores)
+router.get('/secretarias', listarSecretarias)
 
 router.use('/configuracoes', configuracoesRouter)
 router.use('/usuarios', usuariosRouter)

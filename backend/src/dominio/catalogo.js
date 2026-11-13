@@ -23,15 +23,106 @@ export const PAPEIS = {
 }
 
 /**
- * Mapa demonstrativo. A lista oficial de secretarias ainda não foi informada;
- * ajuste os nomes/serviços aqui quando o município confirmar a estrutura. A
- * triagem central nunca deixa de ver tudo.
+ * Secretarias oficiais informadas pelo município em 13/11/2026.
+ *
+ * Esta é a semente do cadastro administrativo. O `id` é curto e estável; o
+ * `slug` preserva o identificador externo usado no cadastro do município.
+ * A criação/edição pelo painel será adicionada em uma etapa própria.
+ */
+export const secretarias = [
+  {
+    id: 'comunicacao',
+    sigla: 'GABINETE',
+    nome: 'Comunicação (Gabinete)',
+    slug: 'comunicacao-gabinete',
+    ativo: true,
+  },
+  {
+    id: 'testes',
+    sigla: 'TESTES',
+    nome: 'Secretaria - Testes',
+    slug: 'secretaria-testes',
+    ativo: true,
+    teste: true,
+  },
+  {
+    id: 'sema',
+    sigla: 'SEMA',
+    nome: 'Secretaria Municipal de Meio Ambiente',
+    slug: 'sema-secretaria-municipal-de-meio-ambiente',
+    ativo: true,
+  },
+  {
+    id: 'semagri',
+    sigla: 'SEMAGRI',
+    nome: 'Secretaria Municipal de Agricultura',
+    slug: 'semagri-secretaria-municipal-de-agricultura',
+    ativo: true,
+  },
+  {
+    id: 'semas',
+    sigla: 'SEMAS',
+    nome: 'Secretaria do Município de Assistência Social',
+    slug: 'semas-secretaria-do-municipio-de-assist-social',
+    ativo: true,
+  },
+  {
+    id: 'semecd',
+    sigla: 'SEMECD',
+    nome: 'Secretaria do Município de Educação',
+    slug: 'semecd-secretaria-do-municipio-de-educacao',
+    ativo: true,
+  },
+  {
+    id: 'semel',
+    sigla: 'SEMEL',
+    nome: 'Secretaria Municipal de Esportes',
+    slug: 'semel-secretaria-municipal-de-esportes',
+    ativo: true,
+  },
+  {
+    id: 'semiu',
+    sigla: 'SEMIU',
+    nome: 'Secretaria Municipal de Infraestrutura e Urbanismo',
+    slug: 'semiu-secretaria-municipal-de-infraestrutura-e-urbanismo',
+    ativo: true,
+  },
+  {
+    id: 'semosp',
+    sigla: 'SEMOSP',
+    nome: 'Secretaria Municipal de Obras',
+    slug: 'semosp-secretaria-municipal-de-obras',
+    ativo: true,
+  },
+  {
+    id: 'semsau',
+    sigla: 'SEMSAU',
+    nome: 'Secretaria Municipal de Saúde',
+    slug: 'semsau-secretaria-municipal-de-saude',
+    ativo: true,
+  },
+  {
+    id: 'seplan',
+    sigla: 'SEPLAN',
+    nome: 'Secretaria de Planejamento',
+    slug: 'seplan-secretaria-de-planejamento',
+    ativo: true,
+  },
+]
+
+/**
+ * Setores operacionais do piloto.
+ *
+ * `secretariaId` liga o setor à secretaria oficial quando o vínculo já está
+ * definido. Setores com `null` ainda dependem de confirmação do município.
+ * A triagem central nunca deixa de ver tudo.
  */
 export const setores = [
   {
     id: 'triagem',
     nome: 'Triagem e Protocolo',
     secretaria: 'Comunicação e Atendimento',
+    secretariaId: 'comunicacao',
     descricao: 'Recebe, classifica e encaminha as solicitações para os setores.',
     servicos: [],
     central: true,
@@ -41,6 +132,7 @@ export const setores = [
     id: 'infraestrutura',
     nome: 'Obras e Infraestrutura',
     secretaria: 'Secretaria de Obras',
+    secretariaId: 'semosp',
     descricao: 'Iluminação pública e pavimentação.',
     servicos: ['iluminacao', 'pavimentacao'],
     central: false,
@@ -50,6 +142,7 @@ export const setores = [
     id: 'zeladoria',
     nome: 'Zeladoria e Serviços Urbanos',
     secretaria: 'Secretaria de Serviços Urbanos',
+    secretariaId: null,
     descricao: 'Limpeza, coleta e conservação da cidade.',
     servicos: ['limpeza', 'zeladoria'],
     central: false,
@@ -59,6 +152,7 @@ export const setores = [
     id: 'meio_ambiente',
     nome: 'Meio Ambiente',
     secretaria: 'Secretaria de Meio Ambiente',
+    secretariaId: 'sema',
     descricao: 'Poda, arborização e proteção ambiental.',
     servicos: ['poda', 'meio_ambiente'],
     central: false,
@@ -68,6 +162,7 @@ export const setores = [
     id: 'fiscalizacao',
     nome: 'Fiscalização e Posturas',
     secretaria: 'Secretaria de Fiscalização',
+    secretariaId: null,
     descricao: 'Terrenos, construções e posturas municipais.',
     servicos: ['fiscalizacao'],
     central: false,
@@ -77,6 +172,7 @@ export const setores = [
     id: 'mobilidade',
     nome: 'Mobilidade e Trânsito',
     secretaria: 'Secretaria de Mobilidade',
+    secretariaId: null,
     descricao: 'Sinalização, trânsito e acessibilidade viária.',
     servicos: ['sinalizacao'],
     central: false,
@@ -86,6 +182,7 @@ export const setores = [
     id: 'ouvidoria',
     nome: 'Ouvidoria',
     secretaria: 'Controladoria / Ouvidoria',
+    secretariaId: null,
     descricao: 'Elogios, reclamações, sugestões e denúncias.',
     servicos: ['ouvidoria'],
     central: false,
@@ -247,6 +344,21 @@ export function listarSetores({ incluirInativos = false } = {}) {
     .map((setor) => ({ ...setor, servicos: [...setor.servicos] }))
 }
 
+export function listarSecretarias({ incluirInativos = false } = {}) {
+  return secretarias
+    .filter((secretaria) => incluirInativos || secretaria.ativo)
+    .map((secretaria) => ({ ...secretaria }))
+}
+
+export function buscarSecretaria(id) {
+  return secretarias.find((secretaria) => secretaria.id === id) ?? null
+}
+
+export function secretariaDoSetor(setorId) {
+  const setor = buscarSetor(setorId)
+  return setor?.secretariaId ? buscarSecretaria(setor.secretariaId) : null
+}
+
 export function buscarSetor(id) {
   return setores.find((setor) => setor.id === id) ?? null
 }
@@ -258,6 +370,7 @@ export function setorPublico(id) {
     id: setor.id,
     nome: setor.nome,
     secretaria: setor.secretaria,
+    secretariaId: setor.secretariaId ?? null,
     central: Boolean(setor.central),
   }
 }

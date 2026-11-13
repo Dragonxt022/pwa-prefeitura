@@ -607,7 +607,7 @@ Exemplo 422:
 
 - Push em segundo plano e notificações com o app fechado.
 - Autenticação/verificação de titularidade além do código de acesso (hoje protocolo + código são a chave).
-- Lista oficial de secretarias/setores e serviços atendidos; o mapa atual é demonstrativo.
+- Secretarias oficiais cadastradas em 13/11/2026 (11 registros); o vínculo entre setor, secretaria e serviços atendidos ainda depende de confirmação do município.
 - Integração de um modelo local/LLM real na mini IA; o contrato e o fallback por regras já existem.
 - Banco de dados transacional, concorrência e migrações; o JSON atende apenas ao piloto.
 - Validação de formato de contato (telefone/e-mail) no servidor.

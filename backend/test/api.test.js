@@ -210,6 +210,12 @@ test('contrato público exige código de acesso e não expõe segredos', async (
   })
 })
 
+test('consulta administrativa de secretarias exige sessão', async () => {
+  const resposta = await chamar('/gestao/secretarias')
+  assert.equal(resposta.status, 401)
+  assert.equal(resposta.payload.erro.codigo, 'nao_autorizado')
+})
+
 test.after(async () => {
   await new Promise((resolver) => servidor.close(resolver))
   rmSync(diretorio, { recursive: true, force: true })
