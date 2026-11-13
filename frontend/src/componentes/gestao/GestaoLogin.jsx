@@ -98,9 +98,8 @@ export default function GestaoLogin({
           </button>
 
           <p className="campo__ajuda gestao-login__demo" id="dica-login">
-            Demonstração: <code>admin@prefeitura.demo</code> ou{' '}
-            <code>triagem@prefeitura.demo</code>; senha <code>prefeitura-demo</code>. Os setores
-            usam endereços como <code>obras@prefeitura.demo</code>.
+            Demonstração: contas <code>admin@prefeitura.demo</code> e{' '}
+            <code>triagem@prefeitura.demo</code>. A senha é fornecida pela equipe responsável.
           </p>
         </form>
 
