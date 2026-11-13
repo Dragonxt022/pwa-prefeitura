@@ -26,6 +26,9 @@ export function criarApp({ latenciaMs = Number(process.env.MOCK_LATENCY_MS ?? 20
 
   app.disable('x-powered-by')
   app.set('json spaces', 2)
+  // Em produção a API fica atrás do nginx (um salto). Confiar apenas nesse
+  // proxy faz o rate limit usar o IP real do cliente enviado em X-Forwarded-For.
+  app.set('trust proxy', 1)
   // Credenciais são necessárias para o cookie HttpOnly da sessão de gestão.
   app.use(cors({ origin: origensPermitidas(), credentials: true }))
   // Fotos são reenquadradas no cliente, mas ainda podem chegar com alguns
