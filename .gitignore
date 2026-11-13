@@ -41,3 +41,6 @@ backend/*.data.json
 
 # Artefatos do Playwright MCP
 .playwright-mcp/
+
+# Arquivos da pasta doc não pode ser versionada 05-infraestrutura-servidor.md
+doc/05-infraestrutura-servidor.md
