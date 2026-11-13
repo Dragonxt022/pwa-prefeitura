@@ -1,4 +1,4 @@
-import { Check, LoaderCircle, Phone, Send, ShieldCheck, UploadCloud, WifiOff } from 'lucide-react'
+import { Check, Clock3, LoaderCircle, Phone, Send, ShieldCheck, UploadCloud, WifiOff } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { LIMITES } from '../../utils/solicitacao'
 import CampoFoto from './CampoFoto'
@@ -18,6 +18,8 @@ export default function FormularioSolicitacao({
   aoBuscarServico,
   aoSelecionarServico,
   formulario,
+  cidadao,
+  filaAviso,
   erros,
   erroGeral,
   fotoErro,
@@ -106,7 +108,27 @@ export default function FormularioSolicitacao({
             {erros.contato}
           </p>
         )}
+        <p className="campo__ajuda">
+          {cidadao ? (
+            <>
+              Contato e endereço preenchidos a partir do seu cadastro.{' '}
+              <Link to="/perfil">Editar perfil</Link>
+            </>
+          ) : (
+            <>
+              <Link to="/perfil">Entre na sua conta</Link> para preencher contato e endereço
+              automaticamente.
+            </>
+          )}
+        </p>
       </div>
+
+      {filaAviso && (
+        <p className="alerta alerta--info" role="status">
+          <Clock3 aria-hidden="true" />
+          <span>{filaAviso}</span>
+        </p>
+      )}
 
       {!online && (
         <p className="alerta alerta--info">

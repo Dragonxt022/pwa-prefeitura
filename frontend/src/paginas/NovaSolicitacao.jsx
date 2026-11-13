@@ -20,6 +20,7 @@ export default function NovaSolicitacao() {
         aoCopiar={solicitacao.copiarProtocolo}
         aoCopiarCodigo={solicitacao.copiarCodigo}
         aoNovaSolicitacao={solicitacao.novaSolicitacao}
+        avisoFila={solicitacao.avisoFila}
       />
     )
   }
@@ -59,6 +60,8 @@ export default function NovaSolicitacao() {
           aoBuscarServico={solicitacao.definirBuscaServico}
           aoSelecionarServico={solicitacao.selecionarServico}
           formulario={solicitacao.formulario}
+          cidadao={solicitacao.cidadao}
+          filaAviso={solicitacao.avisoFila}
           erros={solicitacao.erros}
           erroGeral={solicitacao.erroGeral}
           fotoErro={solicitacao.foto.erro}

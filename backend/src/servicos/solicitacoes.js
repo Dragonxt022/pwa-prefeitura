@@ -21,7 +21,7 @@ import {
 import { adicionarDias } from '../utils/data.js'
 import { hashToken, verificarHashToken } from '../utils/seguranca.js'
 import { normalizarTexto } from '../utils/texto.js'
-import { triagemAutomaticaAtiva } from './configuracoes.js'
+import { iaTriagemAtiva, triagemAutomaticaAtiva } from './configuracoes.js'
 
 export function buscarSolicitacao(protocolo) {
   return repositorioSolicitacoes.buscar(protocolo)
@@ -95,7 +95,9 @@ export async function criarSolicitacao({
   const servico = buscarServico(tipo)
   const setores = listarSetores()
   const sugestao = sugestaoExterna ?? classificarSolicitacao({ tipo, descricao, endereco, setores })
-  const automatica = triagemAutomaticaAtiva()
+  // Com o modelo ativo, a aplicação automática é decidida depois, na fila,
+  // para não encaminhar o pedido com a sugestão mais fraca das regras.
+  const automatica = triagemAutomaticaAtiva() && !iaTriagemAtiva()
   const setorSugerido = setores.find(
     (setor) => setor.id === sugestao.setorId && !setor.central,
   )

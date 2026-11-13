@@ -64,6 +64,9 @@ export default defineConfig(({ mode }) => {
                 if (!sameOrigin || !url.pathname.startsWith('/api/')) return false
                 if (url.pathname.startsWith('/api/gestao')) return false
                 if (url.pathname.startsWith('/api/solicitacoes')) return false
+                // Dados pessoais da conta e estado da fila nunca vão para o cache.
+                if (url.pathname.startsWith('/api/cidadao')) return false
+                if (url.pathname.startsWith('/api/triagem')) return false
                 return true
               },
               handler: 'NetworkFirst',

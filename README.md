@@ -32,9 +32,13 @@ avaliar o atendimento e consultar avisos da cidade — com funcionamento offline
 - **Transferência e reclassificação:** evento auditável em `transferencias`, selo “Transferida”, troca
   de setor/serviço e preservação do SLA original por padrão.
 - **Impressão:** seleção de pedidos ou resultado dos filtros via CSS de impressão, sem expor foto.
-- **Mini IA de triagem:** classificador local por regras, desligado por padrão, com suporte a Ollama
-  (Qwen3 1.7B) via `/api/chat` e modo de pensamento desativado (`think: false`). A aplicação automática
-  do setor é controlada no painel; a triagem manual continua disponível.
+- **Mini IA de triagem com fila:** classificador local por regras, desligado por padrão, com suporte a
+  Ollama (Qwen3 1.7B) via `/api/chat` e modo de pensamento desativado (`think: false`). A inferência
+  roda em fila depois da gravação: o cidadão recebe o protocolo na hora, a sugestão é aplicada quando
+  o modelo responde e o formulário avisa quando há muitas solicitações na fila.
+- **Conta do cidadão (LGPD):** cadastro com e-mail, senha, telefone e endereço; telefone e endereço
+  preenchem automaticamente novas solicitações. O perfil permite editar, baixar os dados e excluir a
+  conta, com consentimento registrado e Aviso de Privacidade próprio.
 - **Catálogo administrativo:** 11 secretarias oficiais, setores e serviços editáveis em
   Configurações → Catálogo, persistidos no MySQL, com soft delete, bloqueio por solicitação aberta e
   auditoria de alterações. A Ouvidoria foi removida do catálogo.
@@ -245,6 +249,19 @@ Rotas públicas:
 | GET | `/solicitacoes/:protocolo` | Consulta com histórico; exige o cabeçalho `x-codigo-acesso` |
 | GET | `/solicitacoes/:protocolo/status` | Status atual, setor e SLA; exige `x-codigo-acesso` |
 | POST | `/solicitacoes/:protocolo/avaliacao` | Avaliação após conclusão; exige `x-codigo-acesso` |
+| GET | `/triagem/fila` | Estado público da fila de classificação (pendentes, aviso) |
+
+Rotas da conta do cidadão (cookie `HttpOnly` próprio; nenhuma resposta inclui senha ou hash):
+
+| Método | Rota | Descrição |
+|---|---|---|
+| POST | `/cidadao/cadastro` | Nome, e-mail, senha, telefone, endereço e consentimento; cria a conta e a sessão |
+| POST | `/cidadao/login` | E-mail e senha; erro genérico para não confirmar e-mails |
+| POST | `/cidadao/logout` | Revoga a sessão e limpa o cookie |
+| GET | `/cidadao/sessao` | Restaura a sessão (`null` quando não autenticado) |
+| GET/PUT | `/cidadao/perfil` | Lê ou atualiza os próprios dados |
+| GET | `/cidadao/dados` | Portabilidade: download dos dados pessoais em JSON |
+| DELETE | `/cidadao/conta` | Exclusão com confirmação de senha; anonimiza o cadastro e revoga sessões |
 
 O código de acesso tem o formato `ABCD-EFGH-JKLM` (12 caracteres, sem `I`, `O`, `0` ou `1`) e é
 gerado com `crypto.getRandomValues` no navegador. Ele **nunca** vai na URL, em payload público ou em
@@ -336,7 +353,15 @@ Contrato completo, limites, códigos de erro e regras: [doc/02-requisitos.md](do
 - No piloto, o acesso do cidadão exige **protocolo + código de acesso**. O código é exibido uma única
   vez na confirmação e fica salvo em “Meus pedidos” neste aparelho; se os dados do aparelho forem
   apagados, ele não pode ser recuperado. Não use dados reais.
-- O Service Worker não guarda respostas de gestão, detalhes, status ou semelhantes de solicitações.
+- O Service Worker não guarda respostas de gestão, detalhes, status, semelhantes, conta do cidadão ou
+  estado da fila de triagem.
+- A conta do cidadão coleta apenas nome, e-mail, telefone e endereço — sem CPF ou documento — e registra
+  a data/versão do consentimento. O Aviso de Privacidade fica em `/privacidade`.
+- O cidadão pode corrigir os dados, baixar uma cópia em JSON e excluir a conta; a exclusão apaga os
+  dados pessoais e revoga todas as sessões. Solicitações já registradas permanecem no histórico do
+  atendimento público, conforme explicado no aviso.
+- Rotas com dados pessoais respondem `Cache-Control: no-store` e nunca aceitam o identificador do
+  cidadão vindo do cliente.
 - Senhas são persistidas com `scrypt` + sal; tokens de sessão são persistidos apenas como hash SHA-256.
 - O cookie de sessão é `HttpOnly`, `SameSite=Lax` e, em produção, deve usar `Secure` (`COOKIE_SECURE=true`).
 - O token legado `ADMIN_TOKEN` é apenas compatibilidade/emergência quando definido; o login normal não
@@ -398,9 +423,13 @@ build em um host HTTPS. O piloto valida o PWA no desktop via `localhost`.
 | `DATA_FILE` | backend | `backend/data/estado.json` | Arquivo JSON usado quando não há MySQL (e fonte da migração inicial) |
 | `ADMIN_TOKEN` | backend | desativado | Token legado opt-in de emergência; não é o login normal |
 | `DEMO_PASSWORD` | backend | `prefeitura-demo` | Senha das contas demonstrativas criadas no primeiro start |
-| `TRIAGEM_IA_ATIVA` | backend | `false` | Ativa a aplicação automática do setor sugerido pelo classificador local |
-| `SESSION_DAYS` | backend | `30` | Duração do cookie/sessão quando “manter conectado” está marcado |
-| `COOKIE_SECURE` | backend | `false` | Envia o cookie apenas por HTTPS quando `true` (produção) |
+| `TRIAGEM_IA_ATIVA` | backend | `false` | Ativa a aplicação automática do setor sugerido (a sugestão em si é configurada no painel) |
+| `TRIAGEM_FILA_AVISO` | backend | `2` | Total de classificações em andamento/aguardando que dispara o aviso ao cidadão |
+| `TRIAGEM_FILA_MAX` | backend | `20` | Máximo de classificações aguardando; acima disso o pedido segue com as regras |
+| `TRIAGEM_FILA_CONCORRENCIA` | backend | `1` | Quantas inferências rodam ao mesmo tempo |
+| `SESSION_DAYS` | backend | `30` | Duração do cookie/sessão de gestão quando “manter conectado” está marcado |
+| `CIDADAO_SESSION_DAYS` | backend | `30` | Duração do cookie/sessão do cidadão quando “manter conectado” está marcado |
+| `COOKIE_SECURE` | backend | `false` | Envia os cookies apenas por HTTPS quando `true` (produção) |
 | `DB_HOST` | backend | ausente | Servidor MySQL; sem ele tudo fica em memória/JSON local |
 | `DB_PORT` | backend | `3306` | Porta do MySQL |
 | `DB_NAME` | backend | ausente | Banco da aplicação |

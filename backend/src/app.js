@@ -2,11 +2,13 @@ import cors from 'cors'
 import express from 'express'
 import { apiNaoEncontrada, tratarErro } from './middlewares/erros.js'
 import avisosRouter from './rotas/avisos.js'
+import cidadaoRouter from './rotas/cidadao.js'
 import configuracoesRouter from './rotas/configuracoes.js'
 import gestaoRouter from './rotas/gestao.js'
 import perfilRouter from './rotas/perfil.js'
 import servicosRouter from './rotas/servicos.js'
 import solicitacoesRouter from './rotas/solicitacoes.js'
+import triagemRouter from './rotas/triagem.js'
 
 const ORIGENS_PADRAO = [
   'http://localhost:5173',
@@ -57,6 +59,8 @@ export function criarApp({ latenciaMs = Number(process.env.MOCK_LATENCY_MS ?? 20
   app.use('/api/configuracoes', configuracoesRouter)
   app.use('/api/perfil', perfilRouter)
   app.use('/api/solicitacoes', solicitacoesRouter)
+  app.use('/api/cidadao', cidadaoRouter)
+  app.use('/api/triagem', triagemRouter)
   app.use('/api/gestao', gestaoRouter)
 
   app.use('/api', apiNaoEncontrada)

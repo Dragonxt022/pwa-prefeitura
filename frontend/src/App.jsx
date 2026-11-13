@@ -7,6 +7,7 @@ import Home from './paginas/Home'
 import NaoEncontrada from './paginas/NaoEncontrada'
 import NovaSolicitacao from './paginas/NovaSolicitacao'
 import Perfil from './paginas/Perfil'
+import Privacidade from './paginas/Privacidade'
 import Servicos from './paginas/Servicos'
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="nova-solicitacao" element={<NovaSolicitacao />} />
         <Route path="acompanhar" element={<Acompanhar />} />
         <Route path="perfil" element={<Perfil />} />
+        <Route path="privacidade" element={<Privacidade />} />
         <Route path="*" element={<NaoEncontrada />} />
       </Route>
     </Routes>

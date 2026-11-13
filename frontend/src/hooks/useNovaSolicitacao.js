@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { gerarCodigoAcesso } from '../../../shared/codigo-acesso.js'
-import { criarSolicitacao, listarServicos } from '../servicos/api'
+import { consultarFilaTriagem, criarSolicitacao, listarServicos } from '../servicos/api'
 import { listarPedidos, registrarConsulta, registrarPedido } from '../servicos/consultas'
 import { enfileirar, listarFila, ultimoEnvio } from '../servicos/fila'
 import { carregarRascunho, limparRascunho, salvarRascunho } from '../servicos/rascunho'
@@ -13,6 +13,8 @@ import {
   temConteudo,
   validarFormulario,
 } from '../utils/solicitacao'
+import { useCidadao } from '../contexto/useCidadao'
+import { comporEndereco, formatarTelefone } from '../utils/cidadao'
 import { useCep } from './useCep'
 import { useFotoSolicitacao } from './useFotoSolicitacao'
 import { useLocalizacaoSolicitacao } from './useLocalizacaoSolicitacao'
@@ -20,8 +22,29 @@ import { useOnlineStatus } from './useOnlineStatus'
 import { useRecurso } from './useRecurso'
 import { useSolicitacaoSemelhante } from './useSolicitacaoSemelhante'
 
+function camposDoPerfil(cidadao) {
+  if (!cidadao) return {}
+  return {
+    cep: formatarCep(cidadao.cep),
+    endereco: comporEndereco(cidadao),
+    contato: formatarTelefone(cidadao.telefone),
+  }
+}
+
+function avisoDaFila(fila) {
+  if (!fila?.ativo) return ''
+  if (fila.aceito === false && fila.motivo === 'fila_cheia') {
+    return 'A triagem automática está temporariamente sobrecarregada. Seu pedido será analisado pela equipe e não precisa ser enviado novamente.'
+  }
+  if (fila.aviso) {
+    return 'Muitas solicitações neste momento. Seu pedido será registrado normalmente, mas a sugestão automática de setor pode levar alguns minutos.'
+  }
+  return ''
+}
+
 export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
   const online = useOnlineStatus()
+  const { cidadao } = useCidadao()
   const rascunhoInicial = useMemo(() => carregarRascunho(), [])
   const { dados: servicos, carregando, erro: erroServicos, recarregar } = useRecurso(listarServicos, [])
 
@@ -47,9 +70,39 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
       ? 'Rascunho restaurado. Continue de onde parou.'
       : '',
   )
+  const [filaTriagem, setFilaTriagem] = useState(null)
+  const [avisoFila, setAvisoFila] = useState('')
 
   const resumoErroRef = useRef(null)
   const formularioInicialRef = useRef(formulario)
+  const perfilAplicadoRef = useRef(false)
+
+  useEffect(() => {
+    let ativo = true
+    consultarFilaTriagem()
+      .then((dados) => {
+        if (ativo) setFilaTriagem(dados)
+      })
+      .catch(() => {
+        // Aviso é opcional: sem ele o formulário continua funcionando.
+      })
+    return () => {
+      ativo = false
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!cidadao || perfilAplicadoRef.current) return
+    perfilAplicadoRef.current = true
+    const campos = camposDoPerfil(cidadao)
+    setFormulario((atual) => {
+      const proximo = { ...atual }
+      for (const [campo, valor] of Object.entries(campos)) {
+        if (valor && !String(proximo[campo] ?? '').trim()) proximo[campo] = valor
+      }
+      return proximo
+    })
+  }, [cidadao])
 
   const cep = useCep({
     cep: formulario.cep,
@@ -162,11 +215,12 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
     return true
   }
 
-  function concluir(criada, codigoAcesso) {
+  function concluir(criada, codigoAcesso, fila) {
     registrarConsulta(criada.protocolo)
     registrarPedido(criada, codigoAcesso)
     limparRascunho()
     setRascunhoStatus('')
+    setAvisoFila(avisoDaFila(fila))
     setProtocolo({ ...criada, codigoAcesso })
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -201,8 +255,8 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
     }
 
     try {
-      const criada = await criarSolicitacao(payload)
-      concluir(criada, payload.codigoAcesso)
+      const resposta = await criarSolicitacao(payload)
+      concluir(resposta.dados, payload.codigoAcesso, resposta.fila)
     } catch (erro) {
       if (erro.offline) {
         salvarNaFila(payload)
@@ -242,7 +296,8 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
 
   function novaSolicitacao() {
     limparRascunho()
-    setFormulario({ ...FORMULARIO_VAZIO })
+    setFormulario({ ...FORMULARIO_VAZIO, ...camposDoPerfil(cidadao) })
+    setAvisoFila('')
     setProtocolo(null)
     setPendente(null)
     setPendenteEm(null)
@@ -270,6 +325,8 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
     servicoSelecionado,
     erros,
     erroGeral,
+    cidadao,
+    avisoFila: avisoFila || avisoDaFila(filaTriagem),
     cep,
     foto,
     localizacao,

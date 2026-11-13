@@ -19,7 +19,7 @@ import {
   criarSolicitacao as criarSolicitacaoServico,
   listarSemelhantes as listarSemelhantesServico,
 } from '../servicos/solicitacoes.js'
-import { sugerirClassificacao } from '../servicos/triagem.js'
+import { agendarTriagem } from '../servicos/triagem.js'
 import {
   codigoAcessoInvalido,
   jaAvaliada,
@@ -59,12 +59,14 @@ export async function criar(req, res) {
     return res.status(200).json({ dados: apresentarSolicitacaoPublica(existente), criada: false })
   }
 
-  const sugestao = await sugerirClassificacao(dados)
-  const { solicitacao, criada, acessoNegado } = await criarSolicitacaoServico({
-    ...dados,
-    sugestao,
-  })
+  // A classificação por IA entra na fila depois da gravação. O cidadão recebe
+  // o protocolo imediatamente, com a triagem por regras como ponto de partida.
+  const { solicitacao, criada, acessoNegado } = await criarSolicitacaoServico(dados)
   if (acessoNegado) throw codigoAcessoInvalido()
+  let fila = null
+  if (criada) {
+    fila = agendarTriagem(solicitacao.protocolo)
+  }
   if (criada) {
     void notificarEvento('nova_solicitacao', {
       protocolo: solicitacao.protocolo,
@@ -81,7 +83,11 @@ export async function criar(req, res) {
   }
   return res
     .status(criada ? 201 : 200)
-    .json({ dados: apresentarSolicitacaoPublica(solicitacao), criada })
+    .json({
+      dados: apresentarSolicitacaoPublica(solicitacao),
+      criada,
+      ...(fila ? { fila } : {}),
+    })
 }
 
 export async function avaliar(req, res) {

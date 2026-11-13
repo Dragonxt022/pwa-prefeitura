@@ -176,6 +176,7 @@ export default function Layout() {
 
         <div className="rodape__links">
           <Link to="/servicos">{t('app.catalogo')}</Link>
+          <Link to="/privacidade">Privacidade</Link>
           <Link to="/gestao">{t('app.gestao')}</Link>
           {naoLidas > 0 && (
             <span className="rodape__aviso">

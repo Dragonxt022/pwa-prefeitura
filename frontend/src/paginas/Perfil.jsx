@@ -3,9 +3,12 @@ import {
   CalendarDays,
   ClipboardList,
   Contrast,
+  Download,
   Fingerprint,
+  LogOut,
   Mail,
   MapPin,
+  Pencil,
   Phone,
   ShieldCheck,
   Smartphone,
@@ -16,17 +19,21 @@ import {
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import ErrorState from '../componentes/ErrorState'
+import PerfilAcesso from '../componentes/perfil/PerfilAcesso'
+import PerfilFormulario from '../componentes/perfil/PerfilFormulario'
 import { SkeletonBloco } from '../componentes/Loading'
 import { Badge } from '../componentes/StatusBadge'
+import { useCidadao } from '../contexto/useCidadao'
 import { usePwaInstall } from '../hooks/usePwaInstall'
-import { useRecurso } from '../hooks/useRecurso'
 import {
   lerPreferenciasAcessibilidade,
   salvarPreferenciasAcessibilidade,
 } from '../utils/acessibilidade'
-import { obterPerfil } from '../servicos/api'
+import {
+  baixarDadosCidadao,
+} from '../servicos/api'
 import { contarNotificacoesNaoLidas, limparDadosLocais } from '../servicos/consultas'
+import { enderecoCompleto, formatarTelefone } from '../utils/cidadao'
 import { formatarData } from '../utils/format'
 
 function lerPermissao() {
@@ -47,21 +54,52 @@ function Dado({ Icone, rotulo, valor, largo = false }) {
   )
 }
 
+function dadosDoCidadao(cidadao) {
+  return {
+    nome: cidadao.nome,
+    email: cidadao.email,
+    telefone: formatarTelefone(cidadao.telefone),
+    cep: cidadao.cep,
+    logradouro: cidadao.logradouro,
+    numero: cidadao.numero,
+    complemento: cidadao.complemento ?? '',
+    bairro: cidadao.bairro,
+    cidade: cidadao.cidade,
+    uf: cidadao.uf,
+  }
+}
+
 export default function Perfil() {
-  const { dados: perfil, carregando, erro, recarregar } = useRecurso(obterPerfil, [])
+  const {
+    cidadao,
+    carregando: carregandoConta,
+    erro: erroConta,
+    atualizar,
+    sair,
+    excluir,
+  } = useCidadao()
   const { standalone, ios, suportaNotificacao } = usePwaInstall()
   const [permissao, setPermissao] = useState(lerPermissao)
   const [mensagem, setMensagem] = useState('')
+  const [mensagemConta, setMensagemConta] = useState('')
   const [preferencias, setPreferencias] = useState(lerPreferenciasAcessibilidade)
   const [naoLidas, setNaoLidas] = useState(contarNotificacoesNaoLidas)
+  const [editando, setEditando] = useState(false)
+  const [errosEdicao, setErrosEdicao] = useState({})
+  const [erroEdicao, setErroEdicao] = useState(null)
+  const [salvando, setSalvando] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
+  const [senhaExclusao, setSenhaExclusao] = useState('')
+  const [erroExclusao, setErroExclusao] = useState(null)
+  const [processandoExclusao, setProcessandoExclusao] = useState(false)
 
   useEffect(() => {
-    const atualizar = () => setNaoLidas(contarNotificacoesNaoLidas())
-    window.addEventListener('prefeitura:notificacoes', atualizar)
-    window.addEventListener('prefeitura:fila', atualizar)
+    const atualizarNaoLidas = () => setNaoLidas(contarNotificacoesNaoLidas())
+    window.addEventListener('prefeitura:notificacoes', atualizarNaoLidas)
+    window.addEventListener('prefeitura:fila', atualizarNaoLidas)
     return () => {
-      window.removeEventListener('prefeitura:notificacoes', atualizar)
-      window.removeEventListener('prefeitura:fila', atualizar)
+      window.removeEventListener('prefeitura:notificacoes', atualizarNaoLidas)
+      window.removeEventListener('prefeitura:fila', atualizarNaoLidas)
     }
   }, [])
 
@@ -92,6 +130,62 @@ export default function Perfil() {
     window.dispatchEvent(new CustomEvent('prefeitura:fila'))
   }
 
+  async function salvarPerfil(dados) {
+    setSalvando(true)
+    setErroEdicao(null)
+    setErrosEdicao({})
+    try {
+      await atualizar(dados)
+      setEditando(false)
+      setMensagemConta('Cadastro atualizado.')
+    } catch (erro) {
+      setErrosEdicao(erro?.campos ?? {})
+      setErroEdicao(erro?.message || 'Não foi possível salvar o cadastro.')
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  async function sairDaConta() {
+    await sair()
+    setEditando(false)
+    setExcluindo(false)
+    setMensagemConta('Você saiu da conta.')
+  }
+
+  async function exportarDados() {
+    try {
+      const blob = await baixarDadosCidadao()
+      const url = URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'meus-dados-prefeitura.json'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      URL.revokeObjectURL(url)
+      setMensagemConta('Download dos seus dados iniciado.')
+    } catch {
+      setMensagemConta('Não foi possível exportar seus dados agora.')
+    }
+  }
+
+  async function confirmarExclusao(evento) {
+    evento.preventDefault()
+    setErroExclusao(null)
+    setProcessandoExclusao(true)
+    try {
+      await excluir({ senha: senhaExclusao })
+      setExcluindo(false)
+      setSenhaExclusao('')
+      setMensagemConta('Conta excluída e dados pessoais removidos.')
+    } catch (erro) {
+      setErroExclusao(erro?.message || 'Não foi possível excluir a conta.')
+    } finally {
+      setProcessandoExclusao(false)
+    }
+  }
+
   const rotuloNotificacao =
     permissao === 'granted'
       ? 'Ativas'
@@ -109,28 +203,129 @@ export default function Perfil() {
         </span>
         <div className="perfil-topo__texto">
           <p className="perfil-topo__sobre">Perfil</p>
-          <h1>{perfil?.nome ?? 'Seu perfil'}</h1>
+          <h1>{cidadao?.nome ?? 'Seu perfil'}</h1>
         </div>
+        {cidadao && (
+          <button type="button" className="botao botao--secundario botao--pequeno" onClick={sairDaConta}>
+            <LogOut aria-hidden="true" />
+            Sair
+          </button>
+        )}
       </header>
 
-      {erro ? (
-        <ErrorState erro={erro} aoTentarNovamente={recarregar} />
-      ) : carregando ? (
+      {carregandoConta ? (
         <SkeletonBloco linhas={5} />
       ) : (
         <div className="pilha">
-          <section className="cartao" aria-labelledby="titulo-dados">
-            <h2 id="titulo-dados" className="sr-only">
-              Dados do cidadão
-            </h2>
-            <div className="grade-dados">
-              <Dado Icone={Fingerprint} rotulo="Documento" valor={perfil.documentoMascarado} />
-              <Dado Icone={Mail} rotulo="E-mail" valor={perfil.email} largo />
-              <Dado Icone={Phone} rotulo="Telefone" valor={perfil.telefone} />
-              <Dado Icone={MapPin} rotulo="Bairro" valor={perfil.bairro} />
-              <Dado Icone={CalendarDays} rotulo="Desde" valor={formatarData(perfil.desde)} />
-            </div>
-          </section>
+          {mensagemConta && (
+            <p className="alerta alerta--sucesso" role="status">{mensagemConta}</p>
+          )}
+
+          {erroConta && !cidadao && (
+            <p className="alerta alerta--info">
+              Não foi possível consultar sua conta agora. Você ainda pode usar o app; tente novamente
+              ao recuperar a conexão.
+            </p>
+          )}
+
+          {!cidadao ? (
+            <PerfilAcesso />
+          ) : editando ? (
+            <section className="cartao" aria-labelledby="titulo-editar">
+              <div className="cartao__cabecalho">
+                <h2 id="titulo-editar">Editar cadastro</h2>
+              </div>
+              <PerfilFormulario
+                modo="edicao"
+                inicial={dadosDoCidadao(cidadao)}
+                errosServidor={errosEdicao}
+                erroGeral={erroEdicao}
+                enviando={salvando}
+                aoEnviar={salvarPerfil}
+                aoCancelar={() => {
+                  setEditando(false)
+                  setErroEdicao(null)
+                  setErrosEdicao({})
+                }}
+              />
+            </section>
+          ) : (
+            <section className="cartao" aria-labelledby="titulo-dados">
+              <div className="cartao__cabecalho">
+                <h2 id="titulo-dados">Dados do cidadão</h2>
+                <button
+                  type="button"
+                  className="botao botao--secundario botao--pequeno"
+                  onClick={() => {
+                    setEditando(true)
+                    setMensagemConta('')
+                  }}
+                >
+                  <Pencil aria-hidden="true" />
+                  Editar
+                </button>
+              </div>
+              <div className="grade-dados">
+                <Dado Icone={Mail} rotulo="E-mail" valor={cidadao.email} largo />
+                <Dado Icone={Phone} rotulo="Telefone" valor={formatarTelefone(cidadao.telefone)} />
+                <Dado Icone={MapPin} rotulo="Endereço" valor={enderecoCompleto(cidadao)} largo />
+                <Dado Icone={CalendarDays} rotulo="Desde" valor={formatarData(cidadao.criadoEm)} />
+                <Dado Icone={Fingerprint} rotulo="Conta" valor="Cidadão" />
+              </div>
+              <div className="perfil-dados__acoes">
+                <button type="button" className="botao botao--secundario botao--pequeno" onClick={exportarDados}>
+                  <Download aria-hidden="true" />
+                  Baixar meus dados
+                </button>
+                <button
+                  type="button"
+                  className="botao botao--secundario botao--pequeno"
+                  onClick={() => setExcluindo(true)}
+                >
+                  <Trash2 aria-hidden="true" />
+                  Excluir conta
+                </button>
+              </div>
+
+              {excluindo && (
+                <form className="perfil-exclusao" onSubmit={confirmarExclusao}>
+                  <p className="alerta alerta--erro">
+                    A exclusão apaga seu nome, e-mail, telefone e endereço e encerra todas as sessões.
+                    Solicitações já registradas permanecem no histórico do atendimento público.
+                  </p>
+                  <div className="campo">
+                    <label htmlFor="excluir-senha">Confirme sua senha</label>
+                    <input
+                      id="excluir-senha"
+                      type="password"
+                      autoComplete="current-password"
+                      value={senhaExclusao}
+                      onChange={(evento) => setSenhaExclusao(evento.target.value)}
+                      required
+                    />
+                  </div>
+                  {erroExclusao && <p className="campo__erro" role="alert">{erroExclusao}</p>}
+                  <div className="formulario__acoes">
+                    <button
+                      type="button"
+                      className="botao botao--secundario"
+                      onClick={() => {
+                        setExcluindo(false)
+                        setErroExclusao(null)
+                        setSenhaExclusao('')
+                      }}
+                      disabled={processandoExclusao}
+                    >
+                      Cancelar
+                    </button>
+                    <button type="submit" className="botao botao--perigo" disabled={processandoExclusao}>
+                      {processandoExclusao ? 'Excluindo...' : 'Excluir definitivamente'}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </section>
+          )}
 
           <section className="cartao cartao--acessibilidade" aria-labelledby="titulo-acessibilidade">
             <div className="preferencia__topo">
@@ -251,11 +446,23 @@ export default function Perfil() {
               <ShieldCheck aria-hidden="true" />
             </span>
             <div className="cartao__corpo">
-              <h2 id="titulo-privacidade">Dados no aparelho</h2>
+              <h2 id="titulo-privacidade">Privacidade e LGPD</h2>
+              <p>Veja como tratamos seus dados e exerça seus direitos.</p>
+            </div>
+            <Link className="botao botao--secundario botao--pequeno" to="/privacidade">
+              Aviso
+            </Link>
+          </section>
+
+          <section className="cartao cartao--linha" aria-labelledby="titulo-aparelho">
+            <span className="icone-tile tom-verde">
+              <Trash2 aria-hidden="true" />
+            </span>
+            <div className="cartao__corpo">
+              <h2 id="titulo-aparelho">Dados no aparelho</h2>
               <p>Protocolos, rascunhos e fila de envio offline.</p>
             </div>
             <button type="button" className="botao botao--secundario botao--pequeno" onClick={limpar}>
-              <Trash2 aria-hidden="true" />
               Limpar
             </button>
           </section>
@@ -290,6 +497,7 @@ export default function Perfil() {
             <div className="sobre-links">
               <Link to="/servicos">Catálogo de serviços</Link>
               <Link to="/gestao">Área de gestão</Link>
+              <Link to="/privacidade">Aviso de Privacidade</Link>
             </div>
           </section>
         </div>

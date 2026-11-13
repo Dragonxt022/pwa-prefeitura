@@ -30,6 +30,12 @@ export function triagemAutomaticaAtiva() {
   return Boolean(repositorioConfiguracoes.obter().ia.aplicarAutomaticamente)
 }
 
+/** Indica se a classificação deve passar pelo modelo (em vez das regras). */
+export function iaTriagemAtiva() {
+  const ia = repositorioConfiguracoes.obter().ia
+  return Boolean(ia.ativo && ia.provedor !== 'regras')
+}
+
 /**
  * Valida e salva uma seção. Retorna `null` para seção desconhecida e
  * `{ campos }` quando a entrada precisa de correção.

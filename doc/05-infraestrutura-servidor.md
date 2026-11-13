@@ -440,7 +440,7 @@ sudo docker rm portainer-antigo
 | Banco da aplicação | `app_pwa_prefeitura` |
 | Usuário da aplicação | `app_pwa_prefeitura@localhost` |
 | Senha da aplicação | `DB_PASSWORD` em `app.env` / credenciais no servidor |
-| Uso atual | catálogo, solicitações, usuários, sessões e configurações |
+| Uso atual | catálogo, solicitações, usuários, sessões, configurações, contas e sessões de cidadãos |
 
 Comandos:
 
@@ -471,6 +471,18 @@ mysql -u app_pwa_prefeitura -p app_pwa_prefeitura -e "SELECT 1;"
 O MySQL não é acessível a partir dos containers da rede `proxy`; se uma
 aplicação em container precisar do banco, será necessário um proxy ou uma
 decisão explícita de exposição (não fazer isso sem revisar o firewall).
+
+### Dados de cidadãos e LGPD
+
+As contas ficam em `dados_cidadaos` e as sessões em `dados_cidadaos_sessoes`. Senhas usam hash
+`scrypt`; sessões expiradas são removidas na inicialização. A exclusão de conta (feita pelo próprio
+cidadão em `/perfil`, com confirmação de senha) apaga nome, e-mail, telefone e endereço, anula o hash
+da senha, marca `removido_em` e revoga todas as sessões. Registros de solicitações já abertas
+permanecem para a finalidade do atendimento público, conforme o Aviso de Privacidade em
+`/privacidade`.
+
+Backups do MySQL contêm dados pessoais. Mantenha-os em `/root/backups` com permissão restrita
+(`chmod 600`) e descarte conforme a política de retenção do município.
 
 A primeira inicialização com o banco vazio importa `backend/data/estado.json`
 em uma transação (solicitações, usuários, sessões, configurações e sequência de

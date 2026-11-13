@@ -62,6 +62,37 @@ const TABELAS = [
     KEY idx_dados_sessoes_expira (expira_em),
     KEY idx_dados_sessoes_usuario (usuario_id)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  `CREATE TABLE IF NOT EXISTS dados_cidadaos (
+    id VARCHAR(80) NOT NULL PRIMARY KEY,
+    nome VARCHAR(180) NOT NULL,
+    email VARCHAR(180) NOT NULL,
+    senha_hash VARCHAR(255) NULL,
+    telefone VARCHAR(20) NOT NULL DEFAULT '',
+    cep CHAR(8) NOT NULL DEFAULT '',
+    logradouro VARCHAR(180) NOT NULL DEFAULT '',
+    numero VARCHAR(20) NOT NULL DEFAULT '',
+    complemento VARCHAR(80) NULL,
+    bairro VARCHAR(120) NOT NULL DEFAULT '',
+    cidade VARCHAR(120) NOT NULL DEFAULT '',
+    uf CHAR(2) NOT NULL DEFAULT '',
+    ativo TINYINT(1) NOT NULL DEFAULT 1,
+    consentimento_em DATETIME(3) NULL,
+    consentimento_versao VARCHAR(20) NULL,
+    removido_em DATETIME(3) NULL,
+    criado_em DATETIME(3) NOT NULL,
+    atualizado_em DATETIME(3) NOT NULL,
+    UNIQUE KEY uq_dados_cidadaos_email (email),
+    KEY idx_dados_cidadaos_ativo (ativo)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
+  `CREATE TABLE IF NOT EXISTS dados_cidadaos_sessoes (
+    token_hash CHAR(64) NOT NULL PRIMARY KEY,
+    cidadao_id VARCHAR(80) NOT NULL,
+    lembrar TINYINT(1) NOT NULL DEFAULT 0,
+    criada_em DATETIME(3) NOT NULL,
+    expira_em DATETIME(3) NOT NULL,
+    KEY idx_dados_cidadaos_sessoes_expira (expira_em),
+    KEY idx_dados_cidadaos_sessoes_cidadao (cidadao_id)
+  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   `CREATE TABLE IF NOT EXISTS dados_configuracoes (
     id TINYINT UNSIGNED NOT NULL PRIMARY KEY,
     dados JSON NOT NULL,
@@ -137,6 +168,39 @@ function mapearUsuario(linha) {
   }
 }
 
+function mapearCidadao(linha) {
+  return {
+    id: linha.id,
+    nome: linha.nome,
+    email: linha.email,
+    senhaHash: linha.senha_hash,
+    telefone: linha.telefone,
+    cep: linha.cep,
+    logradouro: linha.logradouro,
+    numero: linha.numero,
+    complemento: linha.complemento,
+    bairro: linha.bairro,
+    cidade: linha.cidade,
+    uf: linha.uf,
+    ativo: Boolean(linha.ativo),
+    consentimentoEm: paraIso(linha.consentimento_em),
+    consentimentoVersao: linha.consentimento_versao,
+    removidoEm: paraIso(linha.removido_em),
+    criadoEm: paraIso(linha.criado_em),
+    atualizadoEm: paraIso(linha.atualizado_em),
+  }
+}
+
+function mapearSessaoCidadao(linha) {
+  return {
+    tokenHash: linha.token_hash,
+    cidadaoId: linha.cidadao_id,
+    lembrar: Boolean(linha.lembrar),
+    criadaEm: paraIso(linha.criada_em),
+    expiraEm: paraIso(linha.expira_em),
+  }
+}
+
 function mapearSessao(linha) {
   return {
     tokenHash: linha.token_hash,
@@ -174,6 +238,7 @@ export async function inicializarTabelas() {
 export async function carregarTudo() {
   const pool = obterPool()
   await pool.query('DELETE FROM dados_sessoes WHERE expira_em <= UTC_TIMESTAMP(3)')
+  await pool.query('DELETE FROM dados_cidadaos_sessoes WHERE expira_em <= UTC_TIMESTAMP(3)')
 
   const [solicitacoes] = await pool.query(
     'SELECT * FROM dados_solicitacoes ORDER BY criado_em DESC',
@@ -183,6 +248,10 @@ export async function carregarTudo() {
   const [configuracoes] = await pool.query(
     'SELECT * FROM dados_configuracoes WHERE id = 1 LIMIT 1',
   )
+  const [cidadaos] = await pool.query('SELECT * FROM dados_cidadaos ORDER BY criado_em ASC')
+  const [sessoesCidadao] = await pool.query(
+    'SELECT * FROM dados_cidadaos_sessoes WHERE expira_em > UTC_TIMESTAMP(3)',
+  )
   const [meta] = await pool.query("SELECT valor FROM dados_meta WHERE chave = 'sequencia' LIMIT 1")
 
   return {
@@ -190,6 +259,8 @@ export async function carregarTudo() {
     solicitacoes: solicitacoes.map(mapearSolicitacao),
     usuarios: usuarios.map(mapearUsuario),
     sessoes: sessoes.map(mapearSessao),
+    cidadaos: cidadaos.map(mapearCidadao),
+    sessoesCidadao: sessoesCidadao.map(mapearSessaoCidadao),
     configuracoes: configuracoes[0]
       ? lerJson(configuracoes[0].dados, null)
       : null,
@@ -326,6 +397,99 @@ export async function removerSessao(tokenHash) {
   await pool.execute('DELETE FROM dados_sessoes WHERE token_hash = ?', [tokenHash])
 }
 
+const INSERT_CIDADAO = `INSERT INTO dados_cidadaos
+  (id, nome, email, senha_hash, telefone, cep, logradouro, numero, complemento,
+   bairro, cidade, uf, ativo, consentimento_em, consentimento_versao, removido_em,
+   criado_em, atualizado_em)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+
+function valoresCidadao(cidadao) {
+  return [
+    cidadao.id,
+    cidadao.nome,
+    cidadao.email,
+    cidadao.senhaHash ?? null,
+    cidadao.telefone ?? '',
+    cidadao.cep ?? '',
+    cidadao.logradouro ?? '',
+    cidadao.numero ?? '',
+    cidadao.complemento ?? null,
+    cidadao.bairro ?? '',
+    cidadao.cidade ?? '',
+    cidadao.uf ?? '',
+    cidadao.ativo ? 1 : 0,
+    paraData(cidadao.consentimentoEm),
+    cidadao.consentimentoVersao ?? null,
+    paraData(cidadao.removidoEm),
+    paraData(cidadao.criadoEm),
+    paraData(cidadao.atualizadoEm),
+  ]
+}
+
+export async function inserirCidadao(cidadao) {
+  const pool = obterPool()
+  await pool.execute(INSERT_CIDADAO, valoresCidadao(cidadao))
+}
+
+export async function atualizarCidadao(cidadao) {
+  const pool = obterPool()
+  const [resultado] = await pool.execute(
+    `UPDATE dados_cidadaos SET
+       nome = ?, email = ?, senha_hash = ?, telefone = ?, cep = ?, logradouro = ?,
+       numero = ?, complemento = ?, bairro = ?, cidade = ?, uf = ?, ativo = ?,
+       consentimento_em = ?, consentimento_versao = ?, removido_em = ?, atualizado_em = ?
+     WHERE id = ?`,
+    [
+      cidadao.nome,
+      cidadao.email,
+      cidadao.senhaHash ?? null,
+      cidadao.telefone ?? '',
+      cidadao.cep ?? '',
+      cidadao.logradouro ?? '',
+      cidadao.numero ?? '',
+      cidadao.complemento ?? null,
+      cidadao.bairro ?? '',
+      cidadao.cidade ?? '',
+      cidadao.uf ?? '',
+      cidadao.ativo ? 1 : 0,
+      paraData(cidadao.consentimentoEm),
+      cidadao.consentimentoVersao ?? null,
+      paraData(cidadao.removidoEm),
+      paraData(cidadao.atualizadoEm),
+      cidadao.id,
+    ],
+  )
+  if (resultado.affectedRows === 0) {
+    throw new Error(`Cidadão ${cidadao.id} não existe no banco.`)
+  }
+}
+
+export async function inserirSessaoCidadao(sessao) {
+  const pool = obterPool()
+  await pool.execute(
+    `INSERT INTO dados_cidadaos_sessoes
+      (token_hash, cidadao_id, lembrar, criada_em, expira_em)
+     VALUES (?, ?, ?, ?, ?)`,
+    [
+      sessao.tokenHash,
+      sessao.cidadaoId,
+      sessao.lembrar ? 1 : 0,
+      paraData(sessao.criadaEm),
+      paraData(sessao.expiraEm),
+    ],
+  )
+}
+
+export async function removerSessaoCidadao(tokenHash) {
+  const pool = obterPool()
+  await pool.execute('DELETE FROM dados_cidadaos_sessoes WHERE token_hash = ?', [tokenHash])
+}
+
+export async function removerSessoesDoCidadao(cidadaoId) {
+  const pool = obterPool()
+  await pool.execute('DELETE FROM dados_cidadaos_sessoes WHERE cidadao_id = ?', [cidadaoId])
+}
+
 export async function salvarConfiguracoes(configuracoes) {
   const pool = obterPool()
   await pool.execute(
@@ -370,6 +534,22 @@ export async function importarEstadoInicial(dados) {
         [
           sessao.tokenHash,
           sessao.usuarioId,
+          sessao.lembrar ? 1 : 0,
+          paraData(sessao.criadaEm),
+          paraData(sessao.expiraEm),
+        ],
+      )
+    }
+    for (const cidadao of dados.cidadaos ?? []) {
+      await conexao.execute(INSERT_CIDADAO, valoresCidadao(cidadao))
+    }
+    for (const sessao of dados.sessoesCidadao ?? []) {
+      await conexao.execute(
+        `INSERT INTO dados_cidadaos_sessoes (token_hash, cidadao_id, lembrar, criada_em, expira_em)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          sessao.tokenHash,
+          sessao.cidadaoId,
           sessao.lembrar ? 1 : 0,
           paraData(sessao.criadaEm),
           paraData(sessao.expiraEm),

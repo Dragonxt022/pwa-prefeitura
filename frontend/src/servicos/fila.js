@@ -80,7 +80,8 @@ export function processarFila() {
 
     for (const item of fila) {
       try {
-        const criada = await criarSolicitacao(item.payload)
+        const resposta = await criarSolicitacao(item.payload)
+        const criada = resposta.dados
         registrarConsulta(criada.protocolo)
         registrarPedido(criada, item.payload.codigoAcesso)
         adicionarNotificacao({

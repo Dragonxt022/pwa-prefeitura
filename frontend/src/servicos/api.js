@@ -97,6 +97,43 @@ export const obterConfiguracoesPublicas = () => requisicao('/configuracoes', { t
 
 export const obterPerfil = () => requisicao('/perfil')
 
+// ---------- cidadão: conta, sessão e perfil ----------
+
+export const obterSessaoCidadao = () => requisicao('/cidadao/sessao', { timeout: 8000 })
+
+export const cadastrarCidadao = (dados) =>
+  requisicao('/cidadao/cadastro', { metodo: 'POST', corpo: dados, timeout: 20000 })
+
+export const loginCidadao = (dados) =>
+  requisicao('/cidadao/login', { metodo: 'POST', corpo: dados, timeout: 15000 })
+
+export const logoutCidadao = () =>
+  requisicao('/cidadao/logout', { metodo: 'POST', timeout: 8000 })
+
+export const atualizarPerfilCidadao = (dados) =>
+  requisicao('/cidadao/perfil', { metodo: 'PUT', corpo: dados, timeout: 15000 })
+
+export const excluirContaCidadao = (dados) =>
+  requisicao('/cidadao/conta', { metodo: 'DELETE', corpo: dados, timeout: 15000 })
+
+export async function baixarDadosCidadao() {
+  const resposta = await fetch(`${BASE}/cidadao/dados`, {
+    credentials: 'include',
+    headers: { Accept: 'application/json' },
+  })
+  if (!resposta.ok) {
+    const payload = await resposta.json().catch(() => null)
+    throw new ApiError(
+      payload?.erro?.mensagem || 'Não foi possível exportar seus dados.',
+      { status: resposta.status, codigo: payload?.erro?.codigo },
+    )
+  }
+  return resposta.blob()
+}
+
+export const consultarFilaTriagem = () =>
+  requisicao('/triagem/fila', { timeout: 5000 })
+
 function cabecalhosAcesso(codigoAcesso) {
   return codigoAcesso ? { 'x-codigo-acesso': codigoAcesso } : undefined
 }
@@ -113,7 +150,12 @@ export const consultarStatus = (protocolo, codigoAcesso) =>
   })
 
 export const criarSolicitacao = (dados) =>
-  requisicao('/solicitacoes', { metodo: 'POST', corpo: dados, timeout: 20000 })
+  requisicao('/solicitacoes', {
+    metodo: 'POST',
+    corpo: dados,
+    timeout: 20000,
+    completo: true,
+  })
 
 export const consultarSemelhantes = ({ tipo, endereco, latitude, longitude }) => {
   const query = new URLSearchParams({ tipo, endereco })

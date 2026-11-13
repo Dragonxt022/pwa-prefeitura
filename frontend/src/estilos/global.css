@@ -1822,6 +1822,172 @@ fieldset.campo {
   overflow-wrap: anywhere;
 }
 
+.perfil-acesso {
+  display: grid;
+  gap: 16px;
+}
+
+.perfil-acesso__topo {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.perfil-acesso__topo h2 {
+  margin-bottom: 2px;
+}
+
+.perfil-acesso__topo p {
+  margin: 0;
+}
+
+.perfil-acesso__abas {
+  justify-self: start;
+}
+
+.perfil-acesso__abas button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.perfil-acesso__abas button svg {
+  width: 15px;
+  height: 15px;
+}
+
+.perfil-login,
+.perfil-formulario {
+  display: grid;
+  gap: 16px;
+}
+
+.perfil-formulario__grade {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 560px) {
+  .perfil-formulario__grade {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .perfil-formulario__grade .campo--largo {
+    grid-column: 1 / -1;
+  }
+}
+
+.perfil-formulario__secao {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.perfil-formulario__secao legend {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+  padding: 0;
+  color: var(--texto-suave);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.perfil-formulario__secao legend svg {
+  width: 14px;
+  height: 14px;
+}
+
+.perfil-consentimento {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.perfil-consentimento input {
+  flex: none;
+  margin-top: 3px;
+}
+
+.perfil-consentimento a {
+  color: var(--azul-700);
+  font-weight: 700;
+}
+
+.perfil-dados__acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--borda);
+}
+
+.perfil-exclusao {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--vermelho-700);
+  border-radius: 14px;
+  background: var(--vermelho-50);
+}
+
+.perfil-exclusao .alerta {
+  margin: 0;
+}
+
+.check-simples {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.check-simples input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  accent-color: var(--primaria);
+}
+
+.botao--perigo {
+  border-color: transparent;
+  background: var(--vermelho-700);
+  color: #fff;
+}
+
+.botao--perigo:hover {
+  filter: brightness(0.92);
+}
+
+.lista-simples {
+  display: grid;
+  gap: 6px;
+  margin: 8px 0;
+  padding-left: 20px;
+  color: var(--texto-suave);
+  font-size: 0.86rem;
+}
+
+.cartao__cabecalho h2 svg {
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  vertical-align: -2px;
+}
+
 .cartao--preferencia {
   display: grid;
   gap: 12px;

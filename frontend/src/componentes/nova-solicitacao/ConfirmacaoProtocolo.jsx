@@ -21,6 +21,7 @@ export default function ConfirmacaoProtocolo({
   aoCopiar,
   aoCopiarCodigo,
   aoNovaSolicitacao,
+  avisoFila = '',
 }) {
   const servico = visualServico(protocolo.tipo)
   const IconeServico = servico.Icone
@@ -83,6 +84,13 @@ export default function ConfirmacaoProtocolo({
               aparelho forem apagados.
             </p>
           </>
+        )}
+
+        {avisoFila && (
+          <p className="alerta alerta--info" role="status">
+            <Clock3 aria-hidden="true" />
+            <span>{avisoFila}</span>
+          </p>
         )}
 
         <ul className="lista-dados">

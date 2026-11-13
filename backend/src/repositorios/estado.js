@@ -24,6 +24,7 @@ import {
 } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { normalizarCidadao } from '../dominio/cidadaos.js'
 import { criarConfiguracoesPadrao, normalizarConfiguracoes } from '../dominio/configuracoes.js'
 import {
   calcularSequencia,
@@ -57,6 +58,8 @@ export const estado = {
   solicitacoes: [],
   usuarios: [],
   sessoes: [],
+  cidadaos: [],
+  sessoesCidadao: [],
   configuracoes: criarConfiguracoesPadrao(),
   sequencia: 3,
 }
@@ -74,6 +77,8 @@ function serializar() {
     solicitacoes: estado.solicitacoes,
     usuarios: estado.usuarios,
     sessoes: estado.sessoes,
+    cidadaos: estado.cidadaos,
+    sessoesCidadao: estado.sessoesCidadao,
     configuracoes: estado.configuracoes,
   }, null, 2)
 }
@@ -106,6 +111,12 @@ function validarEstado(salvo) {
   }
   if (salvo.sessoes !== undefined && !Array.isArray(salvo.sessoes)) {
     throw new Error('o campo "sessoes" deve ser uma lista')
+  }
+  if (salvo.cidadaos !== undefined && !Array.isArray(salvo.cidadaos)) {
+    throw new Error('o campo "cidadaos" deve ser uma lista')
+  }
+  if (salvo.sessoesCidadao !== undefined && !Array.isArray(salvo.sessoesCidadao)) {
+    throw new Error('o campo "sessoesCidadao" deve ser uma lista')
   }
   if (
     salvo.configuracoes !== undefined &&
@@ -264,6 +275,8 @@ function montarDados(salvo) {
   let sequenciaSalva = 0
   let usuariosCarregados = null
   let sessoesCarregadas = []
+  let cidadaosCarregados = []
+  let sessoesCidadaoCarregadas = []
   let configuracoesCarregadas = null
 
   if (salvo) {
@@ -285,6 +298,18 @@ function montarDados(salvo) {
       }
       sessoesCarregadas = salvo.sessoes
     }
+    if (salvo.cidadaos !== undefined) {
+      if (!Array.isArray(salvo.cidadaos)) {
+        throw new Error('[dados] o campo "cidadaos" deve ser uma lista.')
+      }
+      cidadaosCarregados = salvo.cidadaos
+    }
+    if (salvo.sessoesCidadao !== undefined) {
+      if (!Array.isArray(salvo.sessoesCidadao)) {
+        throw new Error('[dados] o campo "sessoesCidadao" deve ser uma lista.')
+      }
+      sessoesCidadaoCarregadas = salvo.sessoesCidadao
+    }
     if (salvo.configuracoes !== undefined) {
       if (!salvo.configuracoes || typeof salvo.configuracoes !== 'object' ||
         Array.isArray(salvo.configuracoes)) {
@@ -298,6 +323,7 @@ function montarDados(salvo) {
   const usuarios = (usuariosCarregados
     ? usuariosCarregados.map(normalizarUsuario)
     : criarUsuariosSemente())
+  const cidadaos = cidadaosCarregados.map(normalizarCidadao)
   const agora = Date.now()
   const sessoes = sessoesCarregadas.filter((sessao) => {
     if (!sessao || typeof sessao !== 'object') return false
@@ -306,11 +332,20 @@ function montarDados(salvo) {
       (usuario) => usuario.id === sessao.usuarioId && usuario.ativo,
     )
   })
+  const sessoesCidadao = sessoesCidadaoCarregadas.filter((sessao) => {
+    if (!sessao || typeof sessao !== 'object') return false
+    const expira = new Date(sessao.expiraEm).getTime()
+    return Number.isFinite(expira) && expira > agora && cidadaos.some(
+      (cidadao) => cidadao.id === sessao.cidadaoId && cidadao.ativo,
+    )
+  })
 
   return {
     solicitacoes,
     usuarios,
     sessoes,
+    cidadaos,
+    sessoesCidadao,
     configuracoes: normalizarConfiguracoes(configuracoesCarregadas ?? {}),
     sequencia: Math.max(sequenciaSalva, calcularSequencia(solicitacoes)),
   }
@@ -326,6 +361,14 @@ function aplicarDados(dados) {
 
   estado.sessoes.length = 0
   estado.sessoes.push(...dados.sessoes.map((item) => structuredClone(item)))
+
+  estado.cidadaos.length = 0
+  estado.cidadaos.push(...(dados.cidadaos ?? []).map((item) => structuredClone(item)))
+
+  estado.sessoesCidadao.length = 0
+  estado.sessoesCidadao.push(
+    ...(dados.sessoesCidadao ?? []).map((item) => structuredClone(item)),
+  )
 
   Object.assign(
     estado.configuracoes,
@@ -369,6 +412,8 @@ export async function inicializarDados() {
       solicitacoes: estado.solicitacoes,
       usuarios: estado.usuarios,
       sessoes: estado.sessoes,
+      cidadaos: estado.cidadaos,
+      sessoesCidadao: estado.sessoesCidadao,
       configuracoes: estado.configuracoes,
       sequencia: estado.sequencia,
     }

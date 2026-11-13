@@ -105,9 +105,12 @@ Modelo comentado: [`deploy/app.env.example`](./app.env.example).
 
 ### Dados
 
-- Fonte principal: MySQL `app_pwa_prefeitura` (catalogo, solicitacoes, usuarios, sessoes e configuracoes).
+- Fonte principal: MySQL `app_pwa_prefeitura` (catalogo, solicitacoes, usuarios, sessoes, configuracoes
+  e contas de cidadaos).
 - O `backend/data/estado.json` existente e importado automaticamente no primeiro start com o banco
   vazio; nas inicializacoes seguintes ele nao e mais lido nem regravado.
+- Dados pessoais de cidadaos ficam em `dados_cidadaos` e `dados_cidadaos_sessoes`; sessoes expiradas sao
+  removidas na inicializacao. A exclusao de conta anonimiza o cadastro e revoga as sessoes.
 - Backup do banco: `mysqldump` do schema `app_pwa_prefeitura`.
 - O diretorio `backend/data/` e ignorado pelo Git.
 
@@ -127,6 +130,18 @@ sudo bash deploy/instalar-ollama.sh
 O script instala o Ollama, habilita o servico, baixa `qwen3:1.7b` e valida a API com
 `think: false`. No painel, escolha o provedor **Ollama**, modelo `qwen3:1.7b` e URL
 `http://127.0.0.1:11434`, depois use **Testar IA**.
+
+A classificacao roda em fila depois de o pedido ser gravado. Ajuste com
+`TRIAGEM_FILA_CONCORRENCIA` (padrao `1`), `TRIAGEM_FILA_AVISO` (padrao `2`) e
+`TRIAGEM_FILA_MAX` (padrao `20`).
+
+### Privacidade e LGPD
+
+- O Aviso de Privacidade fica em `/privacidade` e a versao aceita no cadastro e registrada no banco.
+- Rotas `/api/cidadao` exigem sessao propria, respondem `no-store` e nao entram no cache do nginx ou do
+  Service Worker.
+- O backup do banco inclui dados pessoais: guarde os arquivos em `/root/backups` com permissao restrita e
+  defina prazo de descarte.
 
 ## Cloudflare
 
