@@ -31,6 +31,8 @@ export const PAPEIS = {
  *
  * Esta é a semente do cadastro administrativo. O `id` é curto e estável; o
  * `slug` preserva o identificador externo usado no cadastro do município.
+ * A secretaria de testes nasce desativada (soft delete) e permanece apenas
+ * para rastreabilidade; não aparece nas listas públicas.
  */
 export const secretariasSemente = [
   {
@@ -45,7 +47,7 @@ export const secretariasSemente = [
     sigla: 'TESTES',
     nome: 'Secretaria - Testes',
     slug: 'secretaria-testes',
-    ativo: true,
+    ativo: false,
     teste: true,
   },
   {
@@ -116,9 +118,9 @@ export const secretariasSemente = [
 /**
  * Setores operacionais do piloto.
  *
- * `secretariaId` liga o setor à secretaria oficial quando o vínculo já está
- * definido. Setores com `null` ainda dependem de confirmação do município.
- * A triagem central nunca deixa de ver tudo.
+ * `secretariaId` liga o setor à secretaria oficial. Todos os setores do piloto
+ * já têm vínculo definido; novos setores ainda podem ser criados sem secretaria
+ * pela tela administrativa. A triagem central nunca deixa de ver tudo.
  */
 export const setoresSemente = [
   {
@@ -142,8 +144,8 @@ export const setoresSemente = [
   {
     id: 'zeladoria',
     nome: 'Zeladoria e Serviços Urbanos',
-    secretaria: 'Secretaria de Serviços Urbanos',
-    secretariaId: null,
+    secretaria: 'Secretaria Municipal de Obras',
+    secretariaId: 'semosp',
     descricao: 'Limpeza, coleta e conservação da cidade.',
     central: false,
     ativo: true,
@@ -160,8 +162,8 @@ export const setoresSemente = [
   {
     id: 'fiscalizacao',
     nome: 'Fiscalização e Posturas',
-    secretaria: 'Secretaria de Fiscalização',
-    secretariaId: null,
+    secretaria: 'Secretaria Municipal de Infraestrutura e Urbanismo',
+    secretariaId: 'semiu',
     descricao: 'Terrenos, construções e posturas municipais.',
     central: false,
     ativo: true,
@@ -169,8 +171,8 @@ export const setoresSemente = [
   {
     id: 'mobilidade',
     nome: 'Mobilidade e Trânsito',
-    secretaria: 'Secretaria de Mobilidade',
-    secretariaId: null,
+    secretaria: 'Secretaria Municipal de Infraestrutura e Urbanismo',
+    secretariaId: 'semiu',
     descricao: 'Sinalização, trânsito e acessibilidade viária.',
     central: false,
     ativo: true,

@@ -163,14 +163,30 @@ test('fluxo completo de secretaria, setor e serviço novos', async () => {
   )
 })
 
-test('edita setor ainda sem vínculo sem exigir secretaria', async () => {
+test('edita setor legado sem vínculo sem exigir secretaria', async () => {
+  // Simula um setor criado antes de o vínculo com secretaria ser obrigatório.
+  await repositorioCatalogo.criarSetor(
+    {
+      id: 'setor_sem_vinculo',
+      nome: 'Setor Sem Vínculo',
+      descricao: 'Ainda aguardando secretaria.',
+      secretariaId: null,
+      central: false,
+      ativo: true,
+      criadoEm: new Date().toISOString(),
+      atualizadoEm: new Date().toISOString(),
+    },
+    ator,
+  )
+  await servicoCatalogo.inicializarCatalogo()
+
   const antes = servicoCatalogo
     .obterCatalogo()
-    .setores.find((setor) => setor.id === 'fiscalizacao')
+    .setores.find((setor) => setor.id === 'setor_sem_vinculo')
   assert.equal(antes.secretariaId, null)
 
   const resultado = await servicoCatalogo.atualizarSetor(
-    'fiscalizacao',
+    'setor_sem_vinculo',
     { descricao: 'Descrição revisada sem vínculo.' },
     ator,
   )

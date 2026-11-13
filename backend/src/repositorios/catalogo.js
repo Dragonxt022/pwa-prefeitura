@@ -221,6 +221,37 @@ async function semear(conexao) {
   }
 }
 
+/**
+ * Corrige com segurança dados que já existiam na versão anterior da semente.
+ *
+ * `INSERT IGNORE` não altera linhas existentes. Estas atualizações só rodam
+ * quando o registro ainda está exatamente no estado antigo, preservando
+ * qualquer edição feita pelo administrador:
+ * - setores sem vínculo recebem a secretaria definida nesta versão;
+ * - a secretaria de testes, nunca editada, é desativada por soft delete.
+ */
+async function ajustarSementes(conexao) {
+  for (const setor of setoresSemente) {
+    if (!setor.secretariaId) continue
+    await conexao.execute(
+      `UPDATE catalogo_setores
+          SET secretaria_id = ?, atualizado_em = ?
+        WHERE id = ? AND secretaria_id IS NULL`,
+      [setor.secretariaId, new Date(), setor.id],
+    )
+  }
+
+  const testes = secretariasSemente.find((secretaria) => secretaria.teste)
+  if (testes) {
+    await conexao.execute(
+      `UPDATE catalogo_secretarias
+          SET ativo = ?
+        WHERE id = ? AND teste = 1 AND ativo = 1 AND atualizado_em = criado_em`,
+      [testes.ativo === false ? 0 : 1, testes.id],
+    )
+  }
+}
+
 /** Cria o schema, insere sementes ausentes e devolve o catálogo atual. */
 export async function inicializar() {
   if (!mysqlConfigurado) return carregar()
@@ -229,6 +260,7 @@ export async function inicializar() {
     await pool.query(sql)
   }
   await semear(pool)
+  await ajustarSementes(pool)
   return carregar()
 }
 

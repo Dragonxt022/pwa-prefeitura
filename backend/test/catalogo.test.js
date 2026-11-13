@@ -45,9 +45,11 @@ test('catálogo tem as 11 secretarias oficiais', () => {
   )
   for (const secretaria of secretariasSemente) {
     assert.ok(secretaria.nome, `secretaria ${secretaria.id} sem nome`)
+    if (secretaria.teste) continue
     assert.equal(secretaria.ativo, true)
   }
   assert.equal(buscarSecretaria('testes')?.teste, true)
+  assert.equal(buscarSecretaria('testes')?.ativo, false)
 })
 
 test('busca e listagem de secretarias', () => {
@@ -55,7 +57,9 @@ test('busca e listagem de secretarias', () => {
   assert.equal(buscarSecretaria('inexistente'), null)
 
   const lista = listarSecretarias()
-  assert.equal(lista.length, 11)
+  assert.equal(lista.length, 10)
+  assert.equal(lista.some((secretaria) => secretaria.id === 'testes'), false)
+  assert.equal(listarSecretarias({ incluirInativos: true }).length, 11)
   lista[0].nome = 'Alterado'
   assert.notEqual(secretariasSemente[0].nome, 'Alterado')
 })
@@ -72,7 +76,9 @@ test('setores apontam apenas para secretarias existentes', () => {
   assert.equal(secretariaDoSetor('meio_ambiente')?.sigla, 'SEMA')
   assert.equal(secretariaDoSetor('infraestrutura')?.sigla, 'SEMOSP')
   assert.equal(secretariaDoSetor('triagem')?.sigla, 'GABINETE')
-  assert.equal(secretariaDoSetor('zeladoria'), null)
+  assert.equal(secretariaDoSetor('zeladoria')?.sigla, 'SEMOSP')
+  assert.equal(secretariaDoSetor('fiscalizacao')?.sigla, 'SEMIU')
+  assert.equal(secretariaDoSetor('mobilidade')?.sigla, 'SEMIU')
   assert.equal(secretariaDoSetor('inexistente'), null)
 })
 
