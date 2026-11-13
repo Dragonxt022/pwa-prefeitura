@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
+  aplicarCatalogo,
   buscarSecretaria,
   buscarServico,
+  catalogoAtual,
   listarSecretarias,
   listarServicos,
   listarSetores,
@@ -12,6 +14,7 @@ import {
   setorDoServico,
   setoresSemente,
 } from '../src/dominio/catalogo.js'
+import { listarServicos as listarServicosPublicos } from '../src/controladores/catalogo.js'
 
 const SECRETARIAS_ESPERADAS = {
   comunicacao: { sigla: 'GABINETE', slug: 'comunicacao-gabinete' },
@@ -93,4 +96,33 @@ test('serviços são ligados a setores ativos e a lista do setor é derivada', (
   assert.deepEqual(infraestrutura.servicos.sort(), ['iluminacao', 'pavimentacao'])
   assert.equal(buscarServico('poda')?.setorId, 'meio_ambiente')
   assert.equal(buscarServico('ouvidoria'), null)
+})
+
+test('contrato público de serviços não expõe campos internos do catálogo', () => {
+  const original = catalogoAtual()
+  const servicosInternos = original.servicos.map((servico) => ({
+    ...servico,
+    ativo: true,
+    criadoEm: '2026-11-13T00:00:00.000Z',
+    atualizadoEm: '2026-11-13T00:00:00.000Z',
+  }))
+
+  try {
+    aplicarCatalogo({
+      secretarias: original.secretarias,
+      setores: original.setores,
+      servicos: servicosInternos,
+    })
+    let resposta
+    listarServicosPublicos({}, { json: (payload) => { resposta = payload } })
+    assert.equal(resposta.dados.length, 8)
+    for (const servico of resposta.dados) {
+      assert.equal(servico.ativo, undefined)
+      assert.equal(servico.setorId, undefined)
+      assert.equal(servico.criadoEm, undefined)
+      assert.equal(servico.atualizadoEm, undefined)
+    }
+  } finally {
+    aplicarCatalogo(original)
+  }
 })
