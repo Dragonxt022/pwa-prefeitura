@@ -88,7 +88,7 @@ function payloadDe(tipo, form) {
     return {
       nome: form.nome,
       descricao: form.descricao,
-      secretariaId: form.secretariaId,
+      ...(form.secretariaId ? { secretariaId: form.secretariaId } : {}),
       ativo: Boolean(form.ativo),
     }
   }
@@ -98,7 +98,7 @@ function payloadDe(tipo, form) {
     categoria: form.categoria,
     prazoDias: Number(form.prazoDias) || 10,
     ordem: Number(form.ordem) || 0,
-    setorId: form.setorId,
+    ...(form.setorId ? { setorId: form.setorId } : {}),
     destaque: Boolean(form.destaque),
     novo: Boolean(form.novo),
     ativo: Boolean(form.ativo),
