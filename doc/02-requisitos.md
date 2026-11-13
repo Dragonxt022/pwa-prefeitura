@@ -623,7 +623,7 @@ Exemplo 422:
 | RNF-10 | Privacidade de dados | Sem dados reais; contato/clientId/triagem fora das respostas públicas; listagem apenas na gestão e escopada por setor |
 | RNF-11 | Segurança básica | `x-powered-by` desabilitado, corpo limitado a 2 MB, CORS com credenciais restrito, senha `scrypt`, sessão `HttpOnly`/`SameSite=Lax`, código de acesso persistido só como hash SHA-256 |
 | RNF-12 | Persistência | Catálogo em MySQL (schema criado na inicialização, sementes idempotentes e auditoria); solicitações, usuários, sessões e configurações em JSON (`DATA_FILE`) com escrita atômica + `fsync` + backup `.bak` |
-| RNF-13 | Qualidade de código | `oxlint` com **0 erros e 0 warnings**, build sem erros, 37 testes `node:test` e 2 E2E Playwright; CI no GitHub Actions |
+| RNF-13 | Qualidade de código | `oxlint` com **0 erros e 0 warnings**, build sem erros, 38 testes `node:test` e 2 E2E Playwright; CI no GitHub Actions |
 | RNF-14 | Sessão | Cookie `HttpOnly`; “manter conectado” 30 dias, sessão curta 12 h; token persistido apenas como hash |
 | RNF-15 | Triagem automática | Classificador local sem envio de dados a terceiros; flag desligada por padrão; fallback para triagem central |
 

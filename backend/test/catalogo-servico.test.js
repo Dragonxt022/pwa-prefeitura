@@ -163,6 +163,21 @@ test('fluxo completo de secretaria, setor e serviço novos', async () => {
   )
 })
 
+test('edita setor ainda sem vínculo sem exigir secretaria', async () => {
+  const antes = servicoCatalogo
+    .obterCatalogo()
+    .setores.find((setor) => setor.id === 'fiscalizacao')
+  assert.equal(antes.secretariaId, null)
+
+  const resultado = await servicoCatalogo.atualizarSetor(
+    'fiscalizacao',
+    { descricao: 'Descrição revisada sem vínculo.' },
+    ator,
+  )
+  assert.equal(resultado.registro.secretariaId, null)
+  assert.equal(resultado.registro.descricao, 'Descrição revisada sem vínculo.')
+})
+
 test('serviço pode ser movido para outro setor ativo', async () => {
   const resultado = await servicoCatalogo.atualizarServico(
     'poda',
