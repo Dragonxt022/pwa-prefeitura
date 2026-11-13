@@ -68,4 +68,14 @@ test('cidadão cria conta e tem contato e endereço preenchidos na solicitação
 
   await page.goto('/redefinir-senha')
   await expect(page.getByRole('heading', { name: 'Link inválido' })).toBeVisible()
+
+  await page.goto('/gestao')
+  await page.locator('#email-gestao').fill('admin@prefeitura.demo')
+  await page.locator('#senha-gestao').fill('prefeitura-demo')
+  await page.getByRole('button', { name: 'Entrar no painel' }).click()
+  await page.getByRole('link', { name: 'Configurações' }).click()
+  await page.getByRole('tab', { name: /Cidadãos/ }).click()
+  await page.locator('#cidadao-email-recuperacao').fill(email)
+  await page.getByRole('button', { name: 'Gerar link' }).click()
+  await expect(page.locator('#cidadao-link-recuperacao')).toHaveValue(/redefinir-senha#token=/)
 })
