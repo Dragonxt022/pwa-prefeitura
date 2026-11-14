@@ -15,6 +15,10 @@ import {
   setoresSemente,
 } from '../src/dominio/catalogo.js'
 import { listarServicos as listarServicosPublicos } from '../src/controladores/catalogo.js'
+import {
+  iconeVisualValido,
+  tomVisualValido,
+} from '../../shared/catalogo-visual.js'
 
 const SECRETARIAS_ESPERADAS = {
   comunicacao: { sigla: 'GABINETE', slug: 'comunicacao-gabinete' },
@@ -95,6 +99,11 @@ test('serviços são ligados a setores ativos e a lista do setor é derivada', (
       setoresSemente.some((setor) => setor.id === servico.setorId),
       `serviço ${servico.id} aponta para setor inexistente`,
     )
+  }
+
+  for (const servico of servicosSemente) {
+    assert.ok(iconeVisualValido(servico.icone), `serviço ${servico.id} sem ícone válido`)
+    assert.ok(tomVisualValido(servico.cor), `serviço ${servico.id} sem cor válida`)
   }
 
   const setores = listarSetores()

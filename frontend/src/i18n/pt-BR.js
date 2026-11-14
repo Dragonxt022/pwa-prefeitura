@@ -250,6 +250,21 @@ const ptBR = {
   'ia.erroTeste': 'Não foi possível executar o teste.',
   'ia.testeSemConfiguracao': 'Informe os dados do provedor para testar.',
 
+  // Aparência de cartões no aplicativo
+  'visual.titulo': 'Aparência do cartão',
+  'visual.ajuda':
+    'Escolha o ícone e a cor exibidos no aplicativo. No modo automático, o sistema usa o padrão da categoria.',
+  'visual.icone': 'Ícone',
+  'visual.cor': 'Cor',
+  'visual.previa': 'Prévia do cartão',
+  'visual.servico': 'Serviço',
+  'visual.aviso': 'Aviso',
+  'visual.automatico': 'Aparência automática',
+  'visual.tomEscolhido': 'Tom {{tom}}',
+  'visual.iconeAutomatico': 'Usar ícone automático',
+  'visual.corAutomatica': 'Usar cor automática',
+  'visual.usarAutomatico': 'Usar aparência automática',
+
   // Catálogo administrativo
   'catalogo.sobre': 'Estrutura de atendimento',
   'catalogo.titulo': 'Catálogo de secretarias, setores e serviços',
@@ -359,6 +374,9 @@ const ptBR = {
   'avisos.campoTitulo': 'Título',
   'avisos.campoResumo': 'Resumo',
   'avisos.resumoAjuda': 'Texto curto exibido no cartão da Home (até 300 caracteres).',
+  'avisos.campoConteudo': 'Conteúdo completo',
+  'avisos.conteudoAjuda':
+    'Texto exibido na tela de leitura do aviso. Separe os parágrafos com uma linha em branco (até 4.000 caracteres).',
   'avisos.campoCategoria': 'Categoria',
   'avisos.categoriaAjuda': 'Exemplos: Saúde, Serviço, Zeladoria, Educação.',
   'avisos.campoPrioridade': 'Prioridade',

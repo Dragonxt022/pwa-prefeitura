@@ -9,6 +9,7 @@ process.env.DATA_FILE = join(diretorio, 'estado.json')
 
 const repositorioCatalogo = await import('../src/repositorios/catalogo.js')
 const servicoCatalogo = await import('../src/servicos/catalogo.js')
+const { validarCriacaoServico } = await import('../src/validadores/catalogo.js')
 
 const ator = { id: 'admin-teste', nome: 'Admin Teste' }
 
@@ -122,11 +123,15 @@ test('fluxo completo de secretaria, setor e serviço novos', async () => {
       destaque: false,
       novo: true,
       setorId: setor.registro.id,
+      icone: 'map-pin',
+      cor: 'roxo',
     },
     ator,
   )
   assert.equal(servico.registro.id, 'informacoes_turisticas')
   assert.equal(servico.registro.setorId, setor.registro.id)
+  assert.equal(servico.registro.icone, 'map-pin')
+  assert.equal(servico.registro.cor, 'roxo')
 
   const setorComServico = servicoCatalogo
     .obterCatalogo()
@@ -207,6 +212,39 @@ test('serviço pode ser movido para outro setor ativo', async () => {
     catalogo.setores.find((setor) => setor.id === 'infraestrutura').servicos.includes('poda'),
     true,
   )
+})
+
+test('validação rejeita ícone e cor fora do catálogo visual', () => {
+  assert.throws(
+    () =>
+      validarCriacaoServico({
+        titulo: 'Serviço de teste',
+        descricao: 'Descrição do serviço de teste.',
+        categoria: 'Teste',
+        setorId: 'infraestrutura',
+        icone: 'inexistente',
+        cor: 'rosa',
+      }),
+    (erro) => {
+      assert.ok(erro.campos.icone)
+      assert.ok(erro.campos.cor)
+      return true
+    },
+  )
+})
+
+test('atualiza e limpa a aparência do serviço', async () => {
+  const atualizado = await servicoCatalogo.atualizarServico(
+    'poda',
+    { icone: 'leaf', cor: 'verde' },
+    ator,
+  )
+  assert.equal(atualizado.registro.icone, 'leaf')
+  assert.equal(atualizado.registro.cor, 'verde')
+
+  const limpo = await servicoCatalogo.atualizarServico('poda', { icone: null, cor: null }, ator)
+  assert.equal(limpo.registro.icone, null)
+  assert.equal(limpo.registro.cor, null)
 })
 
 test('não encontra registros inexistentes', async () => {

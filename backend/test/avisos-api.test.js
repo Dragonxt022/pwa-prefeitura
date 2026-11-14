@@ -54,8 +54,12 @@ async function entrarComo(email) {
 const NOVO_AVISO = {
   titulo: 'Feira de serviços neste sábado',
   resumo: 'Atendimento gratuito das 8h às 13h na praça central.',
+  conteudo:
+    'A feira reúne atendimento de saúde, orientação sobre benefícios e serviços de zeladoria.\n\nA participação é gratuita e não exige agendamento.',
   categoria: 'Serviço',
   prioridade: 'alta',
+  icone: 'users',
+  cor: 'azul',
 }
 
 test('aviso criado pelo admin aparece na home e pode ser desativado', async () => {
@@ -78,10 +82,23 @@ test('aviso criado pelo admin aparece na home e pode ser desativado', async () =
   assert.equal(criado.status, 201)
   const id = criado.payload.dados.id
   assert.equal(criado.payload.dados.ativo, true)
+  assert.equal(criado.payload.dados.icone, 'users')
+  assert.equal(criado.payload.dados.cor, 'azul')
 
   const depois = await chamar('/avisos')
   assert.equal(depois.payload.dados.length, totalInicial + 1)
   assert.equal(depois.payload.dados[0].id, id)
+
+  const detalhe = await chamar(`/avisos/${id}`)
+  assert.equal(detalhe.status, 200)
+  assert.equal(detalhe.payload.dados.titulo, NOVO_AVISO.titulo)
+  assert.equal(detalhe.payload.dados.conteudo, NOVO_AVISO.conteudo)
+  assert.equal(detalhe.payload.dados.icone, 'users')
+  assert.equal(detalhe.payload.dados.cor, 'azul')
+  assert.equal(detalhe.payload.dados.ativo, undefined)
+
+  const inexistente = await chamar('/avisos/nao_existe')
+  assert.equal(inexistente.status, 404)
 
   const desativado = await chamar(`/gestao/avisos/${id}`, {
     metodo: 'PATCH',
@@ -94,6 +111,9 @@ test('aviso criado pelo admin aparece na home e pode ser desativado', async () =
   const final = await chamar('/avisos')
   assert.equal(final.payload.dados.length, totalInicial)
   assert.equal(final.payload.dados.some((aviso) => aviso.id === id), false)
+
+  const detalheInativo = await chamar(`/avisos/${id}`)
+  assert.equal(detalheInativo.status, 404)
 })
 
 test('somente administradores podem criar avisos', async () => {

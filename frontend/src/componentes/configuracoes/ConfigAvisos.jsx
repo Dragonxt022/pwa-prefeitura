@@ -14,7 +14,9 @@ import {
   obterAvisosGestao,
 } from '../../servicos/api'
 import { formatarDataHora } from '../../utils/format'
+import { visualAviso } from '../../utils/visual'
 import { CampoConfig, ErroOperacao, SeloPersistencia, SwitchConfig } from './ConfigCampos'
+import SeletorVisual from './SeletorVisual'
 
 const PRIORIDADES = [
   { id: 'alta', chave: 'avisos.prioridadeAlta' },
@@ -44,7 +46,10 @@ function formVazio() {
   return {
     titulo: '',
     resumo: '',
+    conteudo: '',
     categoria: '',
+    icone: '',
+    cor: '',
     prioridade: 'normal',
     publicadoEm: paraInputDataHora(),
     ativo: true,
@@ -55,7 +60,10 @@ function payloadDe(form) {
   return {
     titulo: form.titulo,
     resumo: form.resumo,
+    conteudo: form.conteudo,
     categoria: form.categoria,
+    icone: form.icone || null,
+    cor: form.cor || null,
     prioridade: form.prioridade,
     publicadoEm: deInputDataHora(form.publicadoEm),
     ativo: Boolean(form.ativo),
@@ -125,7 +133,10 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
     setForm({
       titulo: registro.titulo,
       resumo: registro.resumo,
+      conteudo: registro.conteudo || registro.resumo,
       categoria: registro.categoria,
+      icone: registro.icone || '',
+      cor: registro.cor || '',
       prioridade: registro.prioridade || 'normal',
       publicadoEm: paraInputDataHora(registro.publicadoEm),
       ativo: registro.ativo,
@@ -358,6 +369,36 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
                       required
                     />
                   </CampoConfig>
+                  <CampoConfig
+                    id="aviso-conteudo"
+                    rotulo={t('avisos.campoConteudo')}
+                    ajuda={t('avisos.conteudoAjuda')}
+                    erro={campos.conteudo}
+                    className="config-grid__largo"
+                  >
+                    <textarea
+                      id="aviso-conteudo"
+                      value={form.conteudo}
+                      maxLength={4000}
+                      rows={8}
+                      onChange={(evento) => trocarCampo('conteudo', evento.target.value)}
+                      required
+                    />
+                  </CampoConfig>
+                  <div className="config-grid__largo">
+                    <SeletorVisual
+                      id="aviso-visual"
+                      tipo="aviso"
+                      categoria={form.categoria}
+                      icone={form.icone}
+                      cor={form.cor}
+                      rotuloPreview={form.titulo || t('visual.aviso')}
+                      erro={campos.icone || campos.cor}
+                      onChange={({ icone, cor }) =>
+                        setForm((atual) => ({ ...atual, icone, cor }))
+                      }
+                    />
+                  </div>
                 </div>
 
                 <div className="config-catalogo__switches">
@@ -404,28 +445,34 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
                   const agendado = referencia
                     ? new Date(aviso.publicadoEm).getTime() > referencia
                     : false
+                  const { Icone, tom } = visualAviso(aviso)
                   return (
                     <li
                       key={aviso.id}
                       className={`config-catalogo__item${aviso.ativo ? '' : ' is-inativo'}`}
                     >
-                      <div className="config-catalogo__item-texto">
-                        <strong>
-                          {aviso.titulo}
-                          {agendado ? (
-                            <span className="config-catalogo__etiqueta">
-                              {t('avisos.agendado')}
-                            </span>
-                          ) : null}
-                        </strong>
-                        <span>
-                          {aviso.categoria}
-                          {' · '}
-                          {t(ROTULO_PRIORIDADE[aviso.prioridade] ?? 'avisos.prioridadeNormal')}
-                          {' · '}
-                          {formatarDataHora(aviso.publicadoEm)}
+                      <div className="config-catalogo__item-principal">
+                        <span className={`config-catalogo__item-icone tom-${tom}`}>
+                          <Icone aria-hidden="true" />
                         </span>
-                        <span className="config-catalogo__vinculos">{aviso.resumo}</span>
+                        <div className="config-catalogo__item-texto">
+                          <strong>
+                            {aviso.titulo}
+                            {agendado ? (
+                              <span className="config-catalogo__etiqueta">
+                                {t('avisos.agendado')}
+                              </span>
+                            ) : null}
+                          </strong>
+                          <span>
+                            {aviso.categoria}
+                            {' · '}
+                            {t(ROTULO_PRIORIDADE[aviso.prioridade] ?? 'avisos.prioridadeNormal')}
+                            {' · '}
+                            {formatarDataHora(aviso.publicadoEm)}
+                          </span>
+                          <span className="config-catalogo__vinculos">{aviso.resumo}</span>
+                        </div>
                       </div>
                       <div className="config-catalogo__item-acoes">
                         <span

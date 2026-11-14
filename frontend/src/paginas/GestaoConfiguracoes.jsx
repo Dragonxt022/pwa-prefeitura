@@ -273,44 +273,50 @@ export default function GestaoConfiguracoes() {
       </a>
 
       <header className="gestao-topo">
-        <Link className="gestao-topo__marca" to="/">
-          <img src={logo} alt="" />
-          <span>
-            <strong>{nomeApp}</strong>
-            <small>{t('config.titulo')}</small>
-          </span>
-        </Link>
-        <div className="gestao-topo__usuario">
-          <span className="gestao-topo__pessoa">
-            <strong>{sessao?.usuario?.nome || t('config.titulo')}</strong>
-            <small>
-              {t(PAPEIS_UI[papel] || 'admin.papelSetor')}
-              {sessao?.usuario?.setor?.nome ? ` · ${sessao.usuario.setor.nome}` : ''}
-            </small>
-          </span>
-          <div className="gestao-topo__acoes">
-            <Link className="botao botao--secundario botao--pequeno" to="/gestao">
-              <ArrowLeft aria-hidden="true" />
-              {t('admin.voltarSolicitacoes')}
-            </Link>
-            <Link className="botao botao--secundario botao--pequeno" to="/">
-              {t('admin.verApp')}
-            </Link>
-            {papel === 'admin' && !acessoNegado && (
+        <div className="gestao-topo__interno">
+          <Link className="gestao-topo__marca" to="/">
+            <img src={logo} alt="" />
+            <span>
+              <strong>{nomeApp}</strong>
+              <small>{t('config.titulo')}</small>
+            </span>
+          </Link>
+          <div className="gestao-topo__usuario">
+            <span className="gestao-topo__pessoa">
+              <strong>{sessao?.usuario?.nome || t('config.titulo')}</strong>
+              <small>
+                {t(PAPEIS_UI[papel] || 'admin.papelSetor')}
+                {sessao?.usuario?.setor?.nome ? ` · ${sessao.usuario.setor.nome}` : ''}
+              </small>
+            </span>
+            <div className="gestao-topo__acoes">
+              <Link className="botao botao--secundario botao--pequeno" to="/gestao">
+                <ArrowLeft aria-hidden="true" />
+                {t('admin.voltarSolicitacoes')}
+              </Link>
+              <Link className="botao botao--secundario botao--pequeno" to="/">
+                {t('admin.verApp')}
+              </Link>
+              {papel === 'admin' && !acessoNegado && (
+                <button
+                  type="button"
+                  className="botao botao--secundario botao--pequeno"
+                  onClick={() => carregar()}
+                  disabled={carregando}
+                >
+                  <RefreshCw className={carregando ? 'girando' : undefined} aria-hidden="true" />
+                  {t('comum.atualizar')}
+                </button>
+              )}
               <button
                 type="button"
                 className="botao botao--secundario botao--pequeno"
-                onClick={() => carregar()}
-                disabled={carregando}
+                onClick={sair}
               >
-                <RefreshCw className={carregando ? 'girando' : undefined} aria-hidden="true" />
-                {t('comum.atualizar')}
+                <LogOut aria-hidden="true" />
+                {t('admin.sair')}
               </button>
-            )}
-            <button type="button" className="botao botao--secundario botao--pequeno" onClick={sair}>
-              <LogOut aria-hidden="true" />
-              {t('admin.sair')}
-            </button>
+            </div>
           </div>
         </div>
       </header>

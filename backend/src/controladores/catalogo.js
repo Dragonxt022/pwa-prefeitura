@@ -4,7 +4,11 @@
  * São leituras estáticas do domínio, sem regra de negócio mutável.
  */
 import * as catalogo from '../dominio/catalogo.js'
-import { listarAvisos as listarAvisosDominio } from '../dominio/avisos.js'
+import {
+  buscarAvisoPublico,
+  listarAvisos as listarAvisosDominio,
+} from '../dominio/avisos.js'
+import { naoEncontrado } from '../utils/erros.js'
 
 export function listarServicos(_req, res) {
   // O contrato público mantém apenas os campos de apresentação. Vínculo com o
@@ -21,6 +25,14 @@ export function listarAvisos(_req, res) {
   const dados = listarAvisosDominio().map(
     ({ ativo: _ativo, criadoEm: _criadoEm, atualizadoEm: _atualizadoEm, ...aviso }) => aviso,
   )
+  res.json({ dados })
+}
+
+export function obterAviso(req, res) {
+  const aviso = buscarAvisoPublico(req.params.id)
+  if (!aviso) throw naoEncontrado('Aviso não encontrado.')
+  // O detalhe mantém o mesmo contrato público da listagem.
+  const { ativo: _ativo, criadoEm: _criadoEm, atualizadoEm: _atualizadoEm, ...dados } = aviso
   res.json({ dados })
 }
 

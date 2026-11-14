@@ -21,7 +21,9 @@ import {
   obterCatalogoGestao,
 } from '../../servicos/api'
 import { formatarDataHora } from '../../utils/format'
+import { visualServico } from '../../utils/visual'
 import { CampoConfig, ErroOperacao, SeloPersistencia, SwitchConfig } from './ConfigCampos'
+import SeletorVisual from './SeletorVisual'
 
 const ABAS = [
   { id: 'secretarias', titulo: 'catalogo.abaSecretarias', Icone: Building2 },
@@ -51,6 +53,8 @@ const FORM_VAZIO = {
     prazoDias: 10,
     ordem: 0,
     setorId: '',
+    icone: '',
+    cor: '',
     destaque: false,
     novo: false,
     ativo: true,
@@ -98,6 +102,8 @@ function payloadDe(tipo, form) {
     prazoDias: Number(form.prazoDias) || 10,
     ordem: Number(form.ordem) || 0,
     ...(form.setorId ? { setorId: form.setorId } : {}),
+    icone: form.icone || null,
+    cor: form.cor || null,
     destaque: Boolean(form.destaque),
     novo: Boolean(form.novo),
     ativo: Boolean(form.ativo),
@@ -576,6 +582,20 @@ export default function ConfigCatalogo({ onSessaoExpirada }) {
                           onChange={(evento) => trocarCampo('descricao', evento.target.value)}
                         />
                       </CampoConfig>
+                      <div className="config-grid__largo">
+                        <SeletorVisual
+                          id="catalogo-servico-visual"
+                          tipo="servico"
+                          identificador={editor.registro?.id ?? ''}
+                          icone={form.icone}
+                          cor={form.cor}
+                          rotuloPreview={form.titulo || t('visual.servico')}
+                          erro={campos.icone || campos.cor}
+                          onChange={({ icone, cor }) =>
+                            setForm((atual) => ({ ...atual, icone, cor }))
+                          }
+                        />
+                      </div>
                     </div>
                     <div className="config-catalogo__switches">
                       <SwitchConfig
@@ -636,44 +656,53 @@ export default function ConfigCatalogo({ onSessaoExpirada }) {
                 {lista.map((item) => {
                   const ativo = item.ativo
                   const ehTriagem = secao === 'setores' && item.central
+                  const visual = secao === 'servicos' ? visualServico(item) : null
+                  const IconeServico = visual?.Icone
                   return (
                     <li
                       key={item.id}
                       className={`config-catalogo__item${ativo ? '' : ' is-inativo'}`}
                     >
-                      <div className="config-catalogo__item-texto">
-                        <strong>
-                          {secao === 'secretarias'
-                            ? `${item.sigla} · ${item.nome}`
-                            : secao === 'setores'
-                              ? item.nome
-                              : item.titulo}
-                          {ehTriagem ? (
-                            <span className="config-catalogo__etiqueta">
-                              {t('catalogo.triagemCentral')}
-                            </span>
-                          ) : null}
-                        </strong>
-                        <span>
-                          {secao === 'secretarias'
-                            ? item.slug
-                            : secao === 'setores'
-                              ? (nomesSecretarias.get(item.secretariaId) ?? t('catalogo.semSecretaria'))
-                              : `${item.categoria || t('catalogo.semCategoria')} · ${nomesSetores.get(item.setorId) ?? t('catalogo.semSetor')} · ${t('catalogo.prazoDias', { dias: item.prazoDias })}`}
-                        </span>
-                        <span className="config-catalogo__vinculos">
-                          {secao === 'secretarias'
-                            ? t('catalogo.setoresVinculados', {
-                                quantidade: setores.filter(
-                                  (setor) => setor.secretariaId === item.id,
-                                ).length,
-                              })
-                            : secao === 'setores'
-                              ? t('catalogo.servicosVinculados', {
-                                  quantidade: item.servicos.length,
+                      <div className="config-catalogo__item-principal">
+                        {IconeServico ? (
+                          <span className={`config-catalogo__item-icone tom-${visual.tom}`}>
+                            <IconeServico aria-hidden="true" />
+                          </span>
+                        ) : null}
+                        <div className="config-catalogo__item-texto">
+                          <strong>
+                            {secao === 'secretarias'
+                              ? `${item.sigla} · ${item.nome}`
+                              : secao === 'setores'
+                                ? item.nome
+                                : item.titulo}
+                            {ehTriagem ? (
+                              <span className="config-catalogo__etiqueta">
+                                {t('catalogo.triagemCentral')}
+                              </span>
+                            ) : null}
+                          </strong>
+                          <span>
+                            {secao === 'secretarias'
+                              ? item.slug
+                              : secao === 'setores'
+                                ? (nomesSecretarias.get(item.secretariaId) ?? t('catalogo.semSecretaria'))
+                                : `${item.categoria || t('catalogo.semCategoria')} · ${nomesSetores.get(item.setorId) ?? t('catalogo.semSetor')} · ${t('catalogo.prazoDias', { dias: item.prazoDias })}`}
+                          </span>
+                          <span className="config-catalogo__vinculos">
+                            {secao === 'secretarias'
+                              ? t('catalogo.setoresVinculados', {
+                                  quantidade: setores.filter(
+                                    (setor) => setor.secretariaId === item.id,
+                                  ).length,
                                 })
-                              : item.descricao || t('catalogo.semDescricao')}
-                        </span>
+                              : secao === 'setores'
+                                ? t('catalogo.servicosVinculados', {
+                                    quantidade: item.servicos.length,
+                                  })
+                                : item.descricao || t('catalogo.semDescricao')}
+                          </span>
+                        </div>
                       </div>
                       <div className="config-catalogo__item-acoes">
                         <span

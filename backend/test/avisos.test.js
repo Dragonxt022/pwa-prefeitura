@@ -1,10 +1,14 @@
 import assert from 'node:assert/strict'
 import test, { beforeEach } from 'node:test'
-import { listarAvisos as listarAvisosPublicos } from '../src/controladores/catalogo.js'
+import {
+  listarAvisos as listarAvisosPublicos,
+  obterAviso as obterAvisoPublico,
+} from '../src/controladores/catalogo.js'
 import {
   aplicarAvisos,
   avisosSemente,
   buscarAviso,
+  buscarAvisoPublico,
   listarAvisos,
 } from '../src/dominio/avisos.js'
 import * as repositorioAvisos from '../src/repositorios/avisos.js'
@@ -25,6 +29,15 @@ const ATOR = { id: 'u-admin', nome: 'Admin Teste' }
 function respostaPublica() {
   let resposta
   listarAvisosPublicos({}, { json: (payload) => { resposta = payload } })
+  return resposta
+}
+
+function respostaDetalhe(id) {
+  let resposta
+  obterAvisoPublico(
+    { params: { id } },
+    { json: (payload) => { resposta = payload } },
+  )
   return resposta
 }
 
@@ -84,16 +97,67 @@ test('contrato público não expõe campos internos do painel', () => {
     assert.equal(aviso.atualizadoEm, undefined)
     assert.ok(aviso.titulo)
     assert.ok(aviso.publicadoEm)
+    assert.ok(aviso.conteudo)
   }
 })
 
-test('validação rejeita título, resumo, categoria e prioridade inválidos', () => {
+test('detalhe público devolve o conteúdo completo do aviso', () => {
+  const resposta = respostaDetalhe('aviso-1')
+  assert.equal(resposta.dados.id, 'aviso-1')
+  assert.equal(resposta.dados.icone, 'paw-print')
+  assert.equal(resposta.dados.cor, 'coral')
+  assert.match(resposta.dados.conteudo, /vacinação antirrábica/i)
+  assert.equal(resposta.dados.ativo, undefined)
+  assert.equal(resposta.dados.criadoEm, undefined)
+})
+
+test('detalhe público não encontra aviso inativo, futuro ou inexistente', () => {
+  aplicarAvisos([
+    ...avisosSemente,
+    {
+      id: 'futuro',
+      titulo: 'Agendado',
+      resumo: 'Aviso que ainda não deve ser publicado na Home.',
+      categoria: 'Serviço',
+      prioridade: 'normal',
+      publicadoEm: '2099-01-01T10:00:00-04:00',
+      ativo: true,
+    },
+    {
+      id: 'inativo',
+      titulo: 'Desativado',
+      resumo: 'Aviso desativado no painel e que não deve aparecer.',
+      categoria: 'Serviço',
+      prioridade: 'normal',
+      publicadoEm: '2026-10-01T10:00:00-04:00',
+      ativo: false,
+    },
+  ])
+
+  assert.equal(buscarAvisoPublico('futuro'), null)
+  assert.equal(buscarAvisoPublico('inativo'), null)
+  assert.throws(() => respostaDetalhe('nao_existe'), (erro) => {
+    assert.equal(erro.name, 'AppError')
+    assert.equal(erro.status, 404)
+    return true
+  })
+})
+
+test('validação rejeita título, resumo, conteúdo, categoria e prioridade inválidos', () => {
   assert.throws(
-    () => validarCriacaoAviso({ titulo: 'ab', resumo: 'curto', categoria: '', prioridade: 'urgente' }),
+    () =>
+      validarCriacaoAviso({
+        titulo: 'ab',
+        resumo: 'curto',
+        conteudo: 'curto',
+        categoria: '',
+        prioridade: 'urgente',
+      }),
     (erro) => {
       assert.equal(erro.name, 'AppError')
       assert.ok(erro.campos.titulo)
       assert.ok(erro.campos.resumo)
+      assert.ok(erro.campos.conteudo)
       assert.ok(erro.campos.categoria)
       assert.ok(erro.campos.prioridade)
       return true
@@ -101,20 +165,45 @@ test('validação rejeita título, resumo, categoria e prioridade inválidos', (
   )
 })
 
-test('validação normaliza prioridade, data e campos de texto', () => {
+test('validação normaliza prioridade, data, textos e aparência', () => {
   const dados = validarCriacaoAviso({
     titulo: '  Nova unidade de saúde  ',
     resumo: '  Atendimento começa na segunda-feira.  ',
+    conteudo: '  A unidade abre às 7h e atende até as 19h.  ',
     categoria: ' Saúde ',
+    icone: 'hospital',
+    cor: 'teal',
     prioridade: 'ALTA',
     publicadoEm: '2026-11-20T10:00:00-04:00',
   })
   assert.equal(dados.titulo, 'Nova unidade de saúde')
   assert.equal(dados.resumo, 'Atendimento começa na segunda-feira.')
+  assert.equal(dados.conteudo, 'A unidade abre às 7h e atende até as 19h.')
   assert.equal(dados.categoria, 'Saúde')
+  assert.equal(dados.icone, 'hospital')
+  assert.equal(dados.cor, 'teal')
   assert.equal(dados.prioridade, 'alta')
   assert.equal(dados.publicadoEm, '2026-11-20T14:00:00.000Z')
   assert.equal(dados.ativo, true)
+})
+
+test('validação rejeita ícone e cor fora do catálogo visual', () => {
+  assert.throws(
+    () =>
+      validarCriacaoAviso({
+        titulo: 'Aviso válido',
+        resumo: 'Resumo suficientemente longo para o teste.',
+        conteudo: 'Conteúdo completo do aviso para o teste de validação.',
+        categoria: 'Serviço',
+        icone: 'inexistente',
+        cor: 'rosa',
+      }),
+    (erro) => {
+      assert.ok(erro.campos.icone)
+      assert.ok(erro.campos.cor)
+      return true
+    },
+  )
 })
 
 test('atualização exige ao menos um campo', () => {
@@ -129,13 +218,19 @@ test('cria aviso com id derivado, prioridade padrão e auditoria', async () => {
     {
       titulo: 'Mutirão de vacinação',
       resumo: 'Atendimento ampliado neste sábado em todas as unidades.',
+      conteudo: 'Todas as unidades abrem das 8h às 17h para atualização da caderneta.',
       categoria: 'Saúde',
+      icone: 'stethoscope',
+      cor: 'roxo',
     },
     ATOR,
   )
 
   assert.equal(resultado.campos, undefined)
   assert.equal(resultado.registro.id, 'mutirao_de_vacinacao')
+  assert.equal(resultado.registro.conteudo, 'Todas as unidades abrem das 8h às 17h para atualização da caderneta.')
+  assert.equal(resultado.registro.icone, 'stethoscope')
+  assert.equal(resultado.registro.cor, 'roxo')
   assert.equal(resultado.registro.prioridade, 'normal')
   assert.equal(resultado.registro.ativo, true)
   assert.ok(resultado.registro.publicadoEm)

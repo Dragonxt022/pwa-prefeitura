@@ -297,6 +297,8 @@ export async function criarServico(dados, ator) {
     destaque: Boolean(dados.destaque),
     novo: Boolean(dados.novo),
     setorId: dados.setorId,
+    icone: dados.icone ?? null,
+    cor: dados.cor ?? null,
     ativo: dados.ativo !== false,
     criadoEm: agora,
     atualizadoEm: agora,

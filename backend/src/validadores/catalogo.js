@@ -5,6 +5,10 @@
  * A validação de unicidade e as regras de desativação ficam no serviço, pois
  * dependem do catálogo atual e das solicitações.
  */
+import {
+  iconeVisualValido,
+  tomVisualValido,
+} from '../../../shared/catalogo-visual.js'
 import { validacao } from '../utils/erros.js'
 import { texto } from '../utils/texto.js'
 
@@ -59,6 +63,17 @@ function lerTextoOpcional(valor, campo, campos, maximo = LIMITES.descricao) {
   if (valor === undefined) return undefined
   const limpo = texto(valor)
   if (limpo.length > maximo) campos[campo] = `Use no máximo ${maximo} caracteres.`
+  return limpo
+}
+
+function validarVisual(valor, campo, campos, valido) {
+  if (valor === undefined) return undefined
+  const limpo = texto(valor)
+  if (!limpo) return null
+  if (!valido(limpo)) {
+    campos[campo] = 'Escolha uma opção válida.'
+    return undefined
+  }
   return limpo
 }
 
@@ -156,6 +171,14 @@ function validarServico(body, { criacao }) {
     if (!setorId) campos.setorId = 'Escolha o setor responsável pelo serviço.'
     dados.setorId = setorId || null
   }
+
+  const icone = validarVisual(body.icone, 'icone', campos, iconeVisualValido)
+  if (criacao) dados.icone = icone ?? null
+  else if (icone !== undefined) dados.icone = icone
+
+  const cor = validarVisual(body.cor, 'cor', campos, tomVisualValido)
+  if (criacao) dados.cor = cor ?? null
+  else if (cor !== undefined) dados.cor = cor
 
   const prazoDias = lerInteiro(body.prazoDias, 'prazoDias', campos, {
     minimo: 1,

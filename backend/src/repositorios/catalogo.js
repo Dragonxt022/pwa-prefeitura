@@ -49,6 +49,8 @@ const TABELAS = [
     destaque TINYINT(1) NOT NULL DEFAULT 0,
     novo TINYINT(1) NOT NULL DEFAULT 0,
     setor_id VARCHAR(64) NULL,
+    icone VARCHAR(40) NULL,
+    cor VARCHAR(20) NULL,
     ativo TINYINT(1) NOT NULL DEFAULT 1,
     criado_em DATETIME(3) NOT NULL,
     atualizado_em DATETIME(3) NOT NULL,
@@ -134,6 +136,8 @@ function mapearServico(linha) {
     destaque: Boolean(linha.destaque),
     novo: Boolean(linha.novo),
     setorId: linha.setor_id,
+    icone: linha.icone ?? null,
+    cor: linha.cor ?? null,
     ativo: Boolean(linha.ativo),
     criadoEm: dataIso(linha.criado_em),
     atualizadoEm: dataIso(linha.atualizado_em),
@@ -205,8 +209,8 @@ async function semear(conexao) {
     await conexao.execute(
       `INSERT IGNORE INTO catalogo_servicos
         (id, titulo, descricao, categoria, prazo_dias, ordem, destaque, novo,
-         setor_id, ativo, criado_em, atualizado_em)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         setor_id, icone, cor, ativo, criado_em, atualizado_em)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         servico.id,
         servico.titulo,
@@ -217,11 +221,37 @@ async function semear(conexao) {
         servico.destaque ? 1 : 0,
         servico.novo ? 1 : 0,
         servico.setorId ?? null,
+        servico.icone ?? null,
+        servico.cor ?? null,
         servico.ativo === false ? 0 : 1,
         agora,
         agora,
       ],
     )
+  }
+}
+
+/**
+ * Evolução de schema: `CREATE TABLE IF NOT EXISTS` não adiciona colunas a
+ * bancos já existentes. Cada ajuste é idempotente e verificado antes.
+ */
+async function garantirColunas() {
+  const pool = obterPool()
+  const colunas = [
+    ['icone', 'ADD COLUMN icone VARCHAR(40) NULL AFTER setor_id'],
+    ['cor', 'ADD COLUMN cor VARCHAR(20) NULL AFTER icone'],
+  ]
+  for (const [nome, definicao] of colunas) {
+    const [existentes] = await pool.query(
+      `SELECT column_name FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'catalogo_servicos'
+          AND column_name = ?`,
+      [nome],
+    )
+    if (existentes.length === 0) {
+      await pool.query(`ALTER TABLE catalogo_servicos ${definicao}`)
+    }
   }
 }
 
@@ -275,6 +305,7 @@ export async function inicializar() {
   for (const sql of TABELAS) {
     await pool.query(sql)
   }
+  await garantirColunas()
   await semear(pool)
   await ajustarSementes(pool)
   return carregar()
@@ -510,8 +541,8 @@ export async function criarServico(registro, ator) {
     await conexao.execute(
       `INSERT INTO catalogo_servicos
         (id, titulo, descricao, categoria, prazo_dias, ordem, destaque, novo,
-         setor_id, ativo, criado_em, atualizado_em)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         setor_id, icone, cor, ativo, criado_em, atualizado_em)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         registro.id,
         registro.titulo,
@@ -522,6 +553,8 @@ export async function criarServico(registro, ator) {
         registro.destaque ? 1 : 0,
         registro.novo ? 1 : 0,
         registro.setorId ?? null,
+        registro.icone ?? null,
+        registro.cor ?? null,
         registro.ativo ? 1 : 0,
         new Date(registro.criadoEm),
         new Date(registro.atualizadoEm),
@@ -546,7 +579,8 @@ export async function atualizarServico(registro, antes, ator) {
     await conexao.execute(
       `UPDATE catalogo_servicos
           SET titulo = ?, descricao = ?, categoria = ?, prazo_dias = ?, ordem = ?,
-              destaque = ?, novo = ?, setor_id = ?, ativo = ?, atualizado_em = ?
+              destaque = ?, novo = ?, setor_id = ?, icone = ?, cor = ?, ativo = ?,
+              atualizado_em = ?
         WHERE id = ?`,
       [
         registro.titulo,
@@ -557,6 +591,8 @@ export async function atualizarServico(registro, antes, ator) {
         registro.destaque ? 1 : 0,
         registro.novo ? 1 : 0,
         registro.setorId ?? null,
+        registro.icone ?? null,
+        registro.cor ?? null,
         registro.ativo ? 1 : 0,
         new Date(registro.atualizadoEm),
         registro.id,

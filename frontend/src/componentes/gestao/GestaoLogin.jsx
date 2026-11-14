@@ -65,7 +65,7 @@ export default function GestaoLogin({
                 value={senha}
                 onChange={(evento) => aoMudarSenha(evento.target.value)}
                 aria-invalid={Boolean(erroLogin)}
-                aria-describedby={erroLogin ? 'erro-login' : 'dica-login'}
+                aria-describedby={erroLogin ? 'erro-login' : undefined}
                 placeholder="Sua senha de acesso"
                 required
               />
@@ -96,11 +96,6 @@ export default function GestaoLogin({
             )}
             {entrando ? 'Entrando…' : verificandoSessao ? 'Verificando sessão…' : 'Entrar no painel'}
           </button>
-
-          <p className="campo__ajuda gestao-login__demo" id="dica-login">
-            Demonstração: contas <code>admin@prefeitura.demo</code> e{' '}
-            <code>triagem@prefeitura.demo</code>. A senha é fornecida pela equipe responsável.
-          </p>
         </form>
 
         <Link className="gestao-login__voltar" to="/">

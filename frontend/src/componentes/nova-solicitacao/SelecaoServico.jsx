@@ -36,7 +36,7 @@ export default function SelecaoServico({
       </p>
       <div className="escolha-servicos" id="lista-servicos">
         {servicosFiltrados.map((servico) => {
-          const { Icone, tom } = visualServico(servico.id)
+          const { Icone, tom } = visualServico(servico)
           const selecionado = tipoSelecionado === servico.id
           return (
             <label

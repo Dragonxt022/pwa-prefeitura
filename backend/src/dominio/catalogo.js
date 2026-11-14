@@ -189,6 +189,8 @@ export const servicosSemente = [
     ordem: 1,
     destaque: true,
     setorId: 'infraestrutura',
+    icone: 'lightbulb',
+    cor: 'ambar',
   },
   {
     id: 'pavimentacao',
@@ -199,6 +201,8 @@ export const servicosSemente = [
     ordem: 2,
     destaque: true,
     setorId: 'infraestrutura',
+    icone: 'construction',
+    cor: 'coral',
   },
   {
     id: 'limpeza',
@@ -209,6 +213,8 @@ export const servicosSemente = [
     ordem: 3,
     destaque: true,
     setorId: 'zeladoria',
+    icone: 'trash-2',
+    cor: 'verde',
   },
   {
     id: 'poda',
@@ -219,6 +225,8 @@ export const servicosSemente = [
     ordem: 4,
     destaque: true,
     setorId: 'meio_ambiente',
+    icone: 'tree-pine',
+    cor: 'teal',
   },
   {
     id: 'fiscalizacao',
@@ -229,6 +237,8 @@ export const servicosSemente = [
     ordem: 5,
     destaque: true,
     setorId: 'fiscalizacao',
+    icone: 'fence',
+    cor: 'roxo',
   },
   {
     id: 'sinalizacao',
@@ -239,6 +249,8 @@ export const servicosSemente = [
     ordem: 6,
     destaque: true,
     setorId: 'mobilidade',
+    icone: 'signpost',
+    cor: 'azul',
   },
   {
     id: 'zeladoria',
@@ -250,6 +262,8 @@ export const servicosSemente = [
     destaque: false,
     novo: true,
     setorId: 'zeladoria',
+    icone: 'building-2',
+    cor: 'teal',
   },
   {
     id: 'meio_ambiente',
@@ -261,6 +275,8 @@ export const servicosSemente = [
     destaque: false,
     novo: true,
     setorId: 'meio_ambiente',
+    icone: 'leaf',
+    cor: 'verde',
   },
 ]
 

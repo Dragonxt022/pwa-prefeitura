@@ -112,7 +112,7 @@ export default function Servicos() {
           ) : (
             <ul className="catalogo__lista">
               {filtrados.map((servico) => {
-                const { rotulo, Icone, tom } = visualServico(servico.id)
+                const { rotulo, Icone, tom } = visualServico(servico)
                 return (
                   <li key={servico.id}>
                     <article className={`catalogo-item tom-${tom}`}>

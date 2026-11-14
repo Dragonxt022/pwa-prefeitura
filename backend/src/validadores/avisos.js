@@ -4,12 +4,17 @@
  * Campos do painel são normalizados aqui antes de chegar ao serviço. A
  * unicidade do título fica no serviço, pois depende dos avisos atuais.
  */
+import {
+  iconeVisualValido,
+  tomVisualValido,
+} from '../../../shared/catalogo-visual.js'
 import { validacao } from '../utils/erros.js'
 import { texto } from '../utils/texto.js'
 
 const LIMITES = {
   titulo: 160,
   resumo: 300,
+  conteudo: 4000,
   categoria: 60,
 }
 
@@ -44,6 +49,17 @@ function validarPrioridade(valor, campos) {
   return prioridade
 }
 
+function validarVisual(valor, campo, campos, valido) {
+  if (valor === undefined) return undefined
+  const limpo = texto(valor)
+  if (!limpo) return null
+  if (!valido(limpo)) {
+    campos[campo] = 'Escolha uma opção válida.'
+    return undefined
+  }
+  return limpo
+}
+
 function validarPublicacao(valor, campos) {
   if (valor === undefined || valor === null || valor === '') return undefined
   const data = new Date(valor)
@@ -72,12 +88,27 @@ function validarAviso(body, { criacao }) {
     })
   }
 
+  if (criacao || body.conteudo !== undefined) {
+    dados.conteudo = lerTextoObrigatorio(body.conteudo, 'conteudo', campos, {
+      minimo: 10,
+      maximo: LIMITES.conteudo,
+    })
+  }
+
   if (criacao || body.categoria !== undefined) {
     dados.categoria = lerTextoObrigatorio(body.categoria, 'categoria', campos, {
       minimo: 2,
       maximo: LIMITES.categoria,
     })
   }
+
+  const icone = validarVisual(body.icone, 'icone', campos, iconeVisualValido)
+  if (criacao) dados.icone = icone ?? null
+  else if (icone !== undefined) dados.icone = icone
+
+  const cor = validarVisual(body.cor, 'cor', campos, tomVisualValido)
+  if (criacao) dados.cor = cor ?? null
+  else if (cor !== undefined) dados.cor = cor
 
   const prioridade = validarPrioridade(body.prioridade, campos)
   if (criacao) dados.prioridade = prioridade ?? 'normal'

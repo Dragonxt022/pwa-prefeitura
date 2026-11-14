@@ -1,8 +1,9 @@
 import { Router } from 'express'
-import { listarAvisos } from '../controladores/catalogo.js'
+import { listarAvisos, obterAviso } from '../controladores/catalogo.js'
 
 const router = Router()
 
 router.get('/', listarAvisos)
+router.get('/:id', obterAviso)
 
 export default router

@@ -93,6 +93,9 @@ export const listarServicos = () => requisicao('/servicos')
 
 export const listarAvisos = () => requisicao('/avisos')
 
+export const obterAviso = (id) =>
+  requisicao(`/avisos/${encodeURIComponent(id)}`, { timeout: 12000 })
+
 export const obterConfiguracoesPublicas = () => requisicao('/configuracoes', { timeout: 8000 })
 
 export const obterPerfil = () => requisicao('/perfil')

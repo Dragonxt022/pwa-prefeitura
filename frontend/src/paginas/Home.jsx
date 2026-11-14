@@ -96,7 +96,7 @@ export default function Home() {
             ) : (
               <ul className="grade-servicos">
                 {servicosFiltrados.map((servico) => {
-                  const { rotulo, Icone, tom } = visualServico(servico.id)
+                  const { rotulo, Icone, tom } = visualServico(servico)
                   return (
                     <li key={servico.id}>
                       <Link
@@ -141,23 +141,32 @@ export default function Home() {
             ) : (
               <ul className="lista-avisos">
                 {avisos.map((aviso) => {
-                  const { Icone, tom } = visualAviso(aviso.categoria)
+                  const { Icone, tom } = visualAviso(aviso)
                   const prioridade = infoPrioridade(aviso.prioridade)
                   return (
-                    <li key={aviso.id} className={`aviso tom-${tom}`}>
-                      <span className="aviso__icone">
-                        <Icone aria-hidden="true" />
-                      </span>
-                      <div className="aviso__corpo">
-                        <div className="aviso__topo">
-                          <Badge tom={prioridade.tom}>{prioridade.rotulo}</Badge>
-                          <span>{aviso.categoria}</span>
-                          <span aria-hidden="true">·</span>
-                          <time dateTime={aviso.publicadoEm}>{formatarData(aviso.publicadoEm)}</time>
+                    <li key={aviso.id}>
+                      <Link
+                        className={`aviso aviso--link tom-${tom}`}
+                        to={`/avisos/${aviso.id}`}
+                        aria-label={`${aviso.titulo} — ler aviso completo`}
+                      >
+                        <span className="aviso__icone">
+                          <Icone aria-hidden="true" />
+                        </span>
+                        <div className="aviso__corpo">
+                          <div className="aviso__topo">
+                            <Badge tom={prioridade.tom}>{prioridade.rotulo}</Badge>
+                            <span>{aviso.categoria}</span>
+                            <span aria-hidden="true">·</span>
+                            <time dateTime={aviso.publicadoEm}>{formatarData(aviso.publicadoEm)}</time>
+                          </div>
+                          <h3>{aviso.titulo}</h3>
+                          <p className="aviso__resumo">{aviso.resumo}</p>
                         </div>
-                        <h3>{aviso.titulo}</h3>
-                        <p className="aviso__resumo">{aviso.resumo}</p>
-                      </div>
+                        <span className="aviso__seta" aria-hidden="true">
+                          <ArrowRight />
+                        </span>
+                      </Link>
                     </li>
                   )
                 })}

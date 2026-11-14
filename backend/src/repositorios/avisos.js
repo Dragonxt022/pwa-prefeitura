@@ -13,7 +13,10 @@ const TABELAS = [
     id VARCHAR(64) NOT NULL PRIMARY KEY,
     titulo VARCHAR(160) NOT NULL,
     resumo VARCHAR(300) NOT NULL,
+    conteudo TEXT NULL,
     categoria VARCHAR(60) NOT NULL DEFAULT '',
+    icone VARCHAR(40) NULL,
+    cor VARCHAR(20) NULL,
     prioridade VARCHAR(16) NOT NULL DEFAULT 'normal',
     publicado_em DATETIME(3) NOT NULL,
     ativo TINYINT(1) NOT NULL DEFAULT 1,
@@ -59,7 +62,10 @@ function mapearAviso(linha) {
     id: linha.id,
     titulo: linha.titulo,
     resumo: linha.resumo,
+    conteudo: linha.conteudo ?? '',
     categoria: linha.categoria,
+    icone: linha.icone ?? null,
+    cor: linha.cor ?? null,
     prioridade: linha.prioridade,
     publicadoEm: dataIso(linha.publicado_em),
     ativo: Boolean(linha.ativo),
@@ -95,13 +101,17 @@ async function semear(conexao) {
   for (const aviso of avisosSemente) {
     await conexao.execute(
       `INSERT IGNORE INTO avisos
-        (id, titulo, resumo, categoria, prioridade, publicado_em, ativo, criado_em, atualizado_em)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id, titulo, resumo, conteudo, categoria, icone, cor, prioridade,
+         publicado_em, ativo, criado_em, atualizado_em)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         aviso.id,
         aviso.titulo,
         aviso.resumo,
+        aviso.conteudo ?? aviso.resumo,
         aviso.categoria ?? '',
+        aviso.icone ?? null,
+        aviso.cor ?? null,
         aviso.prioridade ?? 'normal',
         new Date(aviso.publicadoEm),
         aviso.ativo === false ? 0 : 1,
@@ -109,6 +119,37 @@ async function semear(conexao) {
         agora,
       ],
     )
+    // A coluna de conteúdo é nova: bancos existentes mantêm as sementes já
+    // inseridas e recebem o texto completo sem sobrescrever edições.
+    await conexao.execute(
+      `UPDATE avisos SET conteudo = ? WHERE id = ? AND (conteudo IS NULL OR conteudo = '')`,
+      [aviso.conteudo ?? aviso.resumo, aviso.id],
+    )
+  }
+}
+
+/**
+ * Evolução de schema: `CREATE TABLE IF NOT EXISTS` não adiciona colunas a
+ * bancos já existentes. Cada ajuste é idempotente e verificado antes.
+ */
+async function garantirColunas() {
+  const pool = obterPool()
+  const colunas = [
+    ['conteudo', 'ADD COLUMN conteudo TEXT NULL AFTER resumo'],
+    ['icone', 'ADD COLUMN icone VARCHAR(40) NULL AFTER categoria'],
+    ['cor', 'ADD COLUMN cor VARCHAR(20) NULL AFTER icone'],
+  ]
+  for (const [nome, definicao] of colunas) {
+    const [existentes] = await pool.query(
+      `SELECT column_name FROM information_schema.columns
+        WHERE table_schema = DATABASE()
+          AND table_name = 'avisos'
+          AND column_name = ?`,
+      [nome],
+    )
+    if (existentes.length === 0) {
+      await pool.query(`ALTER TABLE avisos ${definicao}`)
+    }
   }
 }
 
@@ -119,6 +160,7 @@ export async function inicializar() {
   for (const sql of TABELAS) {
     await pool.query(sql)
   }
+  await garantirColunas()
   await semear(pool)
   return carregar()
 }
@@ -205,13 +247,17 @@ export async function criar(registro, ator) {
   await emTransacao(async (conexao) => {
     await conexao.execute(
       `INSERT INTO avisos
-        (id, titulo, resumo, categoria, prioridade, publicado_em, ativo, criado_em, atualizado_em)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        (id, titulo, resumo, conteudo, categoria, icone, cor, prioridade,
+         publicado_em, ativo, criado_em, atualizado_em)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         registro.id,
         registro.titulo,
         registro.resumo,
+        registro.conteudo ?? registro.resumo,
         registro.categoria ?? '',
+        registro.icone ?? null,
+        registro.cor ?? null,
         registro.prioridade,
         new Date(registro.publicadoEm),
         registro.ativo ? 1 : 0,
@@ -237,13 +283,16 @@ export async function atualizar(registro, antes, ator) {
   await emTransacao(async (conexao) => {
     await conexao.execute(
       `UPDATE avisos
-          SET titulo = ?, resumo = ?, categoria = ?, prioridade = ?,
-              publicado_em = ?, ativo = ?, atualizado_em = ?
+          SET titulo = ?, resumo = ?, conteudo = ?, categoria = ?, icone = ?, cor = ?,
+              prioridade = ?, publicado_em = ?, ativo = ?, atualizado_em = ?
         WHERE id = ?`,
       [
         registro.titulo,
         registro.resumo,
+        registro.conteudo ?? registro.resumo,
         registro.categoria ?? '',
+        registro.icone ?? null,
+        registro.cor ?? null,
         registro.prioridade,
         new Date(registro.publicadoEm),
         registro.ativo ? 1 : 0,

@@ -1,6 +1,7 @@
 import { Route, Routes } from 'react-router-dom'
 import Layout from './componentes/Layout'
 import Acompanhar from './paginas/Acompanhar'
+import AvisoDetalhe from './paginas/AvisoDetalhe'
 import Gestao from './paginas/Gestao'
 import GestaoConfiguracoes from './paginas/GestaoConfiguracoes'
 import Home from './paginas/Home'
@@ -19,6 +20,7 @@ export default function App() {
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="servicos" element={<Servicos />} />
+        <Route path="avisos/:id" element={<AvisoDetalhe />} />
         <Route path="nova-solicitacao" element={<NovaSolicitacao />} />
         <Route path="acompanhar" element={<Acompanhar />} />
         <Route path="perfil" element={<Perfil />} />
