@@ -89,8 +89,10 @@ export function useGestaoUsuarios({ setores, setSetores, definirErro, definirMen
       }))
       definirMensagem('Usuário criado. Ele já pode entrar com o e-mail e a senha cadastrados.')
       await carregarUsuarios()
+      return true
     } catch (falha) {
       definirErro(falha)
+      return false
     } finally {
       setSalvandoUsuario(false)
     }

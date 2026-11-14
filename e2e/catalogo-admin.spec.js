@@ -8,7 +8,7 @@ test('administrador edita secretaria, setor e serviço no catálogo', async ({ p
   await page.locator('#email-gestao').fill('admin@prefeitura.demo')
   await page.locator('#senha-gestao').fill('prefeitura-demo')
   await page.getByRole('button', { name: 'Entrar no painel' }).click()
-
+  await page.getByRole('button', { name: 'Abrir menu da conta' }).click()
   await page.getByRole('link', { name: 'Configurações' }).click()
   await expect(page.getByRole('heading', { name: 'Configurações' })).toBeVisible()
 

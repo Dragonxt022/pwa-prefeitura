@@ -1,14 +1,15 @@
-import { Check, ShieldCheck, TriangleAlert } from 'lucide-react'
-import { useEffect } from 'react'
+import { Check, ShieldCheck, SlidersHorizontal, TriangleAlert } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import logoColorido from '../assets/logo-icone-colorido.png'
 import { Badge } from '../componentes/StatusBadge'
+import GestaoAbas from '../componentes/gestao/GestaoAbas'
 import GestaoAcoes from '../componentes/gestao/GestaoAcoes'
+import GestaoDashboard from '../componentes/gestao/GestaoDashboard'
 import GestaoDetalhe from '../componentes/gestao/GestaoDetalhe'
 import GestaoFiltros from '../componentes/gestao/GestaoFiltros'
 import GestaoImpressao from '../componentes/gestao/GestaoImpressao'
 import GestaoLista from '../componentes/gestao/GestaoLista'
 import GestaoLogin from '../componentes/gestao/GestaoLogin'
-import GestaoResumo from '../componentes/gestao/GestaoResumo'
 import GestaoTopo from '../componentes/gestao/GestaoTopo'
 import GestaoTransferencia from '../componentes/gestao/GestaoTransferencia'
 import GestaoUsuarios from '../componentes/gestao/GestaoUsuarios'
@@ -19,10 +20,13 @@ import { useGestaoSessao } from '../hooks/useGestaoSessao'
 import { useGestaoTransferencia } from '../hooks/useGestaoTransferencia'
 import { useGestaoUsuarios } from '../hooks/useGestaoUsuarios'
 import { useI18n } from '../i18n/useI18n.js'
+import { mensagemAmigavel } from '../utils/erros'
 
 export default function Gestao() {
   const { identidade } = useConfiguracoes()
   const { t } = useI18n()
+  const [abaAtiva, setAbaAtiva] = useState('dashboard')
+  const [filtrosAbertos, setFiltrosAbertos] = useState(false)
   const sessao = useGestaoSessao()
   const fila = useGestaoFila({
     usuario: sessao.usuario,
@@ -57,6 +61,12 @@ export default function Gestao() {
   const limparUsuarios = usuarios.limpar
   const limparTransferencia = transferencia.limpar
   const limparImpressao = impressao.limpar
+  const podeGerenciarUsuarios = fila.podeGerenciarUsuarios
+  const abrirUsuarios = usuarios.abrir
+  const fecharUsuarios = usuarios.fechar
+  const filtrosAtivos = Object.values(fila.filtros).filter(Boolean).length
+  const abaEfetiva =
+    abaAtiva === 'usuarios' && !podeGerenciarUsuarios ? 'solicitacoes' : abaAtiva
 
   useEffect(() => {
     if (usuario) return
@@ -65,6 +75,11 @@ export default function Gestao() {
     limparTransferencia()
     limparImpressao()
   }, [limparFila, limparImpressao, limparTransferencia, limparUsuarios, usuario])
+
+  useEffect(() => {
+    if (abaEfetiva !== 'usuarios' || !podeGerenciarUsuarios) return
+    abrirUsuarios()
+  }, [abaEfetiva, abrirUsuarios, podeGerenciarUsuarios])
 
   function entrar(evento) {
     limparFila()
@@ -82,9 +97,10 @@ export default function Gestao() {
     limparImpressao()
   }
 
-  function alternarUsuarios() {
-    if (usuarios.mostrarUsuarios) usuarios.fechar()
-    else usuarios.abrir()
+  function selecionarAba(id) {
+    setAbaAtiva(id)
+    if (id !== 'usuarios') fecharUsuarios()
+    window.requestAnimationFrame(() => document.getElementById(`aba-${id}`)?.focus())
   }
 
   function atualizarFila() {
@@ -127,110 +143,170 @@ export default function Gestao() {
         nomeApp={nomeApp}
         logoMarca={logoMarca}
         usuario={usuario}
-        podeGerenciarUsuarios={fila.podeGerenciarUsuarios}
-        mostrarUsuarios={usuarios.mostrarUsuarios}
+        podeGerenciarUsuarios={podeGerenciarUsuarios}
         carregando={fila.carregando}
         rotuloConfiguracoes={t('admin.configuracoes')}
-        aoAlternarUsuarios={alternarUsuarios}
         aoAtualizar={atualizarFila}
         aoSair={sair}
       />
 
       <main id="gestao-conteudo" className="gestao-conteudo" tabIndex={-1}>
-        <div className="gestao-titulo">
-          <div>
-            <p className="cabecalho-pagina__sobre">Operação</p>
-            <h1>Solicitações</h1>
-            <p className="texto-suave">
-              {fila.podeVerTodos
-                ? 'Fila central e setores em um só lugar.'
-                : `Fila do setor ${usuario.setor?.nome ?? 'atribuído'}. Você vê apenas as solicitações encaminhadas para sua equipe.`}
-            </p>
-          </div>
-          <div className="gestao-titulo__selos">
-            <span className="gestao-titulo__selo">
-              <ShieldCheck aria-hidden="true" />
-              Acesso protegido
-            </span>
-            <Badge tom={sessao.triagemAutomatica ? 'info' : 'neutro'}>
-              {sessao.triagemAutomatica ? 'Triagem automática ativa' : 'Triagem manual'}
-            </Badge>
-          </div>
-        </div>
-
-        <GestaoResumo estatisticas={fila.estatisticas} />
-
-        {usuarios.mostrarUsuarios && fila.podeGerenciarUsuarios && (
-          <GestaoUsuarios
-            setores={fila.setores}
-            formUsuario={usuarios.formUsuario}
-            usuarios={usuarios.usuarios}
-            carregandoUsuarios={usuarios.carregandoUsuarios}
-            salvandoUsuario={usuarios.salvandoUsuario}
-            aoFechar={usuarios.fechar}
-            aoCriar={usuarios.criarUsuario}
-            aoAlternar={usuarios.alternarUsuario}
-            aoMudarCampo={usuarios.atualizarCampo}
-            aoMudarPapel={usuarios.alterarPapel}
-          />
-        )}
-
-        <GestaoFiltros
-          filtros={fila.filtros}
-          servicos={fila.servicos}
-          setores={fila.setores}
-          podeVerTodos={fila.podeVerTodos}
-          aoAtualizarFiltro={fila.atualizarFiltro}
-          aoLimpar={fila.limparFiltros}
-        />
-
-        <GestaoAcoes
-          totalVisivel={fila.dados.dados.length}
-          totalSelecionado={fila.itensSelecionados.length}
-          todosVisiveisSelecionados={fila.todosVisiveisSelecionados}
-          aoAlternarTodos={fila.alternarTodosVisiveis}
-          aoImprimirSelecionados={imprimirSelecionados}
-          aoImprimirFiltro={imprimirFiltro}
-        />
-
         {fila.erro && (
-          <p className="alerta alerta--erro" role="alert">
+          <p className="alerta alerta--erro gestao-aviso" role="alert">
             <TriangleAlert aria-hidden="true" />
-            <span>{fila.erro.message}</span>
+            <span>{mensagemAmigavel(fila.erro)}</span>
           </p>
         )}
         {fila.mensagem && (
-          <p className="alerta alerta--sucesso" role="status">
+          <p className="alerta alerta--sucesso gestao-aviso" role="status">
             <Check aria-hidden="true" />
             <span>{fila.mensagem}</span>
           </p>
         )}
 
-        <div className={`gestao-grid${fila.selecionada ? ' tem-detalhe' : ''}`}>
-          <GestaoLista
-            dados={fila.dados}
+        <section
+          hidden={abaEfetiva !== 'dashboard'}
+          className="gestao-painel"
+          id="painel-dashboard"
+          role="tabpanel"
+          aria-labelledby="aba-dashboard"
+          tabIndex={-1}
+        >
+          <GestaoDashboard
+            estatisticas={fila.estatisticas}
             carregando={fila.carregando}
-            selecionada={fila.selecionada}
-            selecionados={fila.selecionados}
-            servicosPorId={fila.servicosPorId}
-            aoAbrirDetalhe={fila.abrirDetalhe}
-            aoAlternarSelecionado={fila.alternarSelecionado}
+            aoVerSolicitacoes={() => selecionarAba('solicitacoes')}
           />
+        </section>
 
-          {fila.selecionada && (
-            <GestaoDetalhe
-              selecionada={fila.selecionada}
-              detalheRef={fila.detalheRef}
-              formStatus={fila.formStatus}
-              salvandoStatus={fila.salvandoStatus}
-              aoFechar={fila.fecharDetalhe}
-              aoAbrirTransferencia={transferencia.abrir}
-              aoSalvarAtualizacao={fila.salvarAtualizacao}
-              aoAtualizarFormStatus={fila.atualizarFormStatus}
+        <section
+          hidden={abaEfetiva !== 'solicitacoes'}
+          className="gestao-painel"
+          id="painel-solicitacoes"
+          role="tabpanel"
+          aria-labelledby="aba-solicitacoes"
+          tabIndex={-1}
+        >
+          <div className="gestao-painel__conteudo">
+            <header className="gestao-secao">
+              <div className="gestao-secao__linha">
+                <div>
+                  <p className="gestao-eyebrow">Operação</p>
+                  <h1>Solicitações</h1>
+                  <p className="texto-suave">
+                    {fila.podeVerTodos
+                      ? 'Fila central e setores em um só lugar.'
+                      : `Fila do setor ${usuario.setor?.nome ?? 'atribuído'}. Você vê apenas as solicitações encaminhadas para sua equipe.`}
+                  </p>
+                </div>
+                <div className="gestao-secao__acoes">
+                  <span className="gestao-selo">
+                    <ShieldCheck aria-hidden="true" />
+                    Acesso protegido
+                  </span>
+                  <Badge tom={sessao.triagemAutomatica ? 'info' : 'neutro'}>
+                    {sessao.triagemAutomatica ? 'Triagem automática ativa' : 'Triagem manual'}
+                  </Badge>
+                </div>
+              </div>
+              <div className="gestao-secao__barra">
+                <button
+                  type="button"
+                  className="botao botao--secundario"
+                  aria-expanded={filtrosAbertos}
+                  aria-controls={filtrosAbertos ? 'gestao-filtros' : undefined}
+                  onClick={() => setFiltrosAbertos((aberto) => !aberto)}
+                >
+                  <SlidersHorizontal aria-hidden="true" />
+                  {filtrosAbertos
+                    ? 'Ocultar filtros'
+                    : filtrosAtivos > 0
+                      ? `Filtrar (${filtrosAtivos})`
+                      : 'Filtrar'}
+                </button>
+              </div>
+            </header>
+
+            {filtrosAbertos && (
+              <div id="gestao-filtros">
+                <GestaoFiltros
+                  filtros={fila.filtros}
+                  servicos={fila.servicos}
+                  setores={fila.setores}
+                  podeVerTodos={fila.podeVerTodos}
+                  aoAtualizarFiltro={fila.atualizarFiltro}
+                  aoLimpar={fila.limparFiltros}
+                />
+              </div>
+            )}
+
+            <GestaoAcoes
+              totalVisivel={fila.dados.dados.length}
+              totalSelecionado={fila.itensSelecionados.length}
+              todosVisiveisSelecionados={fila.todosVisiveisSelecionados}
+              aoAlternarTodos={fila.alternarTodosVisiveis}
+              aoImprimirSelecionados={imprimirSelecionados}
+              aoImprimirFiltro={imprimirFiltro}
             />
-          )}
-        </div>
+
+            <div className={`gestao-grid${fila.selecionada ? ' tem-detalhe' : ''}`}>
+              <GestaoLista
+                dados={fila.dados}
+                carregando={fila.carregando}
+                selecionada={fila.selecionada}
+                selecionados={fila.selecionados}
+                servicosPorId={fila.servicosPorId}
+                aoAbrirDetalhe={fila.abrirDetalhe}
+                aoAlternarSelecionado={fila.alternarSelecionado}
+              />
+
+              {fila.selecionada && (
+                <GestaoDetalhe
+                  selecionada={fila.selecionada}
+                  detalheRef={fila.detalheRef}
+                  formStatus={fila.formStatus}
+                  salvandoStatus={fila.salvandoStatus}
+                  aoFechar={fila.fecharDetalhe}
+                  aoAbrirTransferencia={transferencia.abrir}
+                  aoSalvarAtualizacao={fila.salvarAtualizacao}
+                  aoAtualizarFormStatus={fila.atualizarFormStatus}
+                />
+              )}
+            </div>
+          </div>
+        </section>
+
+        {podeGerenciarUsuarios && (
+          <section
+            hidden={abaEfetiva !== 'usuarios'}
+            className="gestao-painel"
+            id="painel-usuarios"
+            role="tabpanel"
+            aria-labelledby="aba-usuarios"
+            tabIndex={-1}
+          >
+            <GestaoUsuarios
+              setores={fila.setores}
+              formUsuario={usuarios.formUsuario}
+              usuarios={usuarios.usuarios}
+              carregandoUsuarios={usuarios.carregandoUsuarios}
+              salvandoUsuario={usuarios.salvandoUsuario}
+              erro={fila.erro}
+              aoVoltar={() => selecionarAba('dashboard')}
+              aoCriar={usuarios.criarUsuario}
+              aoAlternar={usuarios.alternarUsuario}
+              aoMudarCampo={usuarios.atualizarCampo}
+              aoMudarPapel={usuarios.alterarPapel}
+            />
+          </section>
+        )}
       </main>
+
+      <GestaoAbas
+        ativa={abaEfetiva}
+        podeGerenciarUsuarios={podeGerenciarUsuarios}
+        aoSelecionar={selecionarAba}
+      />
 
       {transferencia.aberto && (
         <GestaoTransferencia
