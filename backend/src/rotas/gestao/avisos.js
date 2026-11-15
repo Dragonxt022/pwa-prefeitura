@@ -2,6 +2,7 @@ import { Router } from 'express'
 import {
   atualizarAdmin,
   criarAdmin,
+  excluirAdmin,
   listar,
 } from '../../controladores/gestao/avisos.js'
 import { exigirAdmin } from '../../middlewares/autenticacao.js'
@@ -13,5 +14,6 @@ router.get('/', listar)
 
 router.post('/', exigirAdmin, criarAdmin)
 router.patch('/:id', exigirAdmin, atualizarAdmin)
+router.delete('/:id', exigirAdmin, excluirAdmin)
 
 export default router

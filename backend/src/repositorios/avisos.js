@@ -335,6 +335,27 @@ export async function atualizar(registro, antes, ator) {
   return registro
 }
 
+export async function remover(id, antes, ator) {
+  const em = new Date().toISOString()
+  if (!mysqlConfigurado) {
+    const dados = dadosMemoria()
+    const indice = dados.avisos.findIndex((item) => item.id === id)
+    if (indice < 0) return null
+    dados.avisos.splice(indice, 1)
+    registrarAuditoriaMemoria('excluido', antes, null, ator, em)
+    return structuredClone(antes)
+  }
+
+  await emTransacao(async (conexao) => {
+    const [resultado] = await conexao.execute('DELETE FROM avisos WHERE id = ?', [id])
+    if (resultado.affectedRows === 0) {
+      throw new Error(`Aviso ${id} não existe no banco.`)
+    }
+    await gravarAuditoria(conexao, 'excluido', antes, null, ator, em)
+  })
+  return antes
+}
+
 /** Conta uma leitura pública do aviso. */
 export async function registrarVisualizacao(id) {
   if (!mysqlConfigurado) {

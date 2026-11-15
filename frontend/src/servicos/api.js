@@ -229,6 +229,12 @@ export const atualizarAvisoGestao = (id, dados) =>
     timeout: 12000,
   })
 
+export const excluirAvisoGestao = (id) =>
+  requisicao(`/gestao/avisos/${encodeURIComponent(id)}`, {
+    metodo: 'DELETE',
+    timeout: 12000,
+  })
+
 export const criarSecretariaGestao = (dados) =>
   requisicao('/gestao/catalogo/secretarias', { metodo: 'POST', corpo: dados, timeout: 12000 })
 

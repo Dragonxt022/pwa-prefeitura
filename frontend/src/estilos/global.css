@@ -7751,6 +7751,11 @@ html[data-contraste='alto'] .solicitacao-card__resumo:focus-visible {
   flex: 1 1 280px;
 }
 
+.config-secao__topo--acoes {
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
 .config-catalogo__acoes {
   flex: 0 1 auto;
   max-width: 100%;
@@ -7831,6 +7836,25 @@ html[data-contraste='alto'] .solicitacao-card__resumo:focus-visible {
   width: 14px;
   height: 14px;
   flex: none;
+}
+
+.config-catalogo__confirmar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1 1 100%;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--vermelho-700) 35%, var(--borda-card));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--vermelho-50) 62%, var(--superficie));
+  color: var(--vermelho-700);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.config-catalogo__confirmar span {
+  flex: 1 1 180px;
 }
 
 .config-catalogo__item-acoes {

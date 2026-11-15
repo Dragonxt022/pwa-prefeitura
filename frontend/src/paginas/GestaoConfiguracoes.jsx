@@ -4,7 +4,6 @@ import {
   Check,
   LoaderCircle,
   Mail,
-  Megaphone,
   Palette,
   RefreshCw,
   ShieldCheck,
@@ -15,7 +14,6 @@ import {
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import logoColorido from '../assets/logo-icone-colorido.png'
-import ConfigAvisos from '../componentes/configuracoes/ConfigAvisos'
 import ConfigCatalogo from '../componentes/configuracoes/ConfigCatalogo'
 import ConfigCidadaos from '../componentes/configuracoes/ConfigCidadaos'
 import ConfigEmail from '../componentes/configuracoes/ConfigEmail'
@@ -47,12 +45,6 @@ const ABAS = [
     Icone: Building2,
     titulo: 'config.menu.catalogo',
     descricao: 'config.menu.catalogoDescricao',
-  },
-  {
-    id: 'avisos',
-    Icone: Megaphone,
-    titulo: 'config.menu.avisos',
-    descricao: 'config.menu.avisosDescricao',
   },
   {
     id: 'email',
@@ -385,8 +377,6 @@ export default function GestaoConfiguracoes() {
                 </div>
               ) : aba === 'catalogo' ? (
                 <ConfigCatalogo onSessaoExpirada={irParaLogin} />
-              ) : aba === 'avisos' ? (
-                <ConfigAvisos onSessaoExpirada={irParaLogin} />
               ) : aba === 'identidade' ? (
                 <ConfigIdentidade
                   key={`identidade-${config.atualizadoEm ?? 'inicial'}`}

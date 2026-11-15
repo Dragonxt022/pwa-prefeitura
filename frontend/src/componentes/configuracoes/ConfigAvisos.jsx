@@ -7,12 +7,14 @@ import {
   Plus,
   Power,
   RefreshCw,
+  Trash2,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useI18n } from '../../i18n/useI18n.js'
 import {
   atualizarAvisoGestao,
   criarAvisoGestao,
+  excluirAvisoGestao,
   obterAvisosGestao,
 } from '../../servicos/api'
 import { formatarDataHora } from '../../utils/format'
@@ -82,7 +84,7 @@ function estaExpirado(aviso, agora) {
   return !Number.isNaN(expiraEm.getTime()) && expiraEm.getTime() <= agora
 }
 
-export default function ConfigAvisos({ onSessaoExpirada }) {
+export default function ConfigAvisos({ onSessaoExpirada, modoPagina = false }) {
   const { t } = useI18n()
   const [dados, setDados] = useState(null)
   const [carregando, setCarregando] = useState(true)
@@ -97,6 +99,8 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
   const [mensagem, setMensagem] = useState('')
   const [referencia, setReferencia] = useState(0)
   const [abaLista, setAbaLista] = useState('publicados')
+  const [confirmandoExclusao, setConfirmandoExclusao] = useState(null)
+  const [excluindoId, setExcluindoId] = useState(null)
 
   const carregar = useCallback(async () => {
     setCarregando(true)
@@ -120,6 +124,18 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
       void carregar()
     }, 0)
     return () => window.clearTimeout(timer)
+  }, [carregar])
+
+  useEffect(() => {
+    function atualizarSeVisivel() {
+      if (document.visibilityState === 'visible') void carregar()
+    }
+    window.addEventListener('focus', atualizarSeVisivel)
+    document.addEventListener('visibilitychange', atualizarSeVisivel)
+    return () => {
+      window.removeEventListener('focus', atualizarSeVisivel)
+      document.removeEventListener('visibilitychange', atualizarSeVisivel)
+    }
   }, [carregar])
 
   const avisos = useMemo(() => {
@@ -245,15 +261,46 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
     }
   }
 
+  async function excluir(registro) {
+    setExcluindoId(registro.id)
+    setErroForm(null)
+    setDetalheErro('')
+    setCampos({})
+    setMensagem('')
+    try {
+      await excluirAvisoGestao(registro.id)
+      setConfirmandoExclusao(null)
+      await carregar()
+      setMensagem(t('avisos.excluido'))
+    } catch (falha) {
+      if (falha?.status === 401) {
+        onSessaoExpirada?.()
+        return
+      }
+      setDetalheErro(Object.values(falha?.campos ?? {})[0] ?? '')
+      setErroForm(falha)
+    } finally {
+      setExcluindoId(null)
+    }
+  }
+
   return (
     <div className="config-avisos">
-      <section className="cartao config-secao" aria-labelledby="avisos-titulo">
-        <header className="config-secao__topo">
-          <div>
-            <span className="config-eyebrow">{t('avisos.sobre')}</span>
-            <h2 id="avisos-titulo">{t('avisos.titulo')}</h2>
-            <p className="texto-suave">{t('avisos.descricao')}</p>
-          </div>
+      <section
+        className="cartao config-secao"
+        aria-labelledby={modoPagina ? undefined : 'avisos-titulo'}
+        aria-label={modoPagina ? 'Avisos da cidade' : undefined}
+      >
+        <header
+          className={`config-secao__topo${modoPagina ? ' config-secao__topo--acoes' : ''}`}
+        >
+          {!modoPagina && (
+            <div>
+              <span className="config-eyebrow">{t('avisos.sobre')}</span>
+              <h2 id="avisos-titulo">{t('avisos.titulo')}</h2>
+              <p className="texto-suave">{t('avisos.descricao')}</p>
+            </div>
+          )}
           <div className="config-catalogo__acoes">
             <SeloPersistencia persistencia={dados?.persistencia} prefixo="avisos" />
             <button
@@ -620,6 +667,41 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
                                 <CalendarClock aria-hidden="true" />
                                 Edite a expiração para republicar.
                               </span>
+                            )}
+                            {confirmandoExclusao === aviso.id ? (
+                              <div className="config-catalogo__confirmar" role="group">
+                                <span>Excluir este aviso definitivamente?</span>
+                                <button
+                                  type="button"
+                                  className="botao botao--perigo botao--pequeno"
+                                  onClick={() => excluir(aviso)}
+                                  disabled={excluindoId === aviso.id}
+                                >
+                                  {excluindoId === aviso.id ? (
+                                    <LoaderCircle className="girando" aria-hidden="true" />
+                                  ) : (
+                                    <Trash2 aria-hidden="true" />
+                                  )}
+                                  Excluir
+                                </button>
+                                <button
+                                  type="button"
+                                  className="botao botao--secundario botao--pequeno"
+                                  onClick={() => setConfirmandoExclusao(null)}
+                                  disabled={excluindoId === aviso.id}
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                className="botao botao--perigo botao--pequeno"
+                                onClick={() => setConfirmandoExclusao(aviso.id)}
+                              >
+                                <Trash2 aria-hidden="true" />
+                                {t('avisos.excluir')}
+                              </button>
                             )}
                           </div>
                         </li>

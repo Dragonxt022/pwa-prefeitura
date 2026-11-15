@@ -2,6 +2,7 @@ import { Check, LoaderCircle, ShieldCheck, SlidersHorizontal, TriangleAlert } fr
 import { useEffect, useState } from 'react'
 import logoColorido from '../assets/logo-icone-colorido.png'
 import { Badge } from '../componentes/StatusBadge'
+import ConfigAvisos from '../componentes/configuracoes/ConfigAvisos'
 import GestaoAbas from '../componentes/gestao/GestaoAbas'
 import GestaoAcoes from '../componentes/gestao/GestaoAcoes'
 import GestaoDashboard from '../componentes/gestao/GestaoDashboard'
@@ -67,7 +68,11 @@ export default function Gestao() {
   const fecharUsuarios = usuarios.fechar
   const filtrosAtivos = Object.values(fila.filtros).filter(Boolean).length
   const abaEfetiva =
-    abaAtiva === 'usuarios' && !podeGerenciarUsuarios ? 'solicitacoes' : abaAtiva
+    abaAtiva === 'usuarios' && !podeGerenciarUsuarios
+      ? 'solicitacoes'
+      : abaAtiva === 'avisos' && !podeGerenciarUsuarios
+        ? 'solicitacoes'
+        : abaAtiva
 
   useEffect(() => {
     if (usuario) return
@@ -304,6 +309,31 @@ export default function Gestao() {
             </div>
           </div>
         </section>
+
+        {podeGerenciarUsuarios && (
+          <section
+            hidden={abaEfetiva !== 'avisos'}
+            className="gestao-painel"
+            id="painel-avisos"
+            role="tabpanel"
+            aria-labelledby="aba-avisos"
+            tabIndex={-1}
+          >
+            <div className="gestao-painel__conteudo">
+              <header className="gestao-secao">
+                <p className="gestao-eyebrow">Comunicação com o cidadão</p>
+                <h1>Avisos</h1>
+                <p className="texto-suave">
+                  Crie comunicados, acompanhe as visualizações, ative, desative ou exclua
+                  avisos. Os expirados ficam separados e não aparecem na Home.
+                </p>
+              </header>
+              {abaEfetiva === 'avisos' && (
+                <ConfigAvisos onSessaoExpirada={sessao.expirar} modoPagina />
+              )}
+            </div>
+          </section>
+        )}
 
         {podeGerenciarUsuarios && (
           <section

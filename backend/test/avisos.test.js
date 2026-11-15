@@ -15,6 +15,7 @@ import * as repositorioAvisos from '../src/repositorios/avisos.js'
 import {
   atualizarAviso,
   criarAviso,
+  excluirAviso,
   inicializarAvisos,
   listarAuditoriaAvisos,
   obterAvisos,
@@ -314,6 +315,18 @@ test('detalhe público incrementa a contagem de visualizações', () => {
   respostaDetalhe('aviso-1')
   assert.equal(buscarAviso('aviso-1').visualizacoes, antes + 2)
 })
+
+test('exclui aviso, sai do cache e registra auditoria', async () => {
+  const resultado = await excluirAviso('aviso-1', ATOR)
+  assert.equal(resultado.registro.id, 'aviso-1')
+  assert.equal(buscarAviso('aviso-1'), null)
+  assert.equal(listarAvisos({ incluirInativos: true }).some((aviso) => aviso.id === 'aviso-1'), false)
+
+  const auditoria = await listarAuditoriaAvisos()
+  assert.equal(auditoria[0].acao, 'excluido')
+  assert.equal(auditoria[0].avisoId, 'aviso-1')
+})
+
 
 
 test('obterAvisos do painel inclui inativos e a persistência em uso', () => {

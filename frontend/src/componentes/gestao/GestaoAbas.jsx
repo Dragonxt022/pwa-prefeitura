@@ -1,8 +1,9 @@
-import { ClipboardList, LayoutDashboard, UsersRound } from 'lucide-react'
+import { ClipboardList, LayoutDashboard, Megaphone, UsersRound } from 'lucide-react'
 
 const ABAS_BASE = [
   { id: 'dashboard', rotulo: 'Dashboard', Icone: LayoutDashboard },
   { id: 'solicitacoes', rotulo: 'Solicitações', Icone: ClipboardList },
+  { id: 'avisos', rotulo: 'Avisos', Icone: Megaphone, somenteAdmin: true },
   { id: 'usuarios', rotulo: 'Usuários', Icone: UsersRound, somenteAdmin: true },
 ]
 

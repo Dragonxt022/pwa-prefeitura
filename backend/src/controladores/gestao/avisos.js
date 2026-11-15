@@ -8,6 +8,7 @@ import { naoEncontrado, validacao } from '../../utils/erros.js'
 import {
   atualizarAviso,
   criarAviso,
+  excluirAviso,
   listarAuditoriaAvisos,
   obterAvisos,
 } from '../../servicos/avisos.js'
@@ -42,4 +43,12 @@ export async function criarAdmin(req, res) {
 export async function atualizarAdmin(req, res) {
   const dados = validarAtualizacaoAviso(req.body)
   responder(res, await atualizarAviso(req.params.id, dados, req.usuario))
+}
+
+export async function excluirAdmin(req, res) {
+  const resultado = await excluirAviso(req.params.id, req.usuario)
+  if (resultado.naoEncontrado) {
+    throw naoEncontrado('Aviso não encontrado.')
+  }
+  res.json({ dados: { id: resultado.registro.id } })
 }

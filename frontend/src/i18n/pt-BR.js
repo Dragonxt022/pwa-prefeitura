@@ -362,6 +362,8 @@ const ptBR = {
   'avisos.carregando': 'Carregando avisos…',
   'avisos.vazio': 'Nenhum aviso cadastrado.',
   'avisos.salvo': 'Aviso salvo. A alteração já está valendo.',
+  'avisos.excluido': 'Aviso excluído.',
+  'avisos.excluir': 'Excluir',
   'avisos.ativado': 'Aviso reativado.',
   'avisos.desativado': 'Aviso desativado.',
   'avisos.resumo': 'ativos de {{total}} avisos',

@@ -129,6 +129,15 @@ export async function atualizarAviso(id, dados, ator) {
   return { registro: buscarAviso(id) ?? registro }
 }
 
+export async function excluirAviso(id, ator) {
+  const antes = buscarAviso(id)
+  if (!antes) return { naoEncontrado: true }
+
+  await repositorioAvisos.remover(id, antes, ator)
+  await recarregar()
+  return { registro: antes }
+}
+
 /** Persiste a leitura no repositório em segundo plano. */
 export async function registrarVisualizacaoPersistente(id) {
   try {
