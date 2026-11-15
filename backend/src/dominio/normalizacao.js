@@ -32,6 +32,7 @@ export function normalizarSolicitacao(item) {
     slaEm: item.slaEm || adicionarDias(criadoEm, prazoDias),
     prioridade: item.prioridade || 'normal',
     foto: item.foto || null,
+    fotoSensivel: Boolean(item.fotoSensivel),
     localizacao: item.localizacao || null,
     avaliacao: item.avaliacao || null,
     clientId: item.clientId || null,

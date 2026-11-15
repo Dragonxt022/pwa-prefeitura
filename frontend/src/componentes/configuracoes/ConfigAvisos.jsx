@@ -1,5 +1,7 @@
 import {
+  CalendarClock,
   Check,
+  Eye,
   LoaderCircle,
   Pencil,
   Plus,
@@ -37,9 +39,9 @@ function paraInputDataHora(iso) {
 }
 
 function deInputDataHora(valor) {
-  if (!valor) return undefined
+  if (!valor) return null
   const data = new Date(valor)
-  return Number.isNaN(data.getTime()) ? undefined : data.toISOString()
+  return Number.isNaN(data.getTime()) ? null : data.toISOString()
 }
 
 function formVazio() {
@@ -52,6 +54,8 @@ function formVazio() {
     cor: '',
     prioridade: 'normal',
     publicadoEm: paraInputDataHora(),
+    expiraEm: '',
+    desativarAoExpirar: true,
     ativo: true,
   }
 }
@@ -66,8 +70,16 @@ function payloadDe(form) {
     cor: form.cor || null,
     prioridade: form.prioridade,
     publicadoEm: deInputDataHora(form.publicadoEm),
+    expiraEm: deInputDataHora(form.expiraEm),
+    desativarAoExpirar: Boolean(form.desativarAoExpirar),
     ativo: Boolean(form.ativo),
   }
+}
+
+function estaExpirado(aviso, agora) {
+  if (!aviso?.expiraEm || aviso.desativarAoExpirar === false) return false
+  const expiraEm = new Date(aviso.expiraEm)
+  return !Number.isNaN(expiraEm.getTime()) && expiraEm.getTime() <= agora
 }
 
 export default function ConfigAvisos({ onSessaoExpirada }) {
@@ -84,6 +96,7 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
   const [alternando, setAlternando] = useState(null)
   const [mensagem, setMensagem] = useState('')
   const [referencia, setReferencia] = useState(0)
+  const [abaLista, setAbaLista] = useState('publicados')
 
   const carregar = useCallback(async () => {
     setCarregando(true)
@@ -114,10 +127,29 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
     return lista.sort((a, b) => new Date(b.publicadoEm) - new Date(a.publicadoEm))
   }, [dados])
 
-  const ativos = avisos.filter((aviso) => aviso.ativo).length
+  const ativos = referencia
+    ? avisos.filter(
+        (aviso) =>
+          aviso.ativo &&
+          new Date(aviso.publicadoEm).getTime() <= referencia &&
+          !estaExpirado(aviso, referencia),
+      ).length
+    : 0
   const agendados = referencia
     ? avisos.filter((aviso) => new Date(aviso.publicadoEm).getTime() > referencia).length
     : 0
+  const expirados = referencia
+    ? avisos.filter((aviso) => estaExpirado(aviso, referencia)).length
+    : 0
+  const publicados = referencia
+    ? avisos.filter((aviso) => !estaExpirado(aviso, referencia))
+    : avisos
+  const expiradosLista = referencia
+    ? avisos.filter((aviso) => estaExpirado(aviso, referencia))
+    : []
+  const abaListaEfetiva =
+    abaLista === 'expirados' && expiradosLista.length > 0 ? 'expirados' : 'publicados'
+  const listaVisivel = abaListaEfetiva === 'expirados' ? expiradosLista : publicados
 
   function abrirNovo() {
     setEditor({ registro: null })
@@ -139,6 +171,8 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
       cor: registro.cor || '',
       prioridade: registro.prioridade || 'normal',
       publicadoEm: paraInputDataHora(registro.publicadoEm),
+      expiraEm: registro.expiraEm ? paraInputDataHora(registro.expiraEm) : '',
+      desativarAoExpirar: registro.desativarAoExpirar !== false,
       ativo: registro.ativo,
     })
     setCampos({})
@@ -264,6 +298,10 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
                 <strong>{agendados}</strong>
                 <span>{t('avisos.resumoAgendados')}</span>
               </div>
+              <div>
+                <strong>{expirados}</strong>
+                <span>{t('avisos.resumoExpirados')}</span>
+              </div>
             </div>
 
             <div className="config-catalogo__barra">
@@ -354,6 +392,19 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
                     />
                   </CampoConfig>
                   <CampoConfig
+                    id="aviso-expira"
+                    rotulo={t('avisos.campoExpiraEm')}
+                    ajuda={t('avisos.expiraAjuda')}
+                    erro={campos.expiraEm}
+                  >
+                    <input
+                      id="aviso-expira"
+                      type="datetime-local"
+                      value={form.expiraEm}
+                      onChange={(evento) => trocarCampo('expiraEm', evento.target.value)}
+                    />
+                  </CampoConfig>
+                  <CampoConfig
                     id="aviso-resumo"
                     rotulo={t('avisos.campoResumo')}
                     ajuda={t('avisos.resumoAjuda')}
@@ -409,6 +460,13 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
                     titulo={t('avisos.campoAtivo')}
                     descricao={t('avisos.campoAtivoAjuda')}
                   />
+                  <SwitchConfig
+                    id="aviso-desativar-expirado"
+                    checked={form.desativarAoExpirar}
+                    onChange={(valor) => trocarCampo('desativarAoExpirar', valor)}
+                    titulo={t('avisos.campoDesativarAoExpirar')}
+                    descricao={t('avisos.campoDesativarAoExpirarAjuda')}
+                  />
                 </div>
 
                 <div className="config-catalogo__editor-acoes">
@@ -440,72 +498,136 @@ export default function ConfigAvisos({ onSessaoExpirada }) {
             ) : avisos.length === 0 ? (
               <p className="config-vazio">{t('avisos.vazio')}</p>
             ) : (
-              <ul className="config-catalogo__lista">
-                {avisos.map((aviso) => {
-                  const agendado = referencia
-                    ? new Date(aviso.publicadoEm).getTime() > referencia
-                    : false
-                  const { Icone, tom } = visualAviso(aviso)
-                  return (
-                    <li
-                      key={aviso.id}
-                      className={`config-catalogo__item${aviso.ativo ? '' : ' is-inativo'}`}
+              <>
+                <div className="config-filtros-lista" role="tablist" aria-label="Filtrar avisos">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={abaListaEfetiva === 'publicados'}
+                    className={`config-filtros-lista__aba${
+                      abaListaEfetiva === 'publicados' ? ' is-ativa' : ''
+                    }`}
+                    onClick={() => setAbaLista('publicados')}
+                  >
+                    Publicados ({publicados.length})
+                  </button>
+                  {expiradosLista.length > 0 && (
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={abaListaEfetiva === 'expirados'}
+                      className={`config-filtros-lista__aba${
+                        abaListaEfetiva === 'expirados' ? ' is-ativa' : ''
+                      }`}
+                      onClick={() => setAbaLista('expirados')}
                     >
-                      <div className="config-catalogo__item-principal">
-                        <span className={`config-catalogo__item-icone tom-${tom}`}>
-                          <Icone aria-hidden="true" />
-                        </span>
-                        <div className="config-catalogo__item-texto">
-                          <strong>
-                            {aviso.titulo}
-                            {agendado ? (
-                              <span className="config-catalogo__etiqueta">
-                                {t('avisos.agendado')}
+                      Expirados ({expiradosLista.length})
+                    </button>
+                  )}
+                </div>
+
+                {listaVisivel.length === 0 ? (
+                  <p className="config-vazio">
+                    {abaListaEfetiva === 'expirados'
+                      ? 'Nenhum aviso expirado.'
+                      : 'Nenhum aviso publicado.'}
+                  </p>
+                ) : (
+                  <ul className="config-catalogo__lista">
+                    {listaVisivel.map((aviso) => {
+                      const agendado = referencia
+                        ? new Date(aviso.publicadoEm).getTime() > referencia
+                        : false
+                      const expirado = referencia ? estaExpirado(aviso, referencia) : false
+                      const { Icone, tom } = visualAviso(aviso)
+                      return (
+                        <li
+                          key={aviso.id}
+                          className={`config-catalogo__item${aviso.ativo ? '' : ' is-inativo'}${
+                            expirado ? ' is-expirado' : ''
+                          }`}
+                        >
+                          <div className="config-catalogo__item-principal">
+                            <span className={`config-catalogo__item-icone tom-${tom}`}>
+                              <Icone aria-hidden="true" />
+                            </span>
+                            <div className="config-catalogo__item-texto">
+                              <strong>
+                                {aviso.titulo}
+                                {agendado ? (
+                                  <span className="config-catalogo__etiqueta">
+                                    {t('avisos.agendado')}
+                                  </span>
+                                ) : null}
+                                {expirado ? (
+                                  <span className="config-catalogo__etiqueta config-catalogo__etiqueta--expirado">
+                                    {t('avisos.expirado')}
+                                  </span>
+                                ) : null}
+                              </strong>
+                              <span>
+                                {aviso.categoria}
+                                {' · '}
+                                {t(ROTULO_PRIORIDADE[aviso.prioridade] ?? 'avisos.prioridadeNormal')}
+                                {' · '}
+                                {formatarDataHora(aviso.publicadoEm)}
+                                {aviso.expiraEm
+                                  ? ` · ${t('avisos.expiraEmCurto', {
+                                      data: formatarDataHora(aviso.expiraEm),
+                                    })}`
+                                  : ''}
                               </span>
-                            ) : null}
-                          </strong>
-                          <span>
-                            {aviso.categoria}
-                            {' · '}
-                            {t(ROTULO_PRIORIDADE[aviso.prioridade] ?? 'avisos.prioridadeNormal')}
-                            {' · '}
-                            {formatarDataHora(aviso.publicadoEm)}
-                          </span>
-                          <span className="config-catalogo__vinculos">{aviso.resumo}</span>
-                        </div>
-                      </div>
-                      <div className="config-catalogo__item-acoes">
-                        <span
-                          className={`config-catalogo__status${aviso.ativo ? ' is-ativo' : ''}`}
-                        >
-                          {t(aviso.ativo ? 'comum.ativo' : 'comum.inativo')}
-                        </span>
-                        <button
-                          type="button"
-                          className="botao botao--secundario botao--pequeno"
-                          onClick={() => abrirEdicao(aviso)}
-                        >
-                          <Pencil aria-hidden="true" />
-                          {t('avisos.editar')}
-                        </button>
-                        <button
-                          type="button"
-                          className="botao botao--secundario botao--pequeno"
-                          onClick={() => alternar(aviso)}
-                          disabled={alternando === aviso.id}
-                        >
-                          {alternando === aviso.id ? (
-                            <LoaderCircle className="girando" aria-hidden="true" />
-                          ) : (
-                            <Power aria-hidden="true" />
-                          )}
-                          {t(aviso.ativo ? 'avisos.desativar' : 'avisos.ativar')}
-                        </button>
-                      </div>
-                    </li>
-                  )
-                })}
-              </ul>
+                              <span className="config-catalogo__vinculos">{aviso.resumo}</span>
+                              <span className="config-catalogo__views">
+                                <Eye aria-hidden="true" />
+                                {t('avisos.visualizacoes', {
+                                  quantidade: aviso.visualizacoes ?? 0,
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="config-catalogo__item-acoes">
+                            <span
+                              className={`config-catalogo__status${aviso.ativo ? ' is-ativo' : ''}`}
+                            >
+                              {t(aviso.ativo ? 'comum.ativo' : 'comum.inativo')}
+                            </span>
+                            <button
+                              type="button"
+                              className="botao botao--secundario botao--pequeno"
+                              onClick={() => abrirEdicao(aviso)}
+                            >
+                              <Pencil aria-hidden="true" />
+                              {t('avisos.editar')}
+                            </button>
+                            {!expirado && (
+                              <button
+                                type="button"
+                                className="botao botao--secundario botao--pequeno"
+                                onClick={() => alternar(aviso)}
+                                disabled={alternando === aviso.id}
+                              >
+                                {alternando === aviso.id ? (
+                                  <LoaderCircle className="girando" aria-hidden="true" />
+                                ) : (
+                                  <Power aria-hidden="true" />
+                                )}
+                                {t(aviso.ativo ? 'avisos.desativar' : 'avisos.ativar')}
+                              </button>
+                            )}
+                            {expirado && (
+                              <span className="config-catalogo__dica">
+                                <CalendarClock aria-hidden="true" />
+                                Edite a expiração para republicar.
+                              </span>
+                            )}
+                          </div>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </>
             )}
           </>
         )}

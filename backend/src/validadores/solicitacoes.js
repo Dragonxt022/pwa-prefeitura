@@ -36,10 +36,49 @@ function validarLocalizacao(valor) {
   return { latitude, longitude, precisao }
 }
 
+function assinaturaValida(mime, base64) {
+  let bytes
+  try {
+    bytes = Buffer.from(base64.slice(0, 96), 'base64')
+  } catch {
+    return false
+  }
+  if (mime === 'jpeg' || mime === 'jpg') {
+    return bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff
+  }
+  if (mime === 'png') {
+    return (
+      bytes.length >= 8 &&
+      bytes[0] === 0x89 &&
+      bytes[1] === 0x50 &&
+      bytes[2] === 0x4e &&
+      bytes[3] === 0x47 &&
+      bytes[4] === 0x0d &&
+      bytes[5] === 0x0a &&
+      bytes[6] === 0x1a &&
+      bytes[7] === 0x0a
+    )
+  }
+  if (mime === 'webp') {
+    return (
+      bytes.length >= 12 &&
+      bytes.toString('ascii', 0, 4) === 'RIFF' &&
+      bytes.toString('ascii', 8, 12) === 'WEBP'
+    )
+  }
+  return false
+}
+
 function validarFoto(valor) {
   if (valor === undefined || valor === null || valor === '') return null
-  if (typeof valor !== 'string' || !/^data:image\/(jpeg|jpg|png|webp);base64,[a-z0-9+/=]+$/i.test(valor)) {
+  const formato = typeof valor === 'string'
+    ? valor.match(/^data:image\/(jpeg|jpg|png|webp);base64,([a-z0-9+/=]+)$/i)
+    : null
+  if (!formato) {
     throw validacao({ foto: 'A foto deve ser uma imagem JPEG, PNG ou WebP.' })
+  }
+  if (!assinaturaValida(formato[1].toLowerCase(), formato[2])) {
+    throw validacao({ foto: 'O arquivo não parece ser uma imagem válida.' })
   }
   if (valor.length > LIMITES.fotoMax) {
     throw validacao({ foto: 'A foto é muito grande. Escolha uma imagem menor.' })

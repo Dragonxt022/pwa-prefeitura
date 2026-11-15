@@ -323,6 +323,13 @@ export const atualizarStatusGestao = (protocolo, dados) =>
     timeout: 12000,
   })
 
+export const moderarFotoGestao = (protocolo, sensivel) =>
+  requisicao(`/gestao/solicitacoes/${encodeURIComponent(protocolo)}/foto-moderacao`, {
+    metodo: 'PATCH',
+    corpo: { sensivel },
+    timeout: 12000,
+  })
+
 export const transferirGestao = (protocolo, dados) =>
   requisicao(`/gestao/solicitacoes/${encodeURIComponent(protocolo)}/transferir`, {
     metodo: 'PATCH',

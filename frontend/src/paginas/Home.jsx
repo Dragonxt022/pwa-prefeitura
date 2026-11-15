@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowUpRight, Clock3, Plus, Search, Sparkles } from 'lucide-react'
+import { ArrowRight, ArrowUpRight, Clock3, Eye, Plus, Search, Sparkles } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import ErrorState from '../componentes/ErrorState'
@@ -159,6 +159,13 @@ export default function Home() {
                             <span>{aviso.categoria}</span>
                             <span aria-hidden="true">·</span>
                             <time dateTime={aviso.publicadoEm}>{formatarData(aviso.publicadoEm)}</time>
+                            <span
+                              className="aviso__views"
+                              aria-label={`${aviso.visualizacoes ?? 0} visualizações`}
+                            >
+                              <Eye aria-hidden="true" />
+                              {aviso.visualizacoes ?? 0}
+                            </span>
                           </div>
                           <h3>{aviso.titulo}</h3>
                           <p className="aviso__resumo">{aviso.resumo}</p>

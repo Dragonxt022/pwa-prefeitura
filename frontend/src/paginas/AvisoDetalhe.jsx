@@ -1,10 +1,11 @@
-import { ArrowLeft, ArrowRight, CalendarDays, LoaderCircle, Megaphone } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CalendarDays, Eye, LoaderCircle, Megaphone } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import ErrorState from '../componentes/ErrorState'
 import { Badge } from '../componentes/StatusBadge'
 import { useRecurso } from '../hooks/useRecurso'
 import { obterAviso } from '../servicos/api'
 import { formatarData, infoPrioridade } from '../utils/format'
+import { partesComLinks } from '../utils/texto'
 import { visualAviso } from '../utils/visual'
 
 function paragrafosDoAviso(aviso) {
@@ -13,6 +14,23 @@ function paragrafosDoAviso(aviso) {
     .split(/\n{2,}/)
     .map((paragrafo) => paragrafo.trim())
     .filter(Boolean)
+}
+
+function ParagrafoComLinks({ texto }) {
+  return partesComLinks(texto).map((parte, indice) =>
+    parte.tipo === 'link' ? (
+      <a
+        key={`link-${indice}-${parte.valor}`}
+        href={parte.valor}
+        target="_blank"
+        rel="noreferrer noopener"
+      >
+        {parte.valor}
+      </a>
+    ) : (
+      <span key={`texto-${indice}`}>{parte.valor}</span>
+    ),
+  )
 }
 
 export default function AvisoDetalhe() {
@@ -83,6 +101,10 @@ function AvisoCompleto({ aviso }) {
               <CalendarDays aria-hidden="true" />
               {formatarData(aviso.publicadoEm)}
             </time>
+            <span className="aviso-detalhe__views">
+              <Eye aria-hidden="true" />
+              {aviso.visualizacoes ?? 0} visualizações
+            </span>
           </div>
           <h1>{aviso.titulo}</h1>
           <p className="aviso-detalhe__resumo">{aviso.resumo}</p>
@@ -91,7 +113,9 @@ function AvisoCompleto({ aviso }) {
 
       <div className="aviso-detalhe__conteudo">
         {paragrafos.map((paragrafo, indice) => (
-          <p key={`${aviso.id}-paragrafo-${indice}`}>{paragrafo}</p>
+          <p key={`${aviso.id}-paragrafo-${indice}`}>
+            <ParagrafoComLinks texto={paragrafo} />
+          </p>
         ))}
       </div>
 

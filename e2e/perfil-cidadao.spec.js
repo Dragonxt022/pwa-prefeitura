@@ -26,9 +26,13 @@ test('cidadão cria conta e tem contato e endereço preenchidos na solicitação
   await expect(page.getByText(/Rua das Acácias, 120/)).toBeVisible()
 
   await page.goto('/nova-solicitacao')
+  await page.locator('.escolha-servico', { hasText: 'Iluminação pública' }).click()
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await page.locator('#descricao').fill('Lâmpada apagada na rua do teste de perfil da conta.')
   await expect(page.locator('#endereco')).toHaveValue('Rua das Acácias, 120 - Centro')
-  await expect(page.locator('#contato')).toHaveValue('(69) 99999-8888')
   await expect(page.locator('#cep')).toHaveValue('76800-000')
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await expect(page.locator('#contato')).toHaveValue('(69) 99999-8888')
   await expect(page.getByText(/preenchidos a partir do seu cadastro/i)).toBeVisible()
 
   await page.goto('/perfil')

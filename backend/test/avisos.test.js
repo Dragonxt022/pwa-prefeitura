@@ -283,6 +283,39 @@ test('atualização de aviso inexistente informa não encontrado', async () => {
   assert.equal(resultado.naoEncontrado, true)
 })
 
+test('aviso expirado é desativado e some da listagem pública', async () => {
+  await inicializarAvisos()
+  const agora = Date.now()
+  const criado = await criarAviso(
+    {
+      titulo: 'Campanha encerrada',
+      resumo: 'Este aviso já passou da data de expiração.',
+      conteudo: 'Conteúdo completo do aviso expirado para validar a regra.',
+      categoria: 'Serviço',
+      publicadoEm: new Date(agora - 86_400_000).toISOString(),
+      expiraEm: new Date(agora - 3_600_000).toISOString(),
+      desativarAoExpirar: true,
+    },
+    ATOR,
+  )
+
+  assert.ok(criado.registro.id)
+  assert.equal(buscarAvisoPublico(criado.registro.id), null)
+  assert.equal(
+    obterAvisos().avisos.find((aviso) => aviso.id === criado.registro.id)?.ativo,
+    false,
+  )
+})
+
+test('detalhe público incrementa a contagem de visualizações', () => {
+  aplicarAvisos(avisosSemente)
+  const antes = buscarAviso('aviso-1').visualizacoes ?? 0
+  respostaDetalhe('aviso-1')
+  respostaDetalhe('aviso-1')
+  assert.equal(buscarAviso('aviso-1').visualizacoes, antes + 2)
+})
+
+
 test('obterAvisos do painel inclui inativos e a persistência em uso', () => {
   const dados = obterAvisos()
   assert.equal(dados.persistencia, 'memoria')

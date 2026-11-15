@@ -6,8 +6,10 @@
 import * as catalogo from '../dominio/catalogo.js'
 import {
   buscarAvisoPublico,
+  contarVisualizacao,
   listarAvisos as listarAvisosDominio,
 } from '../dominio/avisos.js'
+import { registrarVisualizacaoPersistente } from '../servicos/avisos.js'
 import { naoEncontrado } from '../utils/erros.js'
 
 export function listarServicos(_req, res) {
@@ -23,16 +25,32 @@ export function listarServicos(_req, res) {
 export function listarAvisos(_req, res) {
   // Contrato público: sem os campos internos do painel (situação e timestamps).
   const dados = listarAvisosDominio().map(
-    ({ ativo: _ativo, criadoEm: _criadoEm, atualizadoEm: _atualizadoEm, ...aviso }) => aviso,
+    ({
+      ativo: _ativo,
+      criadoEm: _criadoEm,
+      atualizadoEm: _atualizadoEm,
+      desativarAoExpirar: _desativarAoExpirar,
+      ...aviso
+    }) => aviso,
   )
   res.json({ dados })
 }
 
 export function obterAviso(req, res) {
-  const aviso = buscarAvisoPublico(req.params.id)
-  if (!aviso) throw naoEncontrado('Aviso não encontrado.')
+  const publico = buscarAvisoPublico(req.params.id)
+  if (!publico) throw naoEncontrado('Aviso não encontrado.')
+
+  const aviso = contarVisualizacao(req.params.id) ?? publico
+  void registrarVisualizacaoPersistente(req.params.id)
+
   // O detalhe mantém o mesmo contrato público da listagem.
-  const { ativo: _ativo, criadoEm: _criadoEm, atualizadoEm: _atualizadoEm, ...dados } = aviso
+  const {
+    ativo: _ativo,
+    criadoEm: _criadoEm,
+    atualizadoEm: _atualizadoEm,
+    desativarAoExpirar: _desativarAoExpirar,
+    ...dados
+  } = aviso
   res.json({ dados })
 }
 

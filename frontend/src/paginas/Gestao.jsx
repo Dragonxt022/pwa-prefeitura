@@ -1,4 +1,4 @@
-import { Check, ShieldCheck, SlidersHorizontal, TriangleAlert } from 'lucide-react'
+import { Check, LoaderCircle, ShieldCheck, SlidersHorizontal, TriangleAlert } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import logoColorido from '../assets/logo-icone-colorido.png'
 import { Badge } from '../componentes/StatusBadge'
@@ -27,6 +27,7 @@ export default function Gestao() {
   const { t } = useI18n()
   const [abaAtiva, setAbaAtiva] = useState('dashboard')
   const [filtrosAbertos, setFiltrosAbertos] = useState(false)
+  const [modoSelecao, setModoSelecao] = useState(false)
   const sessao = useGestaoSessao()
   const fila = useGestaoFila({
     usuario: sessao.usuario,
@@ -100,7 +101,16 @@ export default function Gestao() {
   function selecionarAba(id) {
     setAbaAtiva(id)
     if (id !== 'usuarios') fecharUsuarios()
+    if (id !== 'solicitacoes') {
+      setModoSelecao(false)
+      fila.limparSelecionados()
+    }
     window.requestAnimationFrame(() => document.getElementById(`aba-${id}`)?.focus())
+  }
+
+  function sairDaSelecao() {
+    setModoSelecao(false)
+    fila.limparSelecionados()
   }
 
   function atualizarFila() {
@@ -113,6 +123,17 @@ export default function Gestao() {
 
   function imprimirFiltro() {
     impressao.imprimir(fila.dados.dados, 'Resultado do filtro')
+  }
+
+  if (sessao.verificandoSessao) {
+    return (
+      <div className="gestao gestao--login">
+        <div className="gestao-login__cartao cartao" role="status">
+          <LoaderCircle className="girando" aria-hidden="true" />
+          <p>Verificando sessão…</p>
+        </div>
+      </div>
+    )
   }
 
   if (!usuario) {
@@ -241,10 +262,13 @@ export default function Gestao() {
             )}
 
             <GestaoAcoes
+              modoSelecao={modoSelecao}
               totalVisivel={fila.dados.dados.length}
               totalSelecionado={fila.itensSelecionados.length}
               todosVisiveisSelecionados={fila.todosVisiveisSelecionados}
               aoAlternarTodos={fila.alternarTodosVisiveis}
+              aoEntrarSelecao={() => setModoSelecao(true)}
+              aoSairSelecao={sairDaSelecao}
               aoImprimirSelecionados={imprimirSelecionados}
               aoImprimirFiltro={imprimirFiltro}
             />
@@ -256,8 +280,11 @@ export default function Gestao() {
                 selecionada={fila.selecionada}
                 selecionados={fila.selecionados}
                 servicosPorId={fila.servicosPorId}
+                modoSelecao={modoSelecao}
+                alterandoStatus={fila.alterandoStatus}
                 aoAbrirDetalhe={fila.abrirDetalhe}
                 aoAlternarSelecionado={fila.alternarSelecionado}
+                aoAlterarStatus={fila.alterarStatusRapido}
               />
 
               {fila.selecionada && (
@@ -266,10 +293,12 @@ export default function Gestao() {
                   detalheRef={fila.detalheRef}
                   formStatus={fila.formStatus}
                   salvandoStatus={fila.salvandoStatus}
+                  moderandoFoto={fila.moderandoFoto}
                   aoFechar={fila.fecharDetalhe}
                   aoAbrirTransferencia={transferencia.abrir}
                   aoSalvarAtualizacao={fila.salvarAtualizacao}
                   aoAtualizarFormStatus={fila.atualizarFormStatus}
+                  aoModerarFoto={fila.moderarFoto}
                 />
               )}
             </div>

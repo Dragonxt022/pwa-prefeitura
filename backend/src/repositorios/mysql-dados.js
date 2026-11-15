@@ -28,6 +28,7 @@ const TABELAS = [
     sla_em DATETIME(3) NOT NULL,
     prioridade VARCHAR(16) NOT NULL DEFAULT 'normal',
     foto MEDIUMTEXT NULL,
+    foto_sensivel TINYINT(1) NOT NULL DEFAULT 0,
     localizacao JSON NULL,
     avaliacao JSON NULL,
     client_id VARCHAR(80) NULL,
@@ -169,6 +170,7 @@ function mapearSolicitacao(linha) {
     slaEm: paraIso(linha.sla_em),
     prioridade: linha.prioridade,
     foto: linha.foto,
+    fotoSensivel: Boolean(linha.foto_sensivel),
     localizacao: lerJson(linha.localizacao),
     avaliacao: lerJson(linha.avaliacao),
     clientId: linha.client_id,
@@ -283,6 +285,19 @@ async function garantirColunas() {
          ADD KEY idx_dados_solicitacoes_cidadao (cidadao_id)`,
     )
   }
+
+  const [sensivel] = await pool.query(
+    `SELECT column_name FROM information_schema.columns
+      WHERE table_schema = DATABASE()
+        AND table_name = 'dados_solicitacoes'
+        AND column_name = 'foto_sensivel'`,
+  )
+  if (sensivel.length === 0) {
+    await pool.query(
+      `ALTER TABLE dados_solicitacoes
+         ADD COLUMN foto_sensivel TINYINT(1) NOT NULL DEFAULT 0 AFTER foto`,
+    )
+  }
 }
 
 export async function inicializarTabelas() {
@@ -334,10 +349,10 @@ export async function carregarTudo() {
 
 const INSERT_SOLICITACAO = `INSERT INTO dados_solicitacoes
   (protocolo, tipo, tipo_titulo, descricao, endereco, contato, status, criado_em,
-   atualizado_em, concluido_em, prazo_dias, sla_em, prioridade, foto, localizacao,
-   avaliacao, client_id, cidadao_id, setor_id, transferencias, triagem,
+   atualizado_em, concluido_em, prazo_dias, sla_em, prioridade, foto, foto_sensivel,
+   localizacao, avaliacao, client_id, cidadao_id, setor_id, transferencias, triagem,
    codigo_acesso_hash, historico)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 function valoresSolicitacao(solicitacao) {
   return [
@@ -355,6 +370,7 @@ function valoresSolicitacao(solicitacao) {
     paraData(solicitacao.slaEm),
     solicitacao.prioridade,
     solicitacao.foto ?? null,
+    solicitacao.fotoSensivel ? 1 : 0,
     paraJson(solicitacao.localizacao),
     paraJson(solicitacao.avaliacao),
     solicitacao.clientId ?? null,
@@ -413,7 +429,7 @@ export async function atualizarSolicitacao(solicitacao) {
     `UPDATE dados_solicitacoes SET
        tipo = ?, tipo_titulo = ?, descricao = ?, endereco = ?, contato = ?, status = ?,
        criado_em = ?, atualizado_em = ?, concluido_em = ?, prazo_dias = ?, sla_em = ?,
-       prioridade = ?, foto = ?, localizacao = ?, avaliacao = ?, client_id = ?,
+       prioridade = ?, foto = ?, foto_sensivel = ?, localizacao = ?, avaliacao = ?, client_id = ?,
        cidadao_id = ?, setor_id = ?, transferencias = ?, triagem = ?,
        codigo_acesso_hash = ?, historico = ?
      WHERE protocolo = ?`,

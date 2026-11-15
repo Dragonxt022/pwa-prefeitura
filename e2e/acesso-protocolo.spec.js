@@ -8,11 +8,14 @@ test('cria pedido, protege o acesso e reabre pelo código', async ({ page, brows
   await expect(page.getByRole('heading', { name: 'O que aconteceu?' })).toBeVisible()
   await page.locator('.escolha-servico', { hasText: 'Iluminação pública' }).click()
   await expect(page.locator('input[name="tipo"][value="iluminacao"]')).toBeChecked()
+  await page.getByRole('button', { name: 'Continuar' }).click()
 
   await page.locator('#descricao').fill(
     'Poste apagado em frente ao número 123, próximo à praça do bairro.',
   )
   await page.locator('#endereco').fill('Rua do Teste E2E, 123 - Centro')
+  await page.getByRole('button', { name: 'Continuar' }).click()
+  await page.getByRole('button', { name: 'Continuar' }).click()
 
   await page.getByRole('button', { name: 'Enviar solicitação' }).click()
 

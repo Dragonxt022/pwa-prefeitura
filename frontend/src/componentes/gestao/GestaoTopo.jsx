@@ -1,4 +1,5 @@
 import {
+  ArrowLeft,
   ExternalLink,
   LogOut,
   Menu,
@@ -18,6 +19,7 @@ export default function GestaoTopo({
   podeGerenciarUsuarios,
   carregando,
   rotuloConfiguracoes,
+  mostrarConfiguracoes = true,
   aoAtualizar,
   aoSair,
 }) {
@@ -101,7 +103,13 @@ export default function GestaoTopo({
               </div>
 
               <div className="gestao-menu__grupo">
-                {podeGerenciarUsuarios && (
+                {!mostrarConfiguracoes && (
+                  <Link className="gestao-menu__item" to="/gestao" onClick={fecharMenu}>
+                    <ArrowLeft aria-hidden="true" />
+                    <span>Voltar para solicitações</span>
+                  </Link>
+                )}
+                {podeGerenciarUsuarios && mostrarConfiguracoes && (
                   <Link
                     className="gestao-menu__item"
                     to="/gestao/configuracoes"

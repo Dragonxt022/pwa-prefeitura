@@ -19,10 +19,14 @@ const TABELAS = [
     cor VARCHAR(20) NULL,
     prioridade VARCHAR(16) NOT NULL DEFAULT 'normal',
     publicado_em DATETIME(3) NOT NULL,
+    visualizacoes INT UNSIGNED NOT NULL DEFAULT 0,
+    expira_em DATETIME(3) NULL,
+    desativar_ao_expirar TINYINT(1) NOT NULL DEFAULT 1,
     ativo TINYINT(1) NOT NULL DEFAULT 1,
     criado_em DATETIME(3) NOT NULL,
     atualizado_em DATETIME(3) NOT NULL,
     KEY idx_avisos_publicado (publicado_em),
+    KEY idx_avisos_expira (expira_em),
     KEY idx_avisos_ativo (ativo)
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci`,
   `CREATE TABLE IF NOT EXISTS avisos_auditoria (
@@ -68,6 +72,12 @@ function mapearAviso(linha) {
     cor: linha.cor ?? null,
     prioridade: linha.prioridade,
     publicadoEm: dataIso(linha.publicado_em),
+    visualizacoes: Math.max(0, Number(linha.visualizacoes) || 0),
+    expiraEm: dataIso(linha.expira_em),
+    desativarAoExpirar:
+      linha.desativar_ao_expirar === undefined || linha.desativar_ao_expirar === null
+        ? true
+        : Boolean(linha.desativar_ao_expirar),
     ativo: Boolean(linha.ativo),
     criadoEm: dataIso(linha.criado_em),
     atualizadoEm: dataIso(linha.atualizado_em),
@@ -102,8 +112,9 @@ async function semear(conexao) {
     await conexao.execute(
       `INSERT IGNORE INTO avisos
         (id, titulo, resumo, conteudo, categoria, icone, cor, prioridade,
-         publicado_em, ativo, criado_em, atualizado_em)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         publicado_em, visualizacoes, expira_em, desativar_ao_expirar,
+         ativo, criado_em, atualizado_em)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         aviso.id,
         aviso.titulo,
@@ -114,6 +125,9 @@ async function semear(conexao) {
         aviso.cor ?? null,
         aviso.prioridade ?? 'normal',
         new Date(aviso.publicadoEm),
+        0,
+        null,
+        1,
         aviso.ativo === false ? 0 : 1,
         agora,
         agora,
@@ -138,6 +152,15 @@ async function garantirColunas() {
     ['conteudo', 'ADD COLUMN conteudo TEXT NULL AFTER resumo'],
     ['icone', 'ADD COLUMN icone VARCHAR(40) NULL AFTER categoria'],
     ['cor', 'ADD COLUMN cor VARCHAR(20) NULL AFTER icone'],
+    [
+      'visualizacoes',
+      'ADD COLUMN visualizacoes INT UNSIGNED NOT NULL DEFAULT 0 AFTER publicado_em',
+    ],
+    ['expira_em', 'ADD COLUMN expira_em DATETIME(3) NULL AFTER visualizacoes'],
+    [
+      'desativar_ao_expirar',
+      'ADD COLUMN desativar_ao_expirar TINYINT(1) NOT NULL DEFAULT 1 AFTER expira_em',
+    ],
   ]
   for (const [nome, definicao] of colunas) {
     const [existentes] = await pool.query(
@@ -248,8 +271,9 @@ export async function criar(registro, ator) {
     await conexao.execute(
       `INSERT INTO avisos
         (id, titulo, resumo, conteudo, categoria, icone, cor, prioridade,
-         publicado_em, ativo, criado_em, atualizado_em)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         publicado_em, visualizacoes, expira_em, desativar_ao_expirar,
+         ativo, criado_em, atualizado_em)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         registro.id,
         registro.titulo,
@@ -260,6 +284,9 @@ export async function criar(registro, ator) {
         registro.cor ?? null,
         registro.prioridade,
         new Date(registro.publicadoEm),
+        registro.visualizacoes ?? 0,
+        registro.expiraEm ? new Date(registro.expiraEm) : null,
+        registro.desativarAoExpirar === false ? 0 : 1,
         registro.ativo ? 1 : 0,
         new Date(registro.criadoEm),
         new Date(registro.atualizadoEm),
@@ -284,7 +311,8 @@ export async function atualizar(registro, antes, ator) {
     await conexao.execute(
       `UPDATE avisos
           SET titulo = ?, resumo = ?, conteudo = ?, categoria = ?, icone = ?, cor = ?,
-              prioridade = ?, publicado_em = ?, ativo = ?, atualizado_em = ?
+              prioridade = ?, publicado_em = ?, expira_em = ?, desativar_ao_expirar = ?,
+              ativo = ?, atualizado_em = ?
         WHERE id = ?`,
       [
         registro.titulo,
@@ -295,6 +323,8 @@ export async function atualizar(registro, antes, ator) {
         registro.cor ?? null,
         registro.prioridade,
         new Date(registro.publicadoEm),
+        registro.expiraEm ? new Date(registro.expiraEm) : null,
+        registro.desativarAoExpirar === false ? 0 : 1,
         registro.ativo ? 1 : 0,
         new Date(registro.atualizadoEm),
         registro.id,
@@ -303,6 +333,52 @@ export async function atualizar(registro, antes, ator) {
     await gravarAuditoria(conexao, 'atualizado', antes, registro, ator, registro.atualizadoEm)
   })
   return registro
+}
+
+/** Conta uma leitura pública do aviso. */
+export async function registrarVisualizacao(id) {
+  if (!mysqlConfigurado) {
+    const aviso = dadosMemoria().avisos.find((item) => item.id === id)
+    if (!aviso) return false
+    aviso.visualizacoes = Math.max(0, Number(aviso.visualizacoes) || 0) + 1
+    return true
+  }
+  const pool = obterPool()
+  const [resultado] = await pool.execute(
+    'UPDATE avisos SET visualizacoes = visualizacoes + 1 WHERE id = ?',
+    [id],
+  )
+  return resultado.affectedRows > 0
+}
+
+/** Desativa em lote os avisos vencidos que têm a desativação automática ligada. */
+export async function desativarExpirados(agora = new Date()) {
+  if (!mysqlConfigurado) {
+    let total = 0
+    for (const aviso of dadosMemoria().avisos) {
+      if (
+        aviso.ativo &&
+        aviso.desativarAoExpirar !== false &&
+        aviso.expiraEm &&
+        new Date(aviso.expiraEm).getTime() <= new Date(agora).getTime()
+      ) {
+        aviso.ativo = false
+        total += 1
+      }
+    }
+    return total
+  }
+  const pool = obterPool()
+  const [resultado] = await pool.execute(
+    `UPDATE avisos
+        SET ativo = 0, atualizado_em = ?
+      WHERE ativo = 1
+        AND desativar_ao_expirar = 1
+        AND expira_em IS NOT NULL
+        AND expira_em <= ?`,
+    [new Date(agora), new Date(agora)],
+  )
+  return resultado.affectedRows
 }
 
 /** Usado nos testes para isolar o estado em memória. */

@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { atualizarStatusGestao, listarGestao, listarServicos, listarSetoresGestao } from '../servicos/api'
+import {
+  atualizarStatusGestao,
+  listarGestao,
+  listarServicos,
+  listarSetoresGestao,
+  moderarFotoGestao,
+} from '../servicos/api'
+import { infoStatus } from '../utils/format'
 import { FILTROS_INICIAIS } from '../utils/gestao'
 
 const DADOS_INICIAIS = { dados: [], total: 0, estatisticas: null }
@@ -16,6 +23,8 @@ export function useGestaoFila({ usuario, aoSessaoExpirada }) {
   const [selecionada, setSelecionada] = useState(null)
   const [formStatus, setFormStatus] = useState(FORM_STATUS_INICIAL)
   const [salvandoStatus, setSalvandoStatus] = useState(false)
+  const [alterandoStatus, setAlterandoStatus] = useState(null)
+  const [moderandoFoto, setModerandoFoto] = useState(false)
   const [selecionados, setSelecionados] = useState([])
   const detalheRef = useRef(null)
 
@@ -154,6 +163,53 @@ export function useGestaoFila({ usuario, aoSessaoExpirada }) {
     }
   }
 
+  async function alterarStatusRapido(item, status) {
+    if (!item || item.status === status) return
+    setAlterandoStatus(item.protocolo)
+    setMensagem('')
+    setErro(null)
+    try {
+      const solicitacao = await atualizarStatusGestao(item.protocolo, {
+        status,
+        prioridade: item.prioridade ?? 'normal',
+      })
+      setMensagem(
+        `Status de ${item.protocolo} alterado para ${infoStatus(status).rotulo}.`,
+      )
+      setSelecionada((atual) =>
+        atual?.protocolo === item.protocolo ? solicitacao : atual,
+      )
+      await carregar(filtros)
+    } catch (falha) {
+      setErro(falha)
+    } finally {
+      setAlterandoStatus(null)
+    }
+  }
+
+  async function moderarFoto(item, sensivel) {
+    if (!item) return
+    setModerandoFoto(true)
+    setMensagem('')
+    setErro(null)
+    try {
+      const solicitacao = await moderarFotoGestao(item.protocolo, sensivel)
+      setSelecionada((atual) =>
+        atual?.protocolo === item.protocolo ? solicitacao : atual,
+      )
+      setMensagem(
+        sensivel
+          ? 'Imagem ocultada do painel e do acompanhamento público.'
+          : 'Sinalização removida. A imagem voltará a ser exibida.',
+      )
+      await carregar(filtros)
+    } catch (falha) {
+      setErro(falha)
+    } finally {
+      setModerandoFoto(false)
+    }
+  }
+
   function atualizarFiltro(campo, valor) {
     setFiltros((atual) => ({ ...atual, [campo]: valor }))
     setSelecionados([])
@@ -170,6 +226,10 @@ export function useGestaoFila({ usuario, aoSessaoExpirada }) {
         ? atual.filter((item) => item !== protocolo)
         : [...atual, protocolo],
     )
+  }
+
+  function limparSelecionados() {
+    setSelecionados([])
   }
 
   function alternarTodosVisiveis() {
@@ -203,6 +263,8 @@ export function useGestaoFila({ usuario, aoSessaoExpirada }) {
     definirSelecionada: setSelecionada,
     formStatus,
     salvandoStatus,
+    alterandoStatus,
+    moderandoFoto,
     selecionados,
     detalheRef,
     podeVerTodos,
@@ -216,9 +278,12 @@ export function useGestaoFila({ usuario, aoSessaoExpirada }) {
     abrirDetalhe,
     fecharDetalhe,
     salvarAtualizacao,
+    alterarStatusRapido,
+    moderarFoto,
     atualizarFiltro,
     limparFiltros,
     alternarSelecionado,
+    limparSelecionados,
     alternarTodosVisiveis,
     atualizarFormStatus,
   }

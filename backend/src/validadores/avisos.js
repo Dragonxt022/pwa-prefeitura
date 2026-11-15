@@ -70,6 +70,17 @@ function validarPublicacao(valor, campos) {
   return data.toISOString()
 }
 
+function validarExpiracao(valor, campos) {
+  if (valor === undefined) return undefined
+  if (valor === null || valor === '') return null
+  const data = new Date(valor)
+  if (Number.isNaN(data.getTime())) {
+    campos.expiraEm = 'Informe uma data e hora válidas para a expiração.'
+    return undefined
+  }
+  return data.toISOString()
+}
+
 function validarAviso(body, { criacao }) {
   const campos = {}
   const dados = {}
@@ -116,6 +127,27 @@ function validarAviso(body, { criacao }) {
 
   const publicadoEm = validarPublicacao(body.publicadoEm, campos)
   if (publicadoEm !== undefined) dados.publicadoEm = publicadoEm
+
+  const expiraEm = validarExpiracao(body.expiraEm, campos)
+  if (expiraEm !== undefined) {
+    if (
+      expiraEm &&
+      publicadoEm &&
+      new Date(expiraEm).getTime() <= new Date(publicadoEm).getTime()
+    ) {
+      campos.expiraEm = 'A expiração deve ser posterior à data de publicação.'
+    } else {
+      dados.expiraEm = expiraEm
+    }
+  }
+
+  const desativarAoExpirar = lerBooleano(
+    body.desativarAoExpirar,
+    'desativarAoExpirar',
+    campos,
+  )
+  if (criacao) dados.desativarAoExpirar = desativarAoExpirar ?? true
+  else if (desativarAoExpirar !== undefined) dados.desativarAoExpirar = desativarAoExpirar
 
   const ativo = lerBooleano(body.ativo, 'ativo', campos)
   if (criacao) dados.ativo = ativo ?? true

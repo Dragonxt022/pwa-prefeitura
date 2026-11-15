@@ -162,6 +162,42 @@ export async function atualizarStatus(protocolo, { status, observacao, prioridad
 }
 
 /**
+ * Moderação de imagem enviada pelo cidadão.
+ *
+ * A imagem original permanece no registro para auditoria, mas deixa de ser
+ * devolvida pelas APIs pública e administrativa quando sinalizada. Isso evita
+ * exposição acidental de conteúdo sensível enquanto a equipe avalia o caso.
+ */
+export async function moderarFoto(protocolo, { sensivel, porUsuario }) {
+  const solicitacao = buscarSolicitacao(protocolo)
+  if (!solicitacao) return null
+
+  const agora = new Date().toISOString()
+  solicitacao.fotoSensivel = Boolean(sensivel)
+  solicitacao.atualizadoEm = agora
+
+  if (solicitacao.fotoSensivel) {
+    solicitacao.historico.push({
+      status: solicitacao.status,
+      em: agora,
+      tipo: 'moderacao',
+      observacao: 'Imagem sinalizada como imprópria e ocultada.',
+      ...(porUsuario ? { por: { id: porUsuario.id, nome: porUsuario.nome } } : {}),
+    })
+  } else if (solicitacao.historico.some((evento) => evento.tipo === 'moderacao')) {
+    solicitacao.historico.push({
+      status: solicitacao.status,
+      em: agora,
+      tipo: 'moderacao',
+      observacao: 'Sinalização de imagem removida.',
+      ...(porUsuario ? { por: { id: porUsuario.id, nome: porUsuario.nome } } : {}),
+    })
+  }
+
+  return repositorioSolicitacoes.salvar(solicitacao)
+}
+
+/**
  * A transferência é um evento auditável: o status principal (em análise, em
  * execução etc.) é preservado. O SLA original também é preservado, a menos que
  * o operador marque explicitamente recalcularSla.

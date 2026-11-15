@@ -3,7 +3,6 @@ import {
   Building2,
   Check,
   LoaderCircle,
-  LogOut,
   Mail,
   Megaphone,
   Palette,
@@ -22,6 +21,7 @@ import ConfigCidadaos from '../componentes/configuracoes/ConfigCidadaos'
 import ConfigEmail from '../componentes/configuracoes/ConfigEmail'
 import ConfigIA from '../componentes/configuracoes/ConfigIA'
 import ConfigIdentidade from '../componentes/configuracoes/ConfigIdentidade'
+import GestaoTopo from '../componentes/gestao/GestaoTopo'
 import { useConfiguracoes } from '../contexto/useConfiguracoes.js'
 import { useI18n } from '../i18n/useI18n.js'
 import {
@@ -73,12 +73,6 @@ const ABAS = [
     descricao: 'config.menu.cidadaosDescricao',
   },
 ]
-
-const PAPEIS_UI = {
-  admin: 'admin.papelAdmin',
-  triagem: 'admin.papelTriagem',
-  setor: 'admin.papelSetor',
-}
 
 function TelaCarregando({ texto }) {
   return (
@@ -272,56 +266,24 @@ export default function GestaoConfiguracoes() {
         {t('app.pularConteudo')}
       </a>
 
-      <header className="gestao-topo">
-        <div className="gestao-topo__interno">
-          <Link className="gestao-topo__marca" to="/">
-            <img src={logo} alt="" />
-            <span>
-              <strong>{nomeApp}</strong>
-              <small>{t('config.titulo')}</small>
-            </span>
-          </Link>
-          <div className="gestao-topo__usuario">
-            <span className="gestao-topo__pessoa">
-              <strong>{sessao?.usuario?.nome || t('config.titulo')}</strong>
-              <small>
-                {t(PAPEIS_UI[papel] || 'admin.papelSetor')}
-                {sessao?.usuario?.setor?.nome ? ` · ${sessao.usuario.setor.nome}` : ''}
-              </small>
-            </span>
-            <div className="gestao-topo__acoes">
-              <Link className="botao botao--secundario botao--pequeno" to="/gestao">
-                <ArrowLeft aria-hidden="true" />
-                {t('admin.voltarSolicitacoes')}
-              </Link>
-              <Link className="botao botao--secundario botao--pequeno" to="/">
-                {t('admin.verApp')}
-              </Link>
-              {papel === 'admin' && !acessoNegado && (
-                <button
-                  type="button"
-                  className="botao botao--secundario botao--pequeno"
-                  onClick={() => carregar()}
-                  disabled={carregando}
-                >
-                  <RefreshCw className={carregando ? 'girando' : undefined} aria-hidden="true" />
-                  {t('comum.atualizar')}
-                </button>
-              )}
-              <button
-                type="button"
-                className="botao botao--secundario botao--pequeno"
-                onClick={sair}
-              >
-                <LogOut aria-hidden="true" />
-                {t('admin.sair')}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <GestaoTopo
+        nomeApp={nomeApp}
+        logoMarca={logo}
+        usuario={sessao?.usuario ?? { nome: t('config.titulo'), papel, setor: null }}
+        podeGerenciarUsuarios={papel === 'admin'}
+        carregando={carregando}
+        rotuloConfiguracoes={t('admin.configuracoes')}
+        mostrarConfiguracoes={false}
+        aoAtualizar={() => carregar()}
+        aoSair={sair}
+      />
 
       <main id="config-conteudo" className="gestao-conteudo config-conteudo" tabIndex={-1}>
+        <Link className="gestao-voltar" to="/gestao">
+          <ArrowLeft aria-hidden="true" />
+          {t('admin.voltarSolicitacoes')}
+        </Link>
+
         <div className="config-cabecalho">
           <div>
             <p className="cabecalho-pagina__sobre">{t('config.sobre')}</p>

@@ -350,7 +350,7 @@ const ptBR = {
   'avisos.sobre': 'Comunicação com o cidadão',
   'avisos.titulo': 'Avisos da cidade',
   'avisos.descricao':
-    'Publique, edite e desative os avisos exibidos na Home. Avisos inativos ou com data futura não aparecem para o cidadão.',
+    'Publique, edite e desative os avisos exibidos na Home. Avisos inativos, futuros ou expirados não aparecem para o cidadão.',
   'avisos.persistenciaMysql': 'MySQL',
   'avisos.persistenciaMemoria': 'Memória',
   'avisos.persistenciaMysqlAjuda':
@@ -366,6 +366,7 @@ const ptBR = {
   'avisos.desativado': 'Aviso desativado.',
   'avisos.resumo': 'ativos de {{total}} avisos',
   'avisos.resumoAgendados': 'agendados para o futuro',
+  'avisos.resumoExpirados': 'expirados e ocultos da Home',
   'avisos.ajuda': 'O aviso mais recente aparece primeiro na Home do aplicativo.',
   'avisos.novo': 'Novo aviso',
   'avisos.novoTitulo': 'Cadastrar aviso',
@@ -376,7 +377,7 @@ const ptBR = {
   'avisos.resumoAjuda': 'Texto curto exibido no cartão da Home (até 300 caracteres).',
   'avisos.campoConteudo': 'Conteúdo completo',
   'avisos.conteudoAjuda':
-    'Texto exibido na tela de leitura do aviso. Separe os parágrafos com uma linha em branco (até 4.000 caracteres).',
+    'Texto exibido na tela de leitura. Separe parágrafos com uma linha em branco. Links http/https viram botões clicáveis (até 4.000 caracteres).',
   'avisos.campoCategoria': 'Categoria',
   'avisos.categoriaAjuda': 'Exemplos: Saúde, Serviço, Zeladoria, Educação.',
   'avisos.campoPrioridade': 'Prioridade',
@@ -385,6 +386,15 @@ const ptBR = {
   'avisos.prioridadeBaixa': 'Baixa',
   'avisos.campoPublicadoEm': 'Publicado em',
   'avisos.publicadoAjuda': 'Datas futuras ficam agendadas e só aparecem na data.',
+  'avisos.campoExpiraEm': 'Expira em',
+  'avisos.expiraAjuda':
+    'Opcional. Ao chegar nesta data, o aviso pode ser desativado automaticamente.',
+  'avisos.campoDesativarAoExpirar': 'Desativar automaticamente ao expirar',
+  'avisos.campoDesativarAoExpirarAjuda':
+    'Ligado por padrão. O aviso sai da Home e do acompanhamento público na data de expiração.',
+  'avisos.expirado': 'Expirado',
+  'avisos.expiraEmCurto': 'expira em {{data}}',
+  'avisos.visualizacoes': '{{quantidade}} visualizações',
   'avisos.campoAtivo': 'Aviso ativo',
   'avisos.campoAtivoAjuda': 'Desativado, o aviso deixa de aparecer imediatamente.',
   'avisos.agendado': 'Agendado',

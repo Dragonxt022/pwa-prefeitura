@@ -190,12 +190,6 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
     setBuscaServico('')
   }
 
-  function validar() {
-    const proximos = validarFormulario(formulario)
-    setErros(proximos)
-    return Object.keys(proximos).length === 0
-  }
-
   function salvarNaFila(payload) {
     enfileirar(payload)
     const persistiu = listarFila().some((item) => item.clientId === payload.clientId)
@@ -230,10 +224,13 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
     setErroGeral(null)
     foto.limparErro()
 
-    if (!validar()) {
+    const proximos = validarFormulario(formulario)
+    if (Object.keys(proximos).length > 0) {
+      setErros(proximos)
       requestAnimationFrame(() => resumoErroRef.current?.focus())
-      return
+      return { ok: false, campos: proximos }
     }
+    setErros({})
 
     const payload = {
       tipo: formulario.tipo,
@@ -249,25 +246,27 @@ export function useNovaSolicitacao({ tipoInicial = '' } = {}) {
 
     setEnviando(true)
     if (!online) {
-      salvarNaFila(payload)
+      const salvo = salvarNaFila(payload)
       setEnviando(false)
-      return
+      return { ok: salvo }
     }
 
     try {
       const resposta = await criarSolicitacao(payload)
       concluir(resposta.dados, payload.codigoAcesso, resposta.fila)
+      return { ok: true }
     } catch (erro) {
       if (erro.offline) {
-        salvarNaFila(payload)
-      } else {
-        setErroGeral(erro)
-        if (erro.campos) {
-          setErros(erro.campos)
-          if (erro.campos.foto) foto.definirErro(erro.campos.foto)
-        }
-        requestAnimationFrame(() => resumoErroRef.current?.focus())
+        const salvo = salvarNaFila(payload)
+        return { ok: salvo }
       }
+      setErroGeral(erro)
+      if (erro.campos) {
+        setErros(erro.campos)
+        if (erro.campos.foto) foto.definirErro(erro.campos.foto)
+      }
+      requestAnimationFrame(() => resumoErroRef.current?.focus())
+      return { ok: false, campos: erro.campos ?? {} }
     } finally {
       setEnviando(false)
     }

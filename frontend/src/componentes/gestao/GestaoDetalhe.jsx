@@ -1,4 +1,5 @@
-import { Check, Clock3, LoaderCircle, Send, Star, X } from 'lucide-react'
+import { Check, Clock3, Eye, EyeOff, LoaderCircle, Send, ShieldAlert, Star, X } from 'lucide-react'
+import { useState } from 'react'
 import { Badge, StatusBadge } from '../StatusBadge'
 import { formatarDataHora, infoStatus } from '../../utils/format'
 import { PRIORIDADES, STATUS_OPCOES, urlDoMapa } from '../../utils/gestao'
@@ -19,15 +20,96 @@ function Estrelas({ nota }) {
   )
 }
 
+function FotoComModeracao({ selecionada, moderandoFoto, aoModerarFoto }) {
+  const [fotoVisivel, setFotoVisivel] = useState(false)
+
+  if (selecionada.fotoOculta) {
+    return (
+      <div className="gestao-detalhe__foto-oculta" role="status">
+        <EyeOff aria-hidden="true" />
+        <div>
+          <strong>Imagem ocultada</strong>
+          <p>
+            A imagem foi sinalizada como imprópria e não é exibida no painel nem no
+            acompanhamento público.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="botao botao--secundario botao--pequeno"
+          onClick={() => aoModerarFoto(selecionada, false)}
+          disabled={moderandoFoto}
+        >
+          Reativar imagem
+        </button>
+      </div>
+    )
+  }
+
+  if (!selecionada.foto) return null
+
+  return (
+    <figure className="gestao-detalhe__foto">
+      {fotoVisivel ? (
+        <>
+          <img src={selecionada.foto} alt="Foto enviada pelo cidadão" />
+          <button
+            type="button"
+            className="botao botao--secundario botao--pequeno"
+            onClick={() => setFotoVisivel(false)}
+          >
+            <EyeOff aria-hidden="true" />
+            Ocultar prévia
+          </button>
+        </>
+      ) : (
+        <div className="gestao-detalhe__foto-aviso">
+          <Eye aria-hidden="true" />
+          <div>
+            <strong>Imagem enviada pelo cidadão</strong>
+            <p>
+              O conteúdo pode ser sensível. A prévia fica oculta por padrão para evitar
+              exposição acidental.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="botao botao--secundario botao--pequeno"
+            onClick={() => setFotoVisivel(true)}
+          >
+            Ver imagem
+          </button>
+        </div>
+      )}
+      <div className="gestao-detalhe__foto-acoes">
+        <button
+          type="button"
+          className="botao botao--perigo botao--pequeno"
+          onClick={() => aoModerarFoto(selecionada, true)}
+          disabled={moderandoFoto}
+        >
+          <ShieldAlert aria-hidden="true" />
+          Sinalizar como imprópria
+        </button>
+      </div>
+      <figcaption>
+        Antes de abrir, considere que a imagem não passou por análise automática de conteúdo.
+      </figcaption>
+    </figure>
+  )
+}
+
 export default function GestaoDetalhe({
   selecionada,
   detalheRef,
   formStatus,
   salvandoStatus,
+  moderandoFoto,
   aoFechar,
   aoAbrirTransferencia,
   aoSalvarAtualizacao,
   aoAtualizarFormStatus,
+  aoModerarFoto,
 }) {
   return (
     <aside className="gestao-detalhe" aria-labelledby="titulo-detalhe">
@@ -126,12 +208,12 @@ export default function GestaoDetalhe({
         <p>{selecionada.descricao}</p>
       </section>
 
-      {selecionada.foto && (
-        <figure className="gestao-detalhe__foto">
-          <img src={selecionada.foto} alt="Foto enviada pelo cidadão" />
-          <figcaption>Foto anexada pelo cidadão.</figcaption>
-        </figure>
-      )}
+      <FotoComModeracao
+        key={selecionada.protocolo}
+        selecionada={selecionada}
+        moderandoFoto={moderandoFoto}
+        aoModerarFoto={aoModerarFoto}
+      />
 
       <div className="gestao-detalhe__acoes">
         <button
@@ -155,6 +237,8 @@ export default function GestaoDetalhe({
               <span className="linha-tempo__ponto">
                 {evento.tipo === 'transferencia' ? (
                   <Send aria-hidden="true" />
+                ) : evento.tipo === 'moderacao' ? (
+                  <ShieldAlert aria-hidden="true" />
                 ) : (
                   <Clock3 aria-hidden="true" />
                 )}
@@ -163,7 +247,9 @@ export default function GestaoDetalhe({
                 <strong>
                   {evento.tipo === 'transferencia'
                     ? 'Transferência'
-                    : infoStatus(evento.status).rotulo}
+                    : evento.tipo === 'moderacao'
+                      ? 'Moderação de imagem'
+                      : infoStatus(evento.status).rotulo}
                 </strong>
                 <time dateTime={evento.em}>{formatarDataHora(evento.em)}</time>
                 {evento.observacao && <p>{evento.observacao}</p>}

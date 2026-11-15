@@ -14,6 +14,7 @@ import {
   buscarSolicitacao,
   estatisticasGestao,
   listarSolicitacoes,
+  moderarFoto as moderarFotoServico,
   transferirSolicitacao,
 } from '../../servicos/solicitacoes.js'
 import { triagemAutomaticaAtiva } from '../../servicos/configuracoes.js'
@@ -64,7 +65,6 @@ export async function atualizarStatus(req, res) {
     ...dados,
     porUsuario: req.usuario,
   })
-
   const evento = ['concluida', 'indeferida'].includes(dados.status)
     ? 'conclusao'
     : 'mudanca_status'
@@ -83,6 +83,23 @@ export async function atualizarStatus(req, res) {
     dados: apresentarSolicitacaoGestao(atualizada),
     estatisticas: estatisticasGestao({ setorId: setorDoFiltro(req) }),
   })
+}
+
+export async function moderarFoto(req, res) {
+  const solicitacao = buscarSolicitacao(req.params.protocolo)
+  if (!solicitacao) throw naoEncontrado('Solicitação não encontrada.')
+  if (!podeAcessarSolicitacao(req.usuario, solicitacao)) {
+    throw semPermissao('Esta solicitação pertence a outro setor.')
+  }
+  if (typeof req.body?.sensivel !== 'boolean') {
+    throw validacao({ sensivel: 'Informe se a imagem deve ser ocultada.' })
+  }
+
+  const atualizada = await moderarFotoServico(solicitacao.protocolo, {
+    sensivel: req.body.sensivel,
+    porUsuario: req.usuario,
+  })
+  res.json({ dados: apresentarSolicitacaoGestao(atualizada) })
 }
 
 export async function transferir(req, res) {

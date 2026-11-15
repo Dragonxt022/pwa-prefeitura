@@ -20,12 +20,15 @@ export function persistenciaAtual() {
 }
 
 export async function inicializarAvisos() {
-  const lista = await repositorioAvisos.inicializar()
-  aplicarAvisos(lista)
-  return { avisos: lista, persistencia: persistenciaAtual() }
+  await repositorioAvisos.inicializar()
+  await repositorioAvisos.desativarExpirados()
+  const atualizada = await repositorioAvisos.carregar()
+  aplicarAvisos(atualizada)
+  return { avisos: atualizada, persistencia: persistenciaAtual() }
 }
 
 async function recarregar() {
+  await repositorioAvisos.desativarExpirados()
   const lista = await repositorioAvisos.carregar()
   aplicarAvisos(lista)
   return lista
@@ -88,6 +91,9 @@ export async function criarAviso(dados, ator) {
     cor: dados.cor ?? null,
     prioridade: dados.prioridade ?? 'normal',
     publicadoEm: dados.publicadoEm ?? agora,
+    expiraEm: dados.expiraEm ?? null,
+    desativarAoExpirar: dados.desativarAoExpirar !== false,
+    visualizacoes: 0,
     ativo: dados.ativo !== false,
     criadoEm: agora,
     atualizadoEm: agora,
@@ -111,7 +117,23 @@ export async function atualizarAviso(id, dados, ator) {
     atualizadoEm: new Date().toISOString(),
   }
 
+  if (
+    registro.expiraEm &&
+    new Date(registro.expiraEm).getTime() <= new Date(registro.publicadoEm).getTime()
+  ) {
+    return { campos: { expiraEm: 'A expiração deve ser posterior à data de publicação.' } }
+  }
+
   await repositorioAvisos.atualizar(registro, antes, ator)
   await recarregar()
   return { registro: buscarAviso(id) ?? registro }
+}
+
+/** Persiste a leitura no repositório em segundo plano. */
+export async function registrarVisualizacaoPersistente(id) {
+  try {
+    await repositorioAvisos.registrarVisualizacao(id)
+  } catch (erro) {
+    console.warn('[avisos] falha ao registrar visualização:', erro.message)
+  }
 }

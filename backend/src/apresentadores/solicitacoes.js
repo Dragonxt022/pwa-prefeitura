@@ -28,6 +28,8 @@ export function apresentarSolicitacaoGestao(solicitacao) {
   } = solicitacao
   return {
     ...interna,
+    foto: solicitacao.fotoSensivel ? null : solicitacao.foto,
+    fotoOculta: Boolean(solicitacao.fotoSensivel),
     protegida: Boolean(solicitacao.codigoAcessoHash),
     setor: setorPublico(solicitacao.setorId),
     setorNome: setorPublico(solicitacao.setorId)?.nome ?? 'Triagem',
@@ -50,22 +52,27 @@ export function apresentarSolicitacaoPublica(solicitacao) {
     transferencias: _transferencias,
     codigoAcessoHash: _codigoAcessoHash,
     cidadaoId: _cidadaoId,
+    fotoSensivel: _fotoSensivel,
     ...publica
   } = solicitacao
   return {
     ...publica,
+    foto: solicitacao.fotoSensivel ? null : solicitacao.foto,
+    fotoOculta: Boolean(solicitacao.fotoSensivel),
     protegida: Boolean(solicitacao.codigoAcessoHash),
-    historico: (publica.historico ?? []).map(({ por: _por, ...evento }) => {
-      if (evento.tipo !== 'transferencia') return evento
-      const transferencia = transferencias.find((item) => item.em === evento.em)
-      const destino = setorPublico(transferencia?.paraSetorId)
-      return {
-        ...evento,
-        observacao: destino
-          ? `Solicitação encaminhada para ${destino.nome}.`
-          : 'Solicitação encaminhada para outro setor.',
-      }
-    }),
+    historico: (publica.historico ?? [])
+      .filter((evento) => evento.tipo !== 'moderacao')
+      .map(({ por: _por, ...evento }) => {
+        if (evento.tipo !== 'transferencia') return evento
+        const transferencia = transferencias.find((item) => item.em === evento.em)
+        const destino = setorPublico(transferencia?.paraSetorId)
+        return {
+          ...evento,
+          observacao: destino
+            ? `Solicitação encaminhada para ${destino.nome}.`
+            : 'Solicitação encaminhada para outro setor.',
+        }
+      }),
     setor: setorPublico(solicitacao.setorId),
     setorNome: setorPublico(solicitacao.setorId)?.nome ?? null,
     transferida: transferencias.length > 0,

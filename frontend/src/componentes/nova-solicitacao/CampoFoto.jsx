@@ -1,4 +1,4 @@
-import { Camera, Check, ImagePlus, Trash2 } from 'lucide-react'
+import { Camera, Check, ImagePlus, ShieldAlert, Trash2 } from 'lucide-react'
 
 export default function CampoFoto({
   foto,
@@ -50,6 +50,11 @@ export default function CampoFoto({
       <p className="campo__ajuda" id="ajuda-foto">
         A foto ajuda a equipe a localizar o problema. Ela é reduzida e tem os metadados removidos
         antes do envio.
+      </p>
+      <p className="campo__ajuda campo__ajuda--seguranca">
+        <ShieldAlert aria-hidden="true" />
+        Não envie imagens com nudez, violência ou conteúdo ilegal. A equipe pode ocultar e
+        sinalizar imagens impróprias.
       </p>
       {mensagem && (
         <p className="campo__ajuda campo__ajuda--status" role="status" aria-live="polite">

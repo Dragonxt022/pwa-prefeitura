@@ -64,6 +64,7 @@ function clonar(valor) {
 }
 
 function dataIso(valor) {
+  if (valor === null || valor === undefined || valor === '') return null
   const data = new Date(valor)
   return Number.isNaN(data.getTime()) ? null : data.toISOString()
 }
@@ -78,8 +79,18 @@ export function aplicarAvisos(lista = []) {
     icone: aviso.icone || null,
     cor: aviso.cor || null,
     publicadoEm: dataIso(aviso.publicadoEm) ?? new Date().toISOString(),
+    expiraEm: dataIso(aviso.expiraEm),
+    desativarAoExpirar: aviso.desativarAoExpirar !== false,
+    visualizacoes: Math.max(0, Number(aviso.visualizacoes) || 0),
     ativo: aviso.ativo !== false,
   }))
+}
+
+/** Um aviso expirado deixa de ser público quando a desativação automática está ligada. */
+export function avisoExpirado(aviso, agora = new Date()) {
+  if (!aviso || aviso.desativarAoExpirar === false || !aviso.expiraEm) return false
+  const expiraEm = new Date(aviso.expiraEm)
+  return !Number.isNaN(expiraEm.getTime()) && expiraEm <= agora
 }
 
 /**
@@ -93,6 +104,7 @@ export function listarAvisos({ incluirInativos = false, agora = new Date() } = {
     .filter((aviso) => {
       if (incluirInativos) return true
       if (!aviso.ativo) return false
+      if (avisoExpirado(aviso, agora)) return false
       const publicado = new Date(aviso.publicadoEm)
       return !Number.isNaN(publicado.getTime()) && publicado <= agora
     })
@@ -112,6 +124,7 @@ export function buscarAviso(id, { incluirInativos = true } = {}) {
 export function buscarAvisoPublico(id, { agora = new Date() } = {}) {
   const aviso = cache.avisos.find((item) => item.id === id && item.ativo)
   if (!aviso) return null
+  if (avisoExpirado(aviso, agora)) return null
   const publicadoEm = new Date(aviso.publicadoEm)
   if (Number.isNaN(publicadoEm.getTime()) || publicadoEm > agora) return null
   return clonar(aviso)
@@ -119,6 +132,14 @@ export function buscarAvisoPublico(id, { agora = new Date() } = {}) {
 
 export function avisosAtuais() {
   return clonar(cache.avisos)
+}
+
+/** Incrementa a leitura no cache e devolve uma cópia atualizada. */
+export function contarVisualizacao(id) {
+  const aviso = cache.avisos.find((item) => item.id === id)
+  if (!aviso) return null
+  aviso.visualizacoes = Math.max(0, Number(aviso.visualizacoes) || 0) + 1
+  return clonar(aviso)
 }
 
 aplicarAvisos(avisosSemente)
