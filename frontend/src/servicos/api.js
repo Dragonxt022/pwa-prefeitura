@@ -1,6 +1,10 @@
 import { CODIGOS_ERRO, mensagemDoErro } from '../utils/erros.js'
+import { carregarCatalogo, salvarCatalogo } from './catalogo-local.js'
 
 const BASE = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/$/, '')
+// 502/503/504 quase sempre indicam proxy ou servidor indisponível, não um
+// pedido inválido. Nesses casos a escrita pode ser guardada para reenvio.
+const STATUS_TRANSITORIOS = new Set([502, 503, 504])
 
 export class ApiError extends Error {
   constructor(mensagem, { status = 0, codigo = CODIGOS_ERRO.DESCONHECIDO, campos, offline = false } = {}) {
@@ -56,6 +60,7 @@ async function requisicao(
           status: resposta.status,
           codigo,
           campos: erro?.campos,
+          offline: STATUS_TRANSITORIOS.has(resposta.status),
         },
       )
     }
@@ -67,21 +72,18 @@ async function requisicao(
 
     if (erro?.name === 'AbortError') {
       const semRede = !navigator.onLine
-      throw new ApiError(mensagemDoErro(CODIGOS_ERRO.TIMEOUT), {
+      // Timeout também é transitório: o clientId impede protocolo duplicado
+      // caso o servidor tenha concluído a escrita mesmo sem responder.
+      throw new ApiError(mensagemDoErro(semRede ? CODIGOS_ERRO.OFFLINE : CODIGOS_ERRO.TIMEOUT), {
         codigo: semRede ? CODIGOS_ERRO.OFFLINE : CODIGOS_ERRO.TIMEOUT,
-        offline: semRede,
-      })
-    }
-
-    if (!navigator.onLine) {
-      throw new ApiError(mensagemDoErro(CODIGOS_ERRO.OFFLINE), {
-        codigo: CODIGOS_ERRO.OFFLINE,
         offline: true,
       })
     }
 
-    throw new ApiError(mensagemDoErro(CODIGOS_ERRO.HTTP_ERROR), {
-      codigo: CODIGOS_ERRO.HTTP_ERROR,
+    // Falha de rede ou servidor inacessível: a operação pode ser retentada.
+    throw new ApiError(mensagemDoErro(CODIGOS_ERRO.OFFLINE), {
+      codigo: CODIGOS_ERRO.OFFLINE,
+      offline: true,
     })
   } finally {
     clearTimeout(timer)
@@ -89,7 +91,19 @@ async function requisicao(
   }
 }
 
-export const listarServicos = () => requisicao('/servicos')
+export async function listarServicos() {
+  try {
+    const servicos = await requisicao('/servicos')
+    salvarCatalogo(servicos)
+    return servicos
+  } catch (erro) {
+    // O catálogo público muda pouco: manter a última cópia permite abrir o
+    // formulário e registrar um pedido mesmo sem falar com o servidor.
+    const salvos = carregarCatalogo()
+    if (salvos && (erro.offline || erro.status >= 500)) return salvos
+    throw erro
+  }
+}
 
 export const listarAvisos = () => requisicao('/avisos')
 

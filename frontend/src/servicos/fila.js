@@ -108,7 +108,9 @@ export function processarFila() {
         enviados += 1
       } catch (falha) {
         erro = falha
-        if (falha?.offline) break
+        // Falhas de comunicação ou do servidor podem ser temporárias: mantém a
+        // fila e interrompe para não repetir a mesma falha em todos os itens.
+        if (falha?.offline || falha?.status >= 500) break
         // Erros de validação não melhoram com novas tentativas automáticas.
         if (falha?.status >= 400 && falha?.status < 500) removerDaFila(item.clientId)
       }

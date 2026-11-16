@@ -21,7 +21,7 @@ export function useGestaoSessao() {
         if (falha.status !== 401) {
           setErroLogin(
             falha.offline
-              ? 'Sem conexão para validar a sessão. Volte online para acessar a gestão.'
+              ? 'Sem conexão com o servidor para validar a sessão. Tente novamente em instantes.'
               : 'Não foi possível validar a sessão agora. Tente novamente.',
           )
         }

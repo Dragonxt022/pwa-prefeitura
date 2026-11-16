@@ -15,7 +15,8 @@ export default function PedidoPendente({ pendente, servicoSelecionado, aoNovaSol
         </span>
         <h1>Pedido salvo</h1>
         <p className="texto-suave">
-          Sem conexão agora. Vamos enviar automaticamente quando a internet voltar.
+          Não foi possível enviar agora. O pedido está guardado neste aparelho e será
+          enviado automaticamente assim que a conexão voltar.
         </p>
 
         <ul className="lista-dados">
