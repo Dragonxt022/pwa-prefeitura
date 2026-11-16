@@ -71,7 +71,7 @@ function payloadSolicitacao(codigoAcesso, sobrescritas = {}) {
   }
 }
 
-test('contrato público exige código de acesso e não expõe segredos', async (t) => {
+test('contrato público consulta pelo protocolo e não expõe segredos', async (t) => {
   await t.test('a criação rejeita código ausente ou inválido', async () => {
     const semCodigo = payloadSolicitacao('')
     delete semCodigo.codigoAcesso
@@ -110,15 +110,14 @@ test('contrato público exige código de acesso e não expõe segredos', async (
     protocolo = resposta.payload.dados.protocolo
   })
 
-  await t.test('detalhe, status e avaliação sem código usam o mesmo erro genérico', async () => {
+  await t.test('detalhe e status ficam disponíveis apenas com o protocolo', async () => {
     for (const caminho of [
       `/solicitacoes/${protocolo}`,
       `/solicitacoes/${protocolo}/status`,
     ]) {
       const resposta = await chamar(caminho)
-      assert.equal(resposta.status, 404)
-      assert.equal(resposta.payload.erro.codigo, 'codigo_acesso_invalido')
-      assert.equal(resposta.payload.dados, undefined)
+      assert.equal(resposta.status, 200)
+      assert.equal(resposta.payload.dados.protocolo, protocolo)
     }
 
     const avaliacao = await chamar(`/solicitacoes/${protocolo}/avaliacao`, {
@@ -129,23 +128,21 @@ test('contrato público exige código de acesso e não expõe segredos', async (
     assert.equal(avaliacao.payload.erro.codigo, 'codigo_acesso_invalido')
     assert.equal(avaliacao.payload.dados, undefined)
 
-    const inexistente = await chamar('/solicitacoes/PREF-2026-999999', {
-      codigoAcesso: codigo,
-    })
+    const inexistente = await chamar('/solicitacoes/PREF-2026-999999')
     assert.equal(inexistente.status, 404)
-    assert.equal(inexistente.payload.erro.codigo, 'codigo_acesso_invalido')
+    assert.equal(inexistente.payload.erro.codigo, 'nao_encontrado')
   })
 
-  await t.test('código errado também não revela o pedido', async () => {
+  await t.test('código de acesso não é necessário para consultar o pedido', async () => {
     const errado = gerarCodigoAcesso()
     const resposta = await chamar(`/solicitacoes/${protocolo}`, { codigoAcesso: errado })
-    assert.equal(resposta.status, 404)
-    assert.equal(resposta.payload.erro.codigo, 'codigo_acesso_invalido')
-    assert.equal(resposta.payload.dados, undefined)
+    assert.equal(resposta.status, 200)
+    assert.equal(resposta.payload.dados.protocolo, protocolo)
+    assert.equal(resposta.payload.dados.codigoAcessoHash, undefined)
   })
 
-  await t.test('código correto libera detalhe e status sem campos internos', async () => {
-    const detalhe = await chamar(`/solicitacoes/${protocolo}`, { codigoAcesso: codigo })
+  await t.test('consulta por protocolo libera detalhe e status sem campos internos', async () => {
+    const detalhe = await chamar(`/solicitacoes/${protocolo}`)
     assert.equal(detalhe.status, 200)
     assert.equal(detalhe.payload.dados.protocolo, protocolo)
     assert.equal(detalhe.payload.dados.endereco, criacao.endereco)
@@ -153,7 +150,7 @@ test('contrato público exige código de acesso e não expõe segredos', async (
     assert.equal(detalhe.payload.dados.clientId, undefined)
     assert.equal(detalhe.payload.dados.contato, undefined)
 
-    const status = await chamar(`/solicitacoes/${protocolo}/status`, { codigoAcesso: codigo })
+    const status = await chamar(`/solicitacoes/${protocolo}/status`)
     assert.equal(status.status, 200)
     assert.equal(status.payload.dados.protocolo, protocolo)
     assert.equal(status.payload.dados.status, 'recebida')
@@ -214,9 +211,10 @@ test('contrato público exige código de acesso e não expõe segredos', async (
     }
   })
 
-  await t.test('protocolos de demonstração usam o código documentado', async () => {
+  await t.test('protocolos de demonstração podem ser consultados pelo número', async () => {
     const semCodigo = await chamar('/solicitacoes/PREF-2026-000001')
-    assert.equal(semCodigo.status, 404)
+    assert.equal(semCodigo.status, 200)
+    assert.equal(semCodigo.payload.dados.protocolo, 'PREF-2026-000001')
 
     const resposta = await chamar('/solicitacoes/PREF-2026-000001', {
       codigoAcesso: 'DEMA-ACES-S226',

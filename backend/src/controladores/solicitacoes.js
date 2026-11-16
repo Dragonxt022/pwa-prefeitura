@@ -23,15 +23,22 @@ import { agendarTriagem } from '../servicos/triagem.js'
 import {
   codigoAcessoInvalido,
   jaAvaliada,
+  naoEncontrado,
   validacao,
 } from '../utils/erros.js'
 import { texto } from '../utils/texto.js'
 import { validarAvaliacao, validarSolicitacao } from '../validadores/solicitacoes.js'
 
 /**
- * Busca protegida: protocolo inexistente e código incorreto têm a mesma
- * resposta, para não confirmar a existência de um pedido a terceiros.
+ * Consulta pública pelo protocolo. O código de acesso continua necessário
+ * apenas para ações sensíveis, como avaliar ou vincular o pedido a uma conta.
  */
+function buscarPublica(req) {
+  const solicitacao = buscarSolicitacao(req.params.protocolo)
+  if (!solicitacao) throw naoEncontrado('Protocolo não encontrado.')
+  return solicitacao
+}
+
 function buscarComCodigo(req) {
   const codigo = req.get('x-codigo-acesso')
   const solicitacao = buscarSolicitacao(req.params.protocolo)
@@ -119,11 +126,11 @@ export async function avaliar(req, res) {
 }
 
 export function detalhar(req, res) {
-  const solicitacao = buscarComCodigo(req)
+  const solicitacao = buscarPublica(req)
   res.json({ dados: apresentarSolicitacaoPublica(solicitacao) })
 }
 
 export function obterStatus(req, res) {
-  const solicitacao = buscarComCodigo(req)
+  const solicitacao = buscarPublica(req)
   res.json({ dados: apresentarStatusPublico(solicitacao) })
 }

@@ -3,7 +3,6 @@ import {
   Building2,
   CalendarDays,
   Clock3,
-  KeyRound,
   LoaderCircle,
   MapPin,
   Plus,
@@ -13,10 +12,6 @@ import {
 } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import {
-  codigoAcessoValido,
-  normalizarCodigoAcesso,
-} from '../../../shared/codigo-acesso.js'
 import Avaliacao from '../componentes/Avaliacao'
 import ErrorState from '../componentes/ErrorState'
 import { IlustracaoBusca } from '../componentes/Ilustracoes'
@@ -47,18 +42,20 @@ function urlDoMapa(localizacao) {
   return `https://www.openstreetmap.org/?mlat=${localizacao.latitude}&mlon=${localizacao.longitude}#map=18/${localizacao.latitude}/${localizacao.longitude}`
 }
 
+function codigoSalvoDoPedido(protocolo) {
+  return listarPedidos().find((item) => item.protocolo === protocolo)?.codigoAcesso ?? ''
+}
+
 export default function Acompanhar() {
   const [params, setParams] = useSearchParams()
   const protocoloParam = normalizarProtocolo(params.get('protocolo'))
 
   const [valor, setValor] = useState(protocoloParam)
-  const [codigo, setCodigo] = useState('')
-  const [codigoConsultado, setCodigoConsultado] = useState('')
+  const [codigoAtual, setCodigoAtual] = useState('')
   const [resultado, setResultado] = useState(null)
   const [erro, setErro] = useState(null)
   const [carregando, setCarregando] = useState(false)
   const [aviso, setAviso] = useState('')
-  const [avisoCodigo, setAvisoCodigo] = useState('')
   const [recentes, setRecentes] = useState(listarConsultas)
   const [pedidos, setPedidos] = useState(listarPedidos)
   const [minhas, setMinhas] = useState([])
@@ -66,16 +63,12 @@ export default function Acompanhar() {
   const [detalheConta, setDetalheConta] = useState(false)
   const { cidadao } = useCidadao()
 
-  const consultadoRef = useRef({ protocolo: '', codigo: '' })
-  const codigoRef = useRef('')
+  const consultadoRef = useRef('')
   const campoRef = useRef(null)
-  const campoCodigoRef = useRef(null)
 
-  const consultar = useCallback(async (protocolo, codigoAcesso = codigoRef.current) => {
+  const consultar = useCallback(async (protocolo) => {
     const limpo = normalizarProtocolo(protocolo)
-    const codigoLimpo = normalizarCodigoAcesso(codigoAcesso)
     setAviso('')
-    setAvisoCodigo('')
     setErro(null)
     setResultado(null)
 
@@ -84,69 +77,53 @@ export default function Acompanhar() {
       campoRef.current?.focus()
       return
     }
-    if (!codigoAcessoValido(codigoLimpo)) {
-      setAvisoCodigo('Informe o código de acesso com 12 caracteres.')
-      campoCodigoRef.current?.focus()
-      return
-    }
 
-    consultadoRef.current = { protocolo: limpo, codigo: codigoLimpo }
-    codigoRef.current = codigoLimpo
-    setCodigo(codigoLimpo)
+    // O código continua salvo no aparelho e é usado para ações sensíveis,
+    // mas não é mais necessário para consultar o andamento.
+    const codigoAcesso = codigoSalvoDoPedido(limpo)
+    consultadoRef.current = limpo
+    setValor(limpo)
+    setCodigoAtual(codigoAcesso)
     setCarregando(true)
     try {
-      const dados = await consultarSolicitacao(limpo, codigoLimpo)
-      setCodigoConsultado(codigoLimpo)
+      const dados = await consultarSolicitacao(limpo, codigoAcesso)
       setResultado(dados)
       setDetalheConta(false)
       setRecentes(registrarConsulta(dados.protocolo))
-      registrarPedido(dados, codigoLimpo)
+      registrarPedido(dados, codigoAcesso)
       marcarPedidoVisto(dados.protocolo)
       setPedidos(listarPedidos())
       marcarNotificacoesLidas()
       window.dispatchEvent(new CustomEvent('prefeitura:notificacoes'))
 
       // Aproveita o código válido para vincular o pedido antigo à conta.
-      if (cidadao) {
-        vincularMinhaSolicitacao({ protocolo: dados.protocolo, codigoAcesso: codigoLimpo })
+      if (cidadao && codigoAcesso) {
+        vincularMinhaSolicitacao({ protocolo: dados.protocolo, codigoAcesso })
           .then(() => listarMinhasSolicitacoes())
           .then((resposta) => setMinhas(resposta?.dados ?? []))
           .catch(() => {
-            // O vínculo é opcional; a consulta por código continua valendo.
+            // O vínculo é opcional; a consulta por protocolo continua valendo.
           })
       }
     } catch (falha) {
       setErro(falha)
-      if (falha?.codigo === CODIGOS_ERRO.CODIGO_ACESSO_INVALIDO) {
-        setAvisoCodigo('Protocolo ou código de acesso não confere.')
-        requestAnimationFrame(() => campoCodigoRef.current?.focus())
-      }
     } finally {
       setCarregando(false)
     }
   }, [cidadao])
 
   useEffect(() => {
-    if (!protocoloParam || consultadoRef.current.protocolo === protocoloParam) return
-    const salvo = listarPedidos().find((item) => item.protocolo === protocoloParam)
-    const codigoSalvo = salvo?.codigoAcesso ?? ''
+    if (!protocoloParam || consultadoRef.current === protocoloParam) return
     setValor(protocoloParam)
-    setCodigo(codigoSalvo)
-    codigoRef.current = codigoSalvo
     setAviso('')
-    setAvisoCodigo(codigoSalvo ? '' : 'Informe o código de acesso deste pedido.')
     setErro(null)
     setResultado(null)
-    if (codigoSalvo) {
-      // A busca é agendada fora do efeito para não iniciar uma cascata de
-      // renders ao sincronizar a URL com um pedido salvo.
-      const timer = window.setTimeout(() => {
-        void consultar(protocoloParam, codigoSalvo)
-      }, 0)
-      return () => window.clearTimeout(timer)
-    }
-    requestAnimationFrame(() => campoCodigoRef.current?.focus())
-    return undefined
+    // A busca é agendada fora do efeito para não iniciar uma cascata de
+    // renders ao sincronizar a URL com o protocolo.
+    const timer = window.setTimeout(() => {
+      void consultar(protocoloParam)
+    }, 0)
+    return () => window.clearTimeout(timer)
   }, [protocoloParam, consultar])
 
   useEffect(() => {
@@ -184,17 +161,14 @@ export default function Acompanhar() {
 
   async function abrirPedidoConta(protocolo) {
     setAviso('')
-    setAvisoCodigo('')
     setErro(null)
     setResultado(null)
     setCarregando(true)
     try {
       const dados = await consultarMinhaSolicitacao(protocolo)
       setValor(protocolo)
-      setCodigo('')
-      setCodigoConsultado('')
-      codigoRef.current = ''
-      consultadoRef.current = { protocolo, codigo: '' }
+      setCodigoAtual('')
+      consultadoRef.current = protocolo
       setResultado(dados)
       setDetalheConta(true)
       setParams({ protocolo }, { replace: true })
@@ -208,29 +182,16 @@ export default function Acompanhar() {
     }
   }
 
-  function abrirPedido(protocolo, codigoAcesso) {
-    const salvo = listarPedidos().find((item) => item.protocolo === protocolo)
-    const codigoFinal = codigoAcesso || salvo?.codigoAcesso || ''
+  function abrirPedido(protocolo) {
     setValor(protocolo)
-    setCodigo(codigoFinal)
-    codigoRef.current = codigoFinal
-    setAvisoCodigo(codigoFinal ? '' : 'Informe o código de acesso deste pedido.')
     setParams({ protocolo }, { replace: true })
-    if (codigoFinal) {
-      consultar(protocolo, codigoFinal)
-    } else {
-      setResultado(null)
-      setErro(null)
-      requestAnimationFrame(() => campoCodigoRef.current?.focus())
-    }
+    consultar(protocolo)
   }
 
   function aoEnviar(evento) {
     evento.preventDefault()
     const limpo = normalizarProtocolo(valor)
-    const codigoLimpo = normalizarCodigoAcesso(codigo)
     setAviso('')
-    setAvisoCodigo('')
 
     if (!limpo) {
       setAviso('Informe o protocolo.')
@@ -238,29 +199,20 @@ export default function Acompanhar() {
       campoRef.current?.focus()
       return
     }
-    if (!codigoAcessoValido(codigoLimpo)) {
-      setAvisoCodigo('Informe o código de acesso com 12 caracteres.')
-      campoCodigoRef.current?.focus()
-      return
-    }
 
     setValor(limpo)
-    setCodigo(codigoLimpo)
     setParams({ protocolo: limpo }, { replace: true })
-    consultar(limpo, codigoLimpo)
+    consultar(limpo)
   }
 
   function voltarParaPedidos() {
     setResultado(null)
     setDetalheConta(false)
-    setCodigoConsultado('')
+    setCodigoAtual('')
     setErro(null)
     setValor('')
-    setCodigo('')
     setAviso('')
-    setAvisoCodigo('')
-    codigoRef.current = ''
-    consultadoRef.current = { protocolo: '', codigo: '' }
+    consultadoRef.current = ''
     setParams({}, { replace: true })
     setPedidos(listarPedidos())
   }
@@ -273,7 +225,6 @@ export default function Acompanhar() {
     ? pedidos.filter((item) => !protocolosDaConta.has(item.protocolo))
     : pedidos
   const naoEncontrado = erro?.codigo === CODIGOS_ERRO.NAO_ENCONTRADO
-  const acessoInvalido = erro?.codigo === CODIGOS_ERRO.CODIGO_ACESSO_INVALIDO
 
   return (
     <div className="pagina pagina--estreita">
@@ -281,16 +232,14 @@ export default function Acompanhar() {
         <p className="cabecalho-pagina__sobre">Acompanhar</p>
         <h1>Seu protocolo</h1>
         <p className="texto-suave">
-          Informe o protocolo e o código de acesso, ou abra um dos seus pedidos.
+          Informe o número do protocolo para acompanhar o andamento, ou abra um dos seus pedidos.
         </p>
       </header>
 
       <form className="cartao consulta" onSubmit={aoEnviar} noValidate>
         <div className="consulta__campos">
           <div className={`campo${aviso ? ' campo--erro' : ''}`}>
-            <label htmlFor="protocolo" className="sr-only">
-              Número do protocolo
-            </label>
+            <label htmlFor="protocolo">Número do protocolo</label>
             <div className="campo__controle campo__controle--busca">
               <Search aria-hidden="true" />
               <input
@@ -307,43 +256,15 @@ export default function Acompanhar() {
                   setAviso('')
                 }}
                 aria-invalid={Boolean(aviso)}
-                aria-describedby={aviso ? 'erro-protocolo' : undefined}
+                aria-describedby={aviso ? 'erro-protocolo' : 'ajuda-protocolo'}
               />
             </div>
+            <p className="campo__ajuda" id="ajuda-protocolo">
+              O número aparece na confirmação do pedido e em “Meus pedidos”.
+            </p>
             {aviso && (
               <p className="campo__erro" id="erro-protocolo">
                 {aviso}
-              </p>
-            )}
-          </div>
-
-          <div className={`campo${avisoCodigo ? ' campo--erro' : ''}`}>
-            <label htmlFor="codigo-acesso">Código de acesso</label>
-            <div className="campo__controle campo__controle--busca">
-              <KeyRound aria-hidden="true" />
-              <input
-                ref={campoCodigoRef}
-                id="codigo-acesso"
-                type="text"
-                inputMode="text"
-                autoComplete="off"
-                spellCheck={false}
-                placeholder="ABCD-EFGH-JKLM"
-                value={codigo}
-                onChange={(evento) => {
-                  setCodigo(normalizarCodigoAcesso(evento.target.value))
-                  setAvisoCodigo('')
-                }}
-                aria-invalid={Boolean(avisoCodigo)}
-                aria-describedby={`ajuda-codigo${avisoCodigo ? ' erro-codigo' : ''}`}
-              />
-            </div>
-            <p className="campo__ajuda" id="ajuda-codigo">
-              Está na confirmação do pedido. Também fica salvo em “Meus pedidos” neste aparelho.
-            </p>
-            {avisoCodigo && (
-              <p className="campo__erro" id="erro-codigo">
-                {avisoCodigo}
               </p>
             )}
           </div>
@@ -428,7 +349,7 @@ export default function Acompanhar() {
                   <button
                     type="button"
                     className={`pedido-card${atualizado ? ' is-atualizado' : ''}`}
-                    onClick={() => abrirPedido(pedido.protocolo, pedido.codigoAcesso)}
+                    onClick={() => abrirPedido(pedido.protocolo)}
                     aria-label={`Abrir ${pedido.protocolo}, ${pedido.tipoTitulo ?? 'serviço'}`}
                   >
                     <span className="pedido-card__topo">
@@ -472,21 +393,17 @@ export default function Acompanhar() {
 
       {carregando && <SkeletonBloco linhas={4} />}
 
-      {(naoEncontrado || acessoInvalido) && (
+      {naoEncontrado && (
         <div className="cartao estado-vazio" role="status">
           <IlustracaoBusca className="estado-vazio__arte" />
-          <h2>{acessoInvalido ? 'Protocolo ou código não confere' : 'Protocolo não encontrado'}</h2>
-          <p>
-            {acessoInvalido
-              ? 'Confira o número do protocolo e o código de acesso e tente novamente.'
-              : 'Confira o número e tente novamente.'}
-          </p>
-          {!acessoInvalido && <code className="exemplo-protocolo">PREF-2026-000001</code>}
+          <h2>Protocolo não encontrado</h2>
+          <p>Confira o número e tente novamente.</p>
+          <code className="exemplo-protocolo">PREF-2026-000001</code>
         </div>
       )}
 
-      {erro && !naoEncontrado && !acessoInvalido && (
-        <ErrorState erro={erro} aoTentarNovamente={() => consultar(valor, codigo)} />
+      {erro && !naoEncontrado && (
+        <ErrorState erro={erro} aoTentarNovamente={() => consultar(valor)} />
       )}
 
       {resultado && (
@@ -620,10 +537,10 @@ export default function Acompanhar() {
             </ol>
           </section>
 
-          {resultado.status === 'concluida' && (
+          {resultado.status === 'concluida' && (detalheConta || codigoAtual) && (
             <Avaliacao
               protocolo={resultado.protocolo}
-              codigoAcesso={codigoConsultado}
+              codigoAcesso={codigoAtual}
               avaliacao={resultado.avaliacao}
               aoEnviarAvaliacao={detalheConta
                 ? (dados) => avaliarMinhaSolicitacao(resultado.protocolo, dados)
@@ -639,7 +556,7 @@ export default function Acompanhar() {
                     ),
                   )
                 } else {
-                  registrarPedido(atualizada, codigoConsultado)
+                  registrarPedido(atualizada, codigoAtual)
                   setPedidos(listarPedidos())
                 }
               }}

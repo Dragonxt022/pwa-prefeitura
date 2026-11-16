@@ -2,13 +2,14 @@ import { expect, test } from '@playwright/test'
 
 test.describe.configure({ mode: 'serial' })
 
-test('cria pedido, protege o acesso e reabre pelo código', async ({ page, browser }) => {
+test('cria pedido, permite consultar pelo protocolo e imprime', async ({ page, browser }) => {
   await page.goto('/nova-solicitacao')
 
   await expect(page.getByRole('heading', { name: 'O que aconteceu?' })).toBeVisible()
   await page.locator('.escolha-servico', { hasText: 'Iluminação pública' }).click()
   await expect(page.locator('input[name="tipo"][value="iluminacao"]')).toBeChecked()
   await page.getByRole('button', { name: 'Continuar' }).click()
+  await page.getByRole('button', { name: 'Pular por enquanto' }).click()
 
   await page.locator('#descricao').fill(
     'Poste apagado em frente ao número 123, próximo à praça do bairro.',
@@ -28,6 +29,7 @@ test('cria pedido, protege o acesso e reabre pelo código', async ({ page, brows
   expect(page.url()).not.toContain(codigo)
   expect(page.url()).not.toContain(codigo.replaceAll('-', ''))
   await expect(page.getByText(/não pode ser recuperado/i)).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Imprimir ou salvar PDF' })).toBeVisible()
 
   await page.locator('.cartao--confirmacao').getByRole('link', { name: 'Acompanhar' }).click()
   await expect(page).toHaveURL(
@@ -35,7 +37,7 @@ test('cria pedido, protege o acesso e reabre pelo código', async ({ page, brows
   )
   await expect(page.locator('#titulo-resultado')).toHaveText(protocolo)
   await expect(page.locator('.resultado .badge').first()).toHaveText('Recebida')
-  await expect(page.locator('#codigo-acesso')).toHaveValue(codigo)
+  await expect(page.locator('#codigo-acesso')).toHaveCount(0)
 
   const pedidosSalvos = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('prefeitura:pedidos') ?? '[]'),
@@ -43,14 +45,8 @@ test('cria pedido, protege o acesso e reabre pelo código', async ({ page, brows
   expect(pedidosSalvos[0]?.codigoAcesso).toBe(codigo)
 
   const semCodigo = await page.request.get(`/api/solicitacoes/${protocolo}`)
-  expect(semCodigo.status()).toBe(404)
-  expect((await semCodigo.json()).erro.codigo).toBe('codigo_acesso_invalido')
-
-  const comCodigo = await page.request.get(`/api/solicitacoes/${protocolo}`, {
-    headers: { 'x-codigo-acesso': codigo },
-  })
-  expect(comCodigo.status()).toBe(200)
-  const corpo = await comCodigo.json()
+  expect(semCodigo.status()).toBe(200)
+  const corpo = await semCodigo.json()
   expect(corpo.dados.protocolo).toBe(protocolo)
   expect(JSON.stringify(corpo)).not.toContain(codigo)
   expect(corpo.dados.codigoAcessoHash).toBeUndefined()
@@ -70,28 +66,21 @@ test('cria pedido, protege o acesso e reabre pelo código', async ({ page, brows
 
   try {
     await paginaLimpa.goto(`/acompanhar?protocolo=${protocolo}`)
-    await expect(paginaLimpa.locator('#erro-codigo')).toContainText(
-      'Informe o código de acesso',
-    )
-    await expect(paginaLimpa.locator('#titulo-resultado')).toHaveCount(0)
+    await expect(paginaLimpa.locator('#titulo-resultado')).toHaveText(protocolo)
+    await expect(paginaLimpa.locator('#codigo-acesso')).toHaveCount(0)
+    expect(paginaLimpa.url()).not.toContain(codigo)
 
-    await paginaLimpa.locator('#codigo-acesso').fill('AAAA-BBBB-CCCC')
+    await paginaLimpa.locator('#protocolo').fill('PREF-2026-999999')
     await paginaLimpa.getByRole('button', { name: 'Buscar', exact: true }).click()
     await expect(
-      paginaLimpa.getByRole('heading', { name: 'Protocolo ou código não confere' }),
+      paginaLimpa.getByRole('heading', { name: 'Protocolo não encontrado' }),
     ).toBeVisible()
-    await expect(paginaLimpa.locator('#titulo-resultado')).toHaveCount(0)
-    expect(paginaLimpa.url()).not.toContain('AAAA-BBBB-CCCC')
-
-    await paginaLimpa.locator('#codigo-acesso').fill(codigo)
-    await paginaLimpa.getByRole('button', { name: 'Buscar', exact: true }).click()
-    await expect(paginaLimpa.locator('#titulo-resultado')).toHaveText(protocolo)
 
     expect(requisicoes.length).toBeGreaterThan(0)
     for (const requisicao of requisicoes) {
       expect(requisicao.url).not.toContain(codigo)
+      expect(requisicao.cabecalho).toBeUndefined()
     }
-    expect(requisicoes.some((requisicao) => requisicao.cabecalho === codigo)).toBe(true)
 
     await paginaLimpa.goto('/servicos')
     await expect(

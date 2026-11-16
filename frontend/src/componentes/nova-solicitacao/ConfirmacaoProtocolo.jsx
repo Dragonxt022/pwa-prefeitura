@@ -7,6 +7,7 @@ import {
   KeyRound,
   LocateFixed,
   MapPin,
+  Printer,
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { IlustracaoSucesso } from '../Ilustracoes'
@@ -37,7 +38,8 @@ export default function ConfirmacaoProtocolo({
         </span>
         <h1>Pronto!</h1>
         <p className="texto-suave">
-          Guarde o número e o código de acesso. Os dois são necessários para acompanhar.
+          Guarde o número do protocolo para acompanhar o andamento. O código de acesso continua
+          protegendo ações sensíveis, como vincular o pedido à sua conta.
         </p>
 
         <div className="protocolo-caixa">
@@ -152,6 +154,14 @@ export default function ConfirmacaoProtocolo({
             Acompanhar
             <ArrowRight aria-hidden="true" />
           </Link>
+          <button
+            type="button"
+            className="botao botao--secundario"
+            onClick={() => window.print()}
+          >
+            <Printer aria-hidden="true" />
+            Imprimir ou salvar PDF
+          </button>
           <button type="button" className="botao botao--secundario" onClick={aoNovaSolicitacao}>
             Nova solicitação
           </button>

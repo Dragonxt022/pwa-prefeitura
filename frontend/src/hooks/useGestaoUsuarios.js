@@ -7,10 +7,26 @@ import {
 } from '../servicos/api'
 import { FORM_USUARIO_INICIAL } from '../utils/gestao'
 
+function setorPadrao(setores) {
+  return setores.find((setor) => !setor.central)?.id ?? ''
+}
+
+function formDoUsuario(usuario) {
+  return {
+    nome: usuario.nome,
+    email: usuario.email,
+    senha: '',
+    papel: usuario.papel,
+    setorId: usuario.papel === 'setor' ? (usuario.setorId ?? '') : '',
+  }
+}
+
 export function useGestaoUsuarios({ setores, setSetores, definirErro, definirMensagem }) {
   const [mostrarUsuarios, setMostrarUsuarios] = useState(false)
   const [usuarios, setUsuarios] = useState([])
   const [carregandoUsuarios, setCarregandoUsuarios] = useState(false)
+  const [formularioAberto, setFormularioAberto] = useState(false)
+  const [usuarioEmEdicao, setUsuarioEmEdicao] = useState(null)
   const [formUsuario, setFormUsuario] = useState(FORM_USUARIO_INICIAL)
   const [salvandoUsuario, setSalvandoUsuario] = useState(false)
 
@@ -18,6 +34,8 @@ export function useGestaoUsuarios({ setores, setSetores, definirErro, definirMen
     setMostrarUsuarios(false)
     setUsuarios([])
     setCarregandoUsuarios(false)
+    setFormularioAberto(false)
+    setUsuarioEmEdicao(null)
     setFormUsuario(FORM_USUARIO_INICIAL)
     setSalvandoUsuario(false)
   }, [])
@@ -34,10 +52,7 @@ export function useGestaoUsuarios({ setores, setSetores, definirErro, definirMen
       setSetores(listaSetores)
       setFormUsuario((atual) => ({
         ...atual,
-        setorId:
-          atual.setorId ||
-          listaSetores.find((setor) => !setor.central)?.id ||
-          '',
+        setorId: atual.setorId || setorPadrao(listaSetores),
       }))
     } catch (falha) {
       definirErro(falha)
@@ -55,6 +70,30 @@ export function useGestaoUsuarios({ setores, setSetores, definirErro, definirMen
     setMostrarUsuarios(false)
   }, [])
 
+  const abrirNovo = useCallback(() => {
+    definirErro(null)
+    definirMensagem('')
+    setUsuarioEmEdicao(null)
+    setFormUsuario({ ...FORM_USUARIO_INICIAL, setorId: setorPadrao(setores) })
+    setFormularioAberto(true)
+  }, [definirErro, definirMensagem, setores])
+
+  const abrirEdicao = useCallback(
+    (usuario) => {
+      definirErro(null)
+      definirMensagem('')
+      setUsuarioEmEdicao(usuario)
+      setFormUsuario(formDoUsuario(usuario))
+      setFormularioAberto(true)
+    },
+    [definirErro, definirMensagem],
+  )
+
+  const fecharFormulario = useCallback(() => {
+    setFormularioAberto(false)
+    setUsuarioEmEdicao(null)
+  }, [])
+
   function atualizarCampo(campo, valor) {
     setFormUsuario((atual) => ({ ...atual, [campo]: valor }))
   }
@@ -70,24 +109,32 @@ export function useGestaoUsuarios({ setores, setSetores, definirErro, definirMen
     }))
   }
 
-  async function criarUsuario(evento) {
+  async function salvarUsuario(evento) {
     evento.preventDefault()
     setSalvandoUsuario(true)
     definirErro(null)
     definirMensagem('')
     try {
-      await criarUsuarioGestao({
-        nome: formUsuario.nome,
-        email: formUsuario.email,
-        senha: formUsuario.senha,
-        papel: formUsuario.papel,
-        setorId: formUsuario.papel === 'setor' ? formUsuario.setorId : undefined,
-      })
-      setFormUsuario((atual) => ({
-        ...FORM_USUARIO_INICIAL,
-        setorId: setores.find((setor) => !setor.central)?.id ?? atual.setorId,
-      }))
-      definirMensagem('Usuário criado. Ele já pode entrar com o e-mail e a senha cadastrados.')
+      if (usuarioEmEdicao) {
+        const dados = {
+          nome: formUsuario.nome,
+          email: formUsuario.email,
+          papel: formUsuario.papel,
+        }
+        if (formUsuario.papel === 'setor') dados.setorId = formUsuario.setorId
+        if (formUsuario.senha) dados.senha = formUsuario.senha
+        await atualizarUsuarioGestao(usuarioEmEdicao.id, dados)
+        definirMensagem('Dados do usuário atualizados.')
+      } else {
+        await criarUsuarioGestao({
+          nome: formUsuario.nome,
+          email: formUsuario.email,
+          senha: formUsuario.senha,
+          papel: formUsuario.papel,
+          setorId: formUsuario.papel === 'setor' ? formUsuario.setorId : undefined,
+        })
+        definirMensagem('Usuário criado. Ele já pode entrar com o e-mail e a senha cadastrados.')
+      }
       await carregarUsuarios()
       return true
     } catch (falha) {
@@ -117,14 +164,19 @@ export function useGestaoUsuarios({ setores, setSetores, definirErro, definirMen
     mostrarUsuarios,
     usuarios,
     carregandoUsuarios,
+    formularioAberto,
+    usuarioEmEdicao,
     formUsuario,
     salvandoUsuario,
     limpar,
     abrir,
     fechar,
+    abrirNovo,
+    abrirEdicao,
+    fecharFormulario,
     atualizarCampo,
     alterarPapel,
-    criarUsuario,
+    salvarUsuario,
     alternarUsuario,
   }
 }

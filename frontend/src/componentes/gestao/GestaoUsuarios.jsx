@@ -2,13 +2,14 @@ import {
   ArrowLeft,
   Building2,
   LoaderCircle,
+  Pencil,
   ShieldCheck,
   TriangleAlert,
   UserPlus,
   UsersRound,
   X,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { Badge } from '../StatusBadge'
 import { PAPEIS_UI } from '../../utils/gestao'
 import { mensagemAmigavel } from '../../utils/erros'
@@ -24,18 +25,22 @@ function iniciais(nome) {
 
 export default function GestaoUsuarios({
   setores,
+  formularioAberto,
+  usuarioEmEdicao,
   formUsuario,
   usuarios,
   carregandoUsuarios,
   salvandoUsuario,
   erro,
   aoVoltar,
-  aoCriar,
+  aoAbrirNovo,
+  aoEditar,
+  aoFecharFormulario,
+  aoSalvar,
   aoAlternar,
   aoMudarCampo,
   aoMudarPapel,
 }) {
-  const [formularioAberto, setFormularioAberto] = useState(false)
   const modalRef = useRef(null)
   const gatilhoRef = useRef(null)
   const primeiroCampoRef = useRef(null)
@@ -49,7 +54,8 @@ export default function GestaoUsuarios({
     function aoTeclar(evento) {
       if (evento.key === 'Escape') {
         evento.preventDefault()
-        fecharFormulario()
+        aoFecharFormulario()
+        window.requestAnimationFrame(() => gatilhoRef.current?.focus())
         return
       }
       if (evento.key !== 'Tab') return
@@ -75,24 +81,23 @@ export default function GestaoUsuarios({
       document.body.style.overflow = overflowAnterior
       document.removeEventListener('keydown', aoTeclar)
     }
-  }, [formularioAberto])
+  }, [aoFecharFormulario, formularioAberto])
 
   useEffect(() => {
     if (formularioAberto) primeiroCampoRef.current?.focus()
   }, [formularioAberto])
 
-  function abrirFormulario() {
-    setFormularioAberto(true)
-  }
-
   function fecharFormulario() {
-    setFormularioAberto(false)
+    aoFecharFormulario()
     window.requestAnimationFrame(() => gatilhoRef.current?.focus())
   }
 
   async function enviarFormulario(evento) {
-    const criado = await aoCriar(evento)
-    if (criado) fecharFormulario()
+    const salvo = await aoSalvar(evento)
+    if (salvo) {
+      aoFecharFormulario()
+      window.requestAnimationFrame(() => gatilhoRef.current?.focus())
+    }
   }
 
   return (
@@ -107,7 +112,7 @@ export default function GestaoUsuarios({
             <p className="gestao-eyebrow">Administração</p>
             <h1>Usuários</h1>
             <p className="texto-suave">
-              Cada usuário de setor acessa somente a fila da própria secretaria. Cadastre acessos
+              Cada usuário de setor acessa somente a fila da própria secretaria. Cadastre, edite
               e ative ou desative contas quando necessário.
             </p>
           </div>
@@ -115,7 +120,7 @@ export default function GestaoUsuarios({
             ref={gatilhoRef}
             type="button"
             className="botao botao--primario"
-            onClick={abrirFormulario}
+            onClick={aoAbrirNovo}
           >
             <UserPlus aria-hidden="true" />
             Novo usuário
@@ -170,13 +175,24 @@ export default function GestaoUsuarios({
                     {usuarioListado.setor?.nome ? ` · ${usuarioListado.setor.nome}` : ''}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  className="botao botao--secundario botao--pequeno"
-                  onClick={() => aoAlternar(usuarioListado)}
-                >
-                  {usuarioListado.ativo ? 'Desativar' : 'Reativar'}
-                </button>
+                <div className="gestao-usuario-item__acoes">
+                  <button
+                    type="button"
+                    className="botao botao--secundario botao--pequeno"
+                    onClick={() => aoEditar(usuarioListado)}
+                    aria-label={`Editar ${usuarioListado.nome}`}
+                  >
+                    <Pencil aria-hidden="true" />
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    className="botao botao--secundario botao--pequeno"
+                    onClick={() => aoAlternar(usuarioListado)}
+                  >
+                    {usuarioListado.ativo ? 'Desativar' : 'Reativar'}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -195,28 +211,36 @@ export default function GestaoUsuarios({
             className="gestao-modal"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="titulo-novo-usuario"
+            aria-labelledby="titulo-formulario-usuario"
           >
             <header className="gestao-modal__topo">
               <button
                 type="button"
                 className="botao botao--secundario botao--icone"
                 onClick={fecharFormulario}
-                aria-label="Fechar formulário de novo usuário"
+                aria-label={
+                  usuarioEmEdicao
+                    ? 'Fechar edição de usuário'
+                    : 'Fechar formulário de novo usuário'
+                }
                 title="Fechar"
               >
                 <X aria-hidden="true" />
               </button>
               <div>
                 <p className="gestao-eyebrow">Equipe</p>
-                <h2 id="titulo-novo-usuario">Novo usuário</h2>
+                <h2 id="titulo-formulario-usuario">
+                  {usuarioEmEdicao ? 'Editar usuário' : 'Novo usuário'}
+                </h2>
               </div>
             </header>
 
             <form className="gestao-modal__form" onSubmit={enviarFormulario}>
               <div className="gestao-modal__corpo">
                 <p className="texto-suave">
-                  Defina o papel e, para usuários de setor, a secretaria responsável pela fila.
+                  {usuarioEmEdicao
+                    ? 'Atualize os dados de acesso. Deixe a senha em branco para manter a atual.'
+                    : 'Defina o papel e, para usuários de setor, a secretaria responsável pela fila.'}
                 </p>
 
                 {erro && (
@@ -255,7 +279,9 @@ export default function GestaoUsuarios({
                 </div>
 
                 <div className="campo">
-                  <label htmlFor="usuario-senha">Senha inicial</label>
+                  <label htmlFor="usuario-senha">
+                    {usuarioEmEdicao ? 'Nova senha (opcional)' : 'Senha inicial'}
+                  </label>
                   <input
                     id="usuario-senha"
                     type="password"
@@ -264,10 +290,12 @@ export default function GestaoUsuarios({
                     value={formUsuario.senha}
                     onChange={(evento) => aoMudarCampo('senha', evento.target.value)}
                     aria-describedby="usuario-senha-ajuda"
-                    required
+                    required={!usuarioEmEdicao}
                   />
                   <p className="campo__ajuda" id="usuario-senha-ajuda">
-                    Mínimo de 8 caracteres. Oriente o usuário a trocar a senha depois.
+                    {usuarioEmEdicao
+                      ? 'Mínimo de 8 caracteres. Deixe em branco para manter a senha atual.'
+                      : 'Mínimo de 8 caracteres. Oriente o usuário a trocar a senha depois.'}
                   </p>
                 </div>
 
@@ -311,7 +339,7 @@ export default function GestaoUsuarios({
 
                 <p className="gestao-modal__nota">
                   <ShieldCheck aria-hidden="true" />
-                  Apenas administradores podem criar e desativar usuários.
+                  Apenas administradores podem criar, editar e desativar usuários.
                 </p>
               </div>
 
@@ -322,10 +350,18 @@ export default function GestaoUsuarios({
                 <button type="submit" className="botao botao--primario" disabled={salvandoUsuario}>
                   {salvandoUsuario ? (
                     <LoaderCircle className="girando" aria-hidden="true" />
+                  ) : usuarioEmEdicao ? (
+                    <Pencil aria-hidden="true" />
                   ) : (
                     <UserPlus aria-hidden="true" />
                   )}
-                  {salvandoUsuario ? 'Criando…' : 'Criar usuário'}
+                  {salvandoUsuario
+                    ? usuarioEmEdicao
+                      ? 'Salvando…'
+                      : 'Criando…'
+                    : usuarioEmEdicao
+                      ? 'Salvar alterações'
+                      : 'Criar usuário'}
                 </button>
               </footer>
             </form>

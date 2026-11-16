@@ -23,7 +23,6 @@ export default function GestaoLogin({
       <header className="gestao-login__marca">
         <img src={logoMarca} alt="" />
         <span>{nomeApp}</span>
-        <span className="marca__selo">demo</span>
       </header>
 
       <main id="gestao-conteudo" className="gestao-login__cartao cartao" tabIndex={-1}>

@@ -42,7 +42,7 @@ export function useAtualizacoes() {
 
   const verificar = useCallback(async () => {
     if (!online) return
-    const salvos = listarPedidos().filter((pedido) => pedido.codigoAcesso)
+    const salvos = listarPedidos()
     if (salvos.length === 0) return
 
     const respostas = await Promise.allSettled(
@@ -94,9 +94,9 @@ export function useAtualizacoes() {
       sincronizarContagem()
     }
 
-    const intervalo = window.setInterval(() => {
-      if (document.visibilityState === 'visible') verificar()
-    }, 60_000)
+    // Continua verificando com a aba em segundo plano para conseguir avisar
+    // pelo navegador quando o status mudar.
+    const intervalo = window.setInterval(() => verificar(), 60_000)
 
     document.addEventListener('visibilitychange', aoMudarVisibilidade)
     window.addEventListener('prefeitura:notificacoes', aoAtualizar)

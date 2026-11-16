@@ -95,11 +95,16 @@ export default function Perfil() {
 
   useEffect(() => {
     const atualizarNaoLidas = () => setNaoLidas(contarNotificacoesNaoLidas())
+    const atualizarPreferencias = (evento) => {
+      setPreferencias(evento.detail ?? lerPreferenciasAcessibilidade())
+    }
     window.addEventListener('prefeitura:notificacoes', atualizarNaoLidas)
     window.addEventListener('prefeitura:fila', atualizarNaoLidas)
+    window.addEventListener('prefeitura:acessibilidade', atualizarPreferencias)
     return () => {
       window.removeEventListener('prefeitura:notificacoes', atualizarNaoLidas)
       window.removeEventListener('prefeitura:fila', atualizarNaoLidas)
+      window.removeEventListener('prefeitura:acessibilidade', atualizarPreferencias)
     }
   }, [])
 
@@ -110,6 +115,9 @@ export default function Perfil() {
     try {
       const resposta = await Notification.requestPermission()
       setPermissao(resposta)
+      window.dispatchEvent(
+        new CustomEvent('prefeitura:permissao-notificacoes', { detail: resposta }),
+      )
       setMensagem(resposta === 'granted' ? 'Permissão concedida.' : 'Permissão não concedida.')
     } catch {
       setMensagem('Não foi possível pedir permissão neste navegador.')

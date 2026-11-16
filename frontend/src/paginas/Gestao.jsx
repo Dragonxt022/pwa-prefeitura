@@ -346,13 +346,18 @@ export default function Gestao() {
           >
             <GestaoUsuarios
               setores={fila.setores}
+              formularioAberto={usuarios.formularioAberto}
+              usuarioEmEdicao={usuarios.usuarioEmEdicao}
               formUsuario={usuarios.formUsuario}
               usuarios={usuarios.usuarios}
               carregandoUsuarios={usuarios.carregandoUsuarios}
               salvandoUsuario={usuarios.salvandoUsuario}
               erro={fila.erro}
               aoVoltar={() => selecionarAba('dashboard')}
-              aoCriar={usuarios.criarUsuario}
+              aoAbrirNovo={usuarios.abrirNovo}
+              aoEditar={usuarios.abrirEdicao}
+              aoFecharFormulario={usuarios.fecharFormulario}
+              aoSalvar={usuarios.salvarUsuario}
               aoAlternar={usuarios.alternarUsuario}
               aoMudarCampo={usuarios.atualizarCampo}
               aoMudarPapel={usuarios.alterarPapel}

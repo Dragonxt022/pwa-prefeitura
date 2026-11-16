@@ -15,6 +15,8 @@ import { useEffect } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import logoColorido from '../assets/logo-icone-colorido.png'
 import logoBranco from '../assets/logo-icone-branco.png'
+import AvisoNotificacoes from './AvisoNotificacoes'
+import MenuAcessibilidade from './MenuAcessibilidade'
 import { useConfiguracoes } from '../contexto/useConfiguracoes.js'
 import { useAtualizacoes } from '../hooks/useAtualizacoes'
 import { useFilaSolicitacoes } from '../hooks/useFilaSolicitacoes'
@@ -87,7 +89,6 @@ export default function Layout() {
               )}
             </span>
             <span className="marca__nome">{nomeApp}</span>
-            <span className="marca__selo">demo</span>
           </NavLink>
 
           <nav className="nav-desktop" aria-label="Navegação principal">
@@ -109,6 +110,8 @@ export default function Layout() {
           </nav>
         </div>
       </header>
+
+      <AvisoNotificacoes />
 
       {!online && (
         <div className="faixa-offline" role="status">
@@ -210,6 +213,8 @@ export default function Layout() {
           </NavLink>
         ))}
       </nav>
+
+      <MenuAcessibilidade />
     </div>
   )
 }

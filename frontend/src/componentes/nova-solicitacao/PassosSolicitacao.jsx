@@ -1,6 +1,6 @@
 import { Check } from 'lucide-react'
 
-const ETAPAS = ['Serviço', 'Local', 'Detalhes', 'Revisão']
+const ETAPAS = ['Serviço', 'Conta', 'Local', 'Detalhes', 'Revisão']
 
 export default function PassosSolicitacao({ etapa, aoSelecionar }) {
   return (

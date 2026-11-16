@@ -20,6 +20,7 @@ function erro502(route) {
 async function preencherAteRevisao(page) {
   await page.locator('.escolha-servico', { hasText: SERVICO }).click()
   await page.getByRole('button', { name: 'Continuar' }).click()
+  await page.getByRole('button', { name: 'Pular por enquanto' }).click()
   await page.locator('#descricao').fill(DESCRICAO)
   await page.locator('#endereco').fill(ENDERECO)
   await page.getByRole('button', { name: 'Continuar' }).click()
